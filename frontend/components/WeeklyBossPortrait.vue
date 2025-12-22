@@ -10,6 +10,53 @@
     </div>
     <div class="weekly-boss-image">
       <img :src="imageSrc" :alt="weekName" />
+
+      <!-- Holographic Call UI Overlay (only on active week) -->
+      <div v-if="isActive" class="holo-overlay">
+        <!-- Scan lines -->
+        <div class="holo-scanlines"></div>
+
+        <!-- Interference glitch effect -->
+        <div class="holo-glitch"></div>
+
+        <!-- UI Frame -->
+        <div class="holo-frame">
+          <!-- Top UI Bar -->
+          <div class="holo-top-bar">
+            <div class="holo-signal">
+              <span class="signal-dot"></span>
+              <span class="signal-dot"></span>
+              <span class="signal-dot"></span>
+              <span class="holo-text">SIGNAL</span>
+            </div>
+            <div class="holo-battery">
+              <div class="battery-level"></div>
+              <span class="holo-text">85%</span>
+            </div>
+          </div>
+
+          <!-- Corner brackets -->
+          <div class="holo-corner top-left"></div>
+          <div class="holo-corner top-right"></div>
+          <div class="holo-corner bottom-left"></div>
+          <div class="holo-corner bottom-right"></div>
+
+          <!-- Grid lines -->
+          <div class="holo-grid-lines"></div>
+
+          <!-- Data stream effect -->
+          <div class="holo-data-stream">
+            <div class="data-line"></div>
+            <div class="data-line"></div>
+            <div class="data-line"></div>
+          </div>
+        </div>
+
+        <!-- Parallax layers -->
+        <div class="holo-parallax-layer layer-1"></div>
+        <div class="holo-parallax-layer layer-2"></div>
+      </div>
+
       <div v-if="conquered" class="completion-badge">
         <div class="badge-content">
           <span class="crown-icon">👑</span>
@@ -132,6 +179,8 @@ const progressBarColor = computed(() => {
 
   &.active {
     background-color: #f59e0b;
+    border-bottom-right-radius: 20px;
+    border-bottom-left-radius: 20px;
   }
 
   .weekly-boss-image {
@@ -336,6 +385,368 @@ const progressBarColor = computed(() => {
   }
   100% {
     transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ==================== HOLOGRAPHIC CALL UI EFFECTS ==================== */
+
+.holo-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  overflow: hidden;
+}
+
+/* Animated scan lines */
+.holo-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 255, 255, 0.03) 0px,
+    rgba(0, 255, 255, 0.03) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  animation: scanlines-move 8s linear infinite;
+  opacity: 0.6;
+}
+
+@keyframes scanlines-move {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(20px);
+  }
+}
+
+/* Glitch interference effect */
+.holo-glitch {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 255, 255, 0.1) 48%,
+    rgba(0, 255, 255, 0.2) 50%,
+    rgba(0, 255, 255, 0.1) 52%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: glitch-sweep 3s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes glitch-sweep {
+  0%,
+  100% {
+    background-position: -200% 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  20% {
+    background-position: 200% 0;
+    opacity: 0;
+  }
+}
+
+/* Main holographic frame */
+.holo-frame {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(0, 255, 255, 0.4);
+  box-shadow:
+    0 0 10px rgba(0, 255, 255, 0.3),
+    inset 0 0 10px rgba(0, 255, 255, 0.1);
+  animation: holo-pulse 2s ease-in-out infinite;
+}
+
+@keyframes holo-pulse {
+  0%, 100% {
+    border-color: rgba(0, 255, 255, 0.4);
+    box-shadow:
+      0 0 10px rgba(0, 255, 255, 0.3),
+      inset 0 0 10px rgba(0, 255, 255, 0.1);
+  }
+  50% {
+    border-color: rgba(0, 255, 255, 0.6);
+    box-shadow:
+      0 0 20px rgba(0, 255, 255, 0.5),
+      inset 0 0 20px rgba(0, 255, 255, 0.2);
+  }
+}
+
+/* Top UI bar with signal and battery */
+.holo-top-bar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(0, 20, 40, 0.8);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  backdrop-filter: blur(4px);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #00ffff;
+  text-shadow: 0 0 5px #00ffff;
+}
+
+.holo-signal {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.signal-dot {
+  width: 4px;
+  height: 4px;
+  background: #00ffff;
+  border-radius: 50%;
+  box-shadow: 0 0 4px #00ffff;
+  animation: signal-blink 1.5s ease-in-out infinite;
+}
+
+.signal-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.signal-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes signal-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.holo-battery {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.battery-level {
+  width: 20px;
+  height: 10px;
+  border: 1px solid #00ffff;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    bottom: 1px;
+    width: 70%;
+    background: linear-gradient(90deg, #00ffff, #00cccc);
+    box-shadow: 0 0 5px #00ffff;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: -3px;
+    top: 3px;
+    width: 2px;
+    height: 4px;
+    background: #00ffff;
+  }
+}
+
+.holo-text {
+  color: #00ffff;
+  text-shadow: 0 0 5px #00ffff;
+  letter-spacing: 1px;
+}
+
+/* Corner brackets */
+.holo-corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: #00ffff;
+  border-style: solid;
+  box-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.holo-corner.top-left {
+  top: 5px;
+  left: 5px;
+  border-width: 2px 0 0 2px;
+}
+
+.holo-corner.top-right {
+  top: 5px;
+  right: 5px;
+  border-width: 2px 2px 0 0;
+}
+
+.holo-corner.bottom-left {
+  bottom: 5px;
+  left: 5px;
+  border-width: 0 0 2px 2px;
+}
+
+.holo-corner.bottom-right {
+  bottom: 5px;
+  right: 5px;
+  border-width: 0 2px 2px 0;
+}
+
+/* Animated grid lines */
+.holo-grid-lines {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 30px 30px;
+  animation: grid-drift 20s linear infinite;
+  opacity: 0.4;
+}
+
+@keyframes grid-drift {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 30px 30px;
+  }
+}
+
+/* Data stream lines */
+.holo-data-stream {
+  position: absolute;
+  bottom: 60px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.data-line {
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #00ffff 50%,
+    transparent 100%
+  );
+  animation: data-flow 2s ease-in-out infinite;
+  box-shadow: 0 0 4px #00ffff;
+}
+
+.data-line:nth-child(1) {
+  width: 80px;
+  animation-delay: 0s;
+}
+
+.data-line:nth-child(2) {
+  width: 120px;
+  animation-delay: 0.3s;
+}
+
+.data-line:nth-child(3) {
+  width: 60px;
+  animation-delay: 0.6s;
+}
+
+@keyframes data-flow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scaleX(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+/* Parallax layers for depth */
+.holo-parallax-layer {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(0, 255, 255, 0.1) 0%,
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.weekly-boss-container.active:hover .holo-parallax-layer {
+  opacity: 1;
+}
+
+.holo-parallax-layer.layer-1 {
+  animation: parallax-float-1 6s ease-in-out infinite;
+}
+
+.holo-parallax-layer.layer-2 {
+  animation: parallax-float-2 8s ease-in-out infinite;
+}
+
+@keyframes parallax-float-1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(5px, -5px) scale(1.02);
+  }
+  66% {
+    transform: translate(-5px, 5px) scale(0.98);
+  }
+}
+
+@keyframes parallax-float-2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-3px, 3px) scale(0.99);
+  }
+  66% {
+    transform: translate(3px, -3px) scale(1.01);
+  }
+}
+
+/* Enhanced active state with holographic glow */
+.weekly-boss-container.active .weekly-boss-image {
+  box-shadow:
+    0 0 20px rgba(0, 255, 255, 0.4),
+    0 0 40px rgba(0, 255, 255, 0.2),
+    inset 0 0 20px rgba(0, 255, 255, 0.1);
+  border-color: rgba(0, 255, 255, 0.5);
+  animation: holo-glow 2s ease-in-out infinite;
+}
+
+@keyframes holo-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 20px rgba(0, 255, 255, 0.4),
+      0 0 40px rgba(0, 255, 255, 0.2),
+      inset 0 0 20px rgba(0, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 30px rgba(0, 255, 255, 0.6),
+      0 0 60px rgba(0, 255, 255, 0.3),
+      inset 0 0 30px rgba(0, 255, 255, 0.15);
   }
 }
 </style>

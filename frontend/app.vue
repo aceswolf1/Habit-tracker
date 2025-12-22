@@ -254,10 +254,10 @@
       <!-- Weekly Boss Section -->
       <div v-if="hasMonth" class="weekly-boss-section">
         <WeeklyBossPortrait
-          v-for="week in weeks"
+          v-for="(week, index) in weeks"
           :key="week.uuid"
           :weekUuid="week.uuid"
-          :imageSrc="week.backgroundImages ? week.backgroundImages[0] : ''"
+          :imageSrc="getWeekImage(week, index)"
           :weekName="week.name"
           :progress="week.progress"
           :subtitle="week.subtitle"
@@ -554,6 +554,17 @@ const getTierText = computed(() => {
   if (progress >= 25) return "BRONZE TIER!";
   return "BEGINNER TIER!";
 });
+
+// Function to get week image with default fallback
+function getWeekImage(week: any, index: number | string) {
+  // If week has a custom background image, use it
+  if (week.backgroundImages && week.backgroundImages[0]) {
+    return week.backgroundImages[0];
+  }
+  // Otherwise, use default week images (week-1.png, week-2.png, etc.)
+  const weekNumber = Number(index) + 1;
+  return `/images/week-${weekNumber}.png`;
+}
 
 // Function to refresh all reactive data from the store
 function refreshDataFromStore() {
