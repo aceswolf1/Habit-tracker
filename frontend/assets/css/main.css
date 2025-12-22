@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Pixel color palette */
+  --color-pixel-dark: #0a101b;
+  --color-pixel-darkblue: #1a2332;
+  --color-pixel-midblue: #2d3e5f;
+  --color-pixel-lightblue: #4a5f8a;
+  --color-pixel-offwhite: #e8e8e8;
+}
+
+/* Global font family */
+.font-press {
+  font-family: 'Press Start 2P', cursive;
+}
+
+/* Pixel-perfect shadow utility */
+.shadow-pixel {
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.8);
+}
+
+/* CRT overlay effect */
+.crt-overlay {
+  position: fixed;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.15),
+      rgba(0, 0, 0, 0.15) 1px,
+      transparent 1px,
+      transparent 2px
+    );
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.3;
+}
+
+/* Pixel-perfect background color */
+.bg-pixel-dark {
+  background-color: var(--color-pixel-dark);
+}

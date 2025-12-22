@@ -1,0 +1,1 @@
+export { default } from "file:///Users/cace/Desktop/cloud-copy/projects/Habit-tracker/frontend/node_modules/@nuxt/vite-builder/dist/runtime/vite-node.mjs"
