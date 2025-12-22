@@ -86,7 +86,7 @@ function initParticles() {
 function resize() {
   if (!canvasEl.value) return;
   width = window.innerWidth;
-  height = window.innerHeight;
+  height = Math.max(window.innerHeight, document.documentElement.scrollHeight);
   dpr = window.devicePixelRatio || 1;
   canvasEl.value.width = width * dpr;
   canvasEl.value.height = height * dpr;
@@ -233,8 +233,11 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .bg-particles-wrapper {
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   z-index: 1; /* above gradient, below content */
   pointer-events: none;
   background: transparent;

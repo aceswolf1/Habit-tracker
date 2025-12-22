@@ -5,11 +5,16 @@
     :data-progress="Math.round(progress / 10) * 10"
     @click="emit('set-current-week', weekUuid)"
   >
-    <div class="boss-header" :class="{ conquered: conquered }">
-      <div v-if="conquered" class="conquered-banner">CONQUERED</div>
+    <div class="boss-header" :class="{ 'has-rank': hasRank }">
+      <div v-if="hasRank" class="rank-banner" :data-rank="rankInfo.rank">
+        RANK {{ rankInfo.rank }}
+      </div>
     </div>
     <div class="weekly-boss-image">
-      <img :src="imageSrc" :alt="weekName" />
+      <img v-if="renderMode === 'image'" :src="imageSrc" :alt="weekName" />
+      <video v-if="renderMode === 'video'" class="boss-subtitle-video" autoplay loop muted>
+        <source :src="computedVideoSrc" type="video/mp4" />
+      </video>
 
       <!-- Holographic Call UI Overlay (only on active week) -->
       <div v-if="isActive" class="holo-overlay">
@@ -57,10 +62,22 @@
         <div class="holo-parallax-layer layer-2"></div>
       </div>
 
-      <div v-if="conquered" class="completion-badge">
-        <div class="badge-content">
-          <span class="crown-icon">👑</span>
-          <span class="completion-text">COMPLETED</span>
+      <!-- Rank Badge Overlay -->
+      <div v-if="hasRank" class="rank-badge-overlay" :data-rank="rankInfo.rank">
+        <div class="rank-badge-container">
+          <!-- Rank Letter -->
+          <div class="rank-letter" :style="{ color: rankInfo.color, textShadow: `0 0 20px ${rankInfo.glow}` }">
+            {{ rankInfo.rank }}
+          </div>
+          <!-- Percentage Badge -->
+          <div class="percentage-badge" :style="{ background: rankInfo.gradient }">
+            <span class="percentage-text">{{ progress }}%</span>
+            <span class="completion-label">COMPLETE</span>
+          </div>
+          <!-- Particle burst effect -->
+          <div class="rank-particles">
+            <div class="particle" v-for="n in 12" :key="n"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -83,26 +100,41 @@
           <div class="marker" v-for="n in 5" :key="n"></div>
         </div>
       </div>
-      <div v-if="conquered" class="rpg-progress-complete">BOSS DEFEATED!</div>
+      <div v-if="hasRank" class="rpg-progress-complete" :style="{ color: rankInfo.color, textShadow: `0 0 8px ${rankInfo.glow}` }">
+        RANK {{ rankInfo.rank }} ACHIEVED!
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from "vue";
+import { useSettingsStore } from "../stores/settingsStore";
 
 const props = defineProps({
   weekUuid: {
     type: String,
     required: true,
   },
+  mode: {
+    type: String,
+    default: "image",
+  },
   imageSrc: {
     type: String,
     required: true,
   },
+  videoSrc: {
+    type: String,
+    default: "",
+  },
   weekName: {
     type: String,
     required: true,
+  },
+  weekIndex: {
+    type: [Number, String],
+    required: false,
   },
   isActive: {
     type: Boolean,
@@ -125,6 +157,19 @@ const props = defineProps({
 
 const emit = defineEmits(["set-current-week"]);
 
+// Calculate rank based on progress percentage
+const rankInfo = computed(() => {
+  const p = props.progress;
+  if (p >= 100) return { rank: 'S', threshold: 100, color: '#a855f7', gradient: 'linear-gradient(135deg, #a855f7, #ec4899, #f59e0b)', glow: 'rgba(168, 85, 247, 0.6)' };
+  if (p >= 95) return { rank: 'A', threshold: 95, color: '#fbbf24', gradient: 'linear-gradient(135deg, #fbbf24, #f59e0b)', glow: 'rgba(251, 191, 36, 0.6)' };
+  if (p >= 90) return { rank: 'B', threshold: 90, color: '#60a5fa', gradient: 'linear-gradient(135deg, #60a5fa, #3b82f6)', glow: 'rgba(96, 165, 250, 0.6)' };
+  if (p >= 85) return { rank: 'C', threshold: 85, color: '#f97316', gradient: 'linear-gradient(135deg, #f97316, #ea580c)', glow: 'rgba(249, 115, 22, 0.6)' };
+  if (p >= 80) return { rank: 'D', threshold: 80, color: '#9ca3af', gradient: 'linear-gradient(135deg, #9ca3af, #6b7280)', glow: 'rgba(156, 163, 175, 0.6)' };
+  return null;
+});
+
+const hasRank = computed(() => rankInfo.value !== null);
+
 const progressBarColor = computed(() => {
   // Red component decreases as progress increases
   const redComponent = Math.max(0, 200 - props.progress * 1.5);
@@ -133,11 +178,37 @@ const progressBarColor = computed(() => {
   const greenComponent = Math.min(185, props.progress * 1.85);
 
   return {
-    background: `linear-gradient(to right, 
+    background: `linear-gradient(to right,
       rgb(${redComponent}, ${greenComponent}, 20),
       rgb(${redComponent - 20}, ${greenComponent + 20}, 40)
     )`,
   };
+});
+
+// Settings-driven render mode and computed video src
+const settings = useSettingsStore();
+
+const renderMode = computed(() => {
+  // If user enabled videos globally, prefer video backgrounds
+  if (settings.useWeekVideos) return "video";
+  return props.mode || "image";
+});
+
+const computedVideoSrc = computed(() => {
+  if (settings.useWeekVideos) {
+    // Prefer using numeric weekIndex to form filenames like week-1.mp4
+    if (props.weekIndex !== undefined && props.weekIndex !== null) {
+      const idx = Number(props.weekIndex) + 1;
+      return `/videos/week-${idx}.mp4`;
+    }
+    // Fallback: slugify the weekName to a filename-friendly form
+    const slug = String(props.weekName)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+    return `/videos/${slug}.mp4`;
+  }
+  return props.videoSrc || "";
 });
 </script>
 
@@ -154,26 +225,47 @@ const progressBarColor = computed(() => {
     position: relative;
     overflow: visible;
 
-    &.conquered {
+    &.has-rank {
       background-color: #fbbf24;
       height: 0.5rem;
     }
 
-    .conquered-banner {
+    .rank-banner {
       position: absolute;
       top: -1.5rem;
       left: 50%;
       transform: translateX(-50%);
-      background-color: #dc2626;
       color: white;
       font-family: "Press Start 2P", cursive;
       font-size: 0.7rem;
       padding: 0.25rem 1rem;
-      border: 2px solid black;
+      border: 3px solid black;
       z-index: 10;
-      box-shadow: 0 0 10px rgba(220, 38, 38, 0.7);
-      animation: float 3s ease-in-out infinite;
       text-shadow: 2px 2px 0 black;
+      animation: rank-float 3s ease-in-out infinite, rank-pulse 2s ease-in-out infinite;
+
+      // Rank-specific colors
+      &[data-rank="S"] {
+        background: linear-gradient(135deg, #a855f7, #ec4899, #f59e0b);
+        box-shadow: 0 0 20px rgba(168, 85, 247, 0.8), 0 0 40px rgba(236, 72, 153, 0.5);
+        animation: rank-float 3s ease-in-out infinite, rank-pulse 2s ease-in-out infinite, rainbow-shift 3s linear infinite;
+      }
+      &[data-rank="A"] {
+        background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        box-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+      }
+      &[data-rank="B"] {
+        background: linear-gradient(135deg, #60a5fa, #3b82f6);
+        box-shadow: 0 0 20px rgba(96, 165, 250, 0.8);
+      }
+      &[data-rank="C"] {
+        background: linear-gradient(135deg, #f97316, #ea580c);
+        box-shadow: 0 0 20px rgba(249, 115, 22, 0.8);
+      }
+      &[data-rank="D"] {
+        background: linear-gradient(135deg, #9ca3af, #6b7280);
+        box-shadow: 0 0 20px rgba(156, 163, 175, 0.6);
+      }
     }
   }
 
@@ -202,8 +294,17 @@ const progressBarColor = computed(() => {
       max-height: 100%;
       object-fit: cover;
     }
+    video {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: cover;
+      position: absolute;
+      inset: 0;
+    }
 
-    .completion-badge {
+    .rank-badge-overlay {
       position: absolute;
       top: 0;
       left: 0;
@@ -212,27 +313,88 @@ const progressBarColor = computed(() => {
       display: flex;
       align-items: center;
       justify-content: center;
-      background-color: rgba(0, 0, 0, 0.6);
+      background-color: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(2px);
+      z-index: 6;
+    }
 
-      .badge-content {
-        background-color: #f59e0b;
-        padding: 1rem 2rem;
-        border: 3px solid black;
-        transform: rotate(-15deg) scale(1.2);
-        box-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
-        animation: pulse 2s infinite;
+    .rank-badge-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      animation: rank-reveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
 
-        .crown-icon {
-          font-size: 2rem;
-          margin-right: 0.5rem;
-          display: inline-block;
-        }
+    .rank-letter {
+      font-family: "Press Start 2P", cursive;
+      font-size: 8rem;
+      font-weight: bold;
+      line-height: 1;
+      animation: rank-letter-pop 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      text-shadow:
+        3px 3px 0 black,
+        -1px -1px 0 black,
+        1px -1px 0 black,
+        -1px 1px 0 black;
+      filter: drop-shadow(0 0 30px currentColor);
+    }
 
-        .completion-text {
-          font-family: "Press Start 2P", cursive;
-          font-size: 1.25rem;
-          color: black;
-          font-weight: bold;
+    .percentage-badge {
+      padding: 0.75rem 1.5rem;
+      border: 3px solid black;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow:
+        0 0 20px rgba(0, 0, 0, 0.5),
+        inset 0 2px 0 rgba(255, 255, 255, 0.3);
+      animation: badge-shimmer 2s ease-in-out infinite;
+
+      .percentage-text {
+        font-family: "Press Start 2P", cursive;
+        font-size: 1.5rem;
+        color: white;
+        font-weight: bold;
+        text-shadow: 2px 2px 0 black;
+        margin-bottom: 0.25rem;
+      }
+
+      .completion-label {
+        font-family: "Press Start 2P", cursive;
+        font-size: 0.6rem;
+        color: rgba(255, 255, 255, 0.9);
+        text-shadow: 1px 1px 0 black;
+        letter-spacing: 2px;
+      }
+    }
+
+    .rank-particles {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: visible;
+
+      .particle {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: white;
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        opacity: 0;
+        animation: particle-burst 1.5s ease-out forwards;
+        box-shadow: 0 0 10px currentColor;
+
+        @for $i from 1 through 12 {
+          &:nth-child(#{$i}) {
+            animation-delay: #{$i * 0.05}s;
+            $angle: #{$i * 30}deg;
+            --particle-angle: #{$angle};
+          }
         }
       }
     }
@@ -340,15 +502,104 @@ const progressBarColor = computed(() => {
   }
 }
 
-@keyframes pulse {
+/* ==================== RANK ANIMATIONS ==================== */
+
+@keyframes rank-float {
   0% {
-    transform: rotate(-15deg) scale(1.2);
+    transform: translateX(-50%) translateY(0);
   }
   50% {
-    transform: rotate(-15deg) scale(1.3);
+    transform: translateX(-50%) translateY(-8px);
   }
   100% {
-    transform: rotate(-15deg) scale(1.2);
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes rank-pulse {
+  0%, 100% {
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.05);
+  }
+}
+
+@keyframes rainbow-shift {
+  0% {
+    filter: hue-rotate(0deg) brightness(1.1);
+  }
+  50% {
+    filter: hue-rotate(20deg) brightness(1.2);
+  }
+  100% {
+    filter: hue-rotate(0deg) brightness(1.1);
+  }
+}
+
+@keyframes rank-reveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(-10deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes rank-letter-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-45deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3) rotate(10deg);
+  }
+  70% {
+    transform: scale(0.95) rotate(-5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes badge-shimmer {
+  0%, 100% {
+    box-shadow:
+      0 0 20px rgba(0, 0, 0, 0.5),
+      inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 30px rgba(255, 255, 255, 0.4),
+      inset 0 2px 0 rgba(255, 255, 255, 0.5);
+  }
+}
+
+@keyframes particle-burst {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform:
+      translate(-50%, -50%)
+      translate(
+        calc(cos(var(--particle-angle, 0deg)) * 100px),
+        calc(sin(var(--particle-angle, 0deg)) * 100px)
+      )
+      scale(1);
   }
 }
 
@@ -373,18 +624,6 @@ const progressBarColor = computed(() => {
   }
   100% {
     opacity: 1;
-  }
-}
-
-@keyframes float {
-  0% {
-    transform: translateX(-50%) translateY(0);
-  }
-  50% {
-    transform: translateX(-50%) translateY(-5px);
-  }
-  100% {
-    transform: translateX(-50%) translateY(0);
   }
 }
 
