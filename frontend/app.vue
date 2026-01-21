@@ -31,7 +31,7 @@
     class="main-wrapper relative min-h-screen flex items-start justify-center p-4 z-[2]"
   >
     <div
-      class="inner-wrapper relative max-w-[92vw] w-full bg-pixel-dark/80 backdrop-blur-[2px] border-4 border-black p-6 shadow-pixel"
+      :class="[ 'inner-wrapper relative max-w-[92vw] w-full bg-pixel-dark/80 backdrop-blur-[2px] border-4 border-black p-6 shadow-pixel', settingsStore.uiFont === 'cyber' ? 'font-cyber' : 'font-press' ]"
     >
       <!-- Page Content -->
       <header style="margin-bottom: 1.5rem">

@@ -11,6 +11,14 @@
   --color-pixel-offwhite: #e8e8e8;
 }
 
+/* Import cyberpunk-like font (Orbitron) */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+/* CSS utility for cyberpunk font */
+.font-cyber {
+  font-family: 'Orbitron', sans-serif;
+}
+
 /* Global font family */
 .font-press {
   font-family: 'Press Start 2P', cursive;

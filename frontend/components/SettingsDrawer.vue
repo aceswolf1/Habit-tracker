@@ -23,6 +23,20 @@
             @change="onToggleVideos($event)"
           />
         </div>
+
+        <div class="setting-row" style="margin-top:0.75rem; flex-direction:column; align-items:flex-start; gap:0.5rem;">
+          <div class="setting-label">UI Font</div>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <label style="display:flex; gap:0.25rem; align-items:center;">
+              <input type="radio" name="uiFont" value="press" :checked="store.uiFont === 'press'" @change="onSetUiFont('press')" />
+              <span style="margin-left:0.25rem">Classic (Press Start)</span>
+            </label>
+            <label style="display:flex; gap:0.25rem; align-items:center;">
+              <input type="radio" name="uiFont" value="cyber" :checked="store.uiFont === 'cyber'" @change="onSetUiFont('cyber')" />
+              <span style="margin-left:0.25rem">Cyberpunk (Orbitron)</span>
+            </label>
+          </div>
+        </div>
       </div>
     </aside>
   </div>
@@ -40,6 +54,16 @@ function close() {
 function onToggleVideos(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   store.setUseWeekVideos(checked);
+}
+
+function onSetUiFont(choice: string) {
+  // Defensive: ensure method exists, otherwise set directly
+  if (typeof (store as any).setUiFont === 'function') {
+    (store as any).setUiFont(choice);
+  } else {
+    (store as any).uiFont = choice;
+    if (typeof window !== 'undefined') localStorage.setItem('uiFont', choice);
+  }
 }
 </script>
 

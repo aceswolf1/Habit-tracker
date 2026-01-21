@@ -7,6 +7,12 @@ export const useSettingsStore = defineStore("settings", {
       typeof window !== "undefined" && localStorage.getItem("useWeekVideos") === "true",
     // Drawer open state
     drawerOpen: false,
+    // UI font choice: 'press' (Press Start 2P) or 'cyber' (cyberpunk style)
+    // Ensure this is always a string (avoid `false` during SSR hydration)
+    uiFont:
+      typeof window !== "undefined"
+        ? (localStorage.getItem("uiFont") || "press")
+        : "press",
   }),
   actions: {
     setUseWeekVideos(val: boolean) {
@@ -18,6 +24,12 @@ export const useSettingsStore = defineStore("settings", {
     toggleDrawer(open?: boolean) {
       if (typeof open === "boolean") this.drawerOpen = open;
       else this.drawerOpen = !this.drawerOpen;
+    },
+    setUiFont(choice: string) {
+      this.uiFont = choice;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("uiFont", choice);
+      }
     },
   },
 });

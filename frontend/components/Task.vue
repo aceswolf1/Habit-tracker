@@ -40,7 +40,7 @@
       <span class="task-description"
         >{{ icon ? icon + " " : "" }}{{ description }}</span
       >
-      <div class="flex gap-1 items-center">
+      <div class="flex items-center gap-1 border-t-[#1e232b] border-t pt-3 mt-1 w-full">
         <span
           class="task-check"
           :style="checkStyles"
@@ -113,6 +113,9 @@ const taskStyles = computed(() => ({
   "align-items": "center",
   position: "relative",
   transition: "border 0.3s, box-shadow .4s",
+  "flex-direction": "column",
+  "align-items": "baseline",
+  gap: "0.7rem",
 }));
 
 // Effect replay key
@@ -467,6 +470,8 @@ const checkStyles = computed(() => ({
   cursor: pointer;
   font-family: "Press Start 2P", cursive;
   line-height: 1rem;
+  height: 24px;
+  width: 24px;
 }
 .edit-btn:hover {
   background: #2563eb;
