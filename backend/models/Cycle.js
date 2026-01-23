@@ -7,7 +7,8 @@ const TaskSchema = new mongoose.Schema({
   completed: { type: Boolean, default: false },
   recurrenceId: String,
   order: Number,
-  icon: String
+  icon: String,
+  gifUrl: String
 });
 
 const DaySchema = new mongoose.Schema({
@@ -31,6 +32,7 @@ const CycleSchema = new mongoose.Schema({
   name: String,
   subtitle: String,
   progress: { type: Number, default: 0 },
+  score: { type: Number, default: 0 },
   weeks: [WeekSchema],
   finished: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },

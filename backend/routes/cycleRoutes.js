@@ -1,10 +1,61 @@
 const express = require('express');
 const router = express.Router();
 const Cycle = require('../models/Cycle');
+const UserProfile = require('../models/UserProfile');
+const { calculateTaskPoints, calculateMonthScore } = require('../utils/scoreCalculator');
 
 // Helper function to generate UUID
 function generateUuid(prefix = 'c') {
   return `${prefix}-${Math.random().toString(36).slice(2)}`;
+}
+
+// Helper function to calculate progress for the entire month
+function calculateProgress(cycle) {
+  if (!cycle || !cycle.weeks) return;
+
+  // Calculate week progress
+  for (const week of cycle.weeks) {
+    let weekTotalTasks = 0;
+    let weekCompletedTasks = 0;
+
+    for (const day of week.days) {
+      const requiredTasks = day.tasks.filter(task => !task.optional);
+      weekTotalTasks += requiredTasks.length;
+      weekCompletedTasks += requiredTasks.filter(task => task.completed).length;
+    }
+
+    if (weekTotalTasks > 0) {
+      week.progress = Math.round((weekCompletedTasks / weekTotalTasks) * 100);
+      week.conquered = weekCompletedTasks === weekTotalTasks;
+    } else {
+      week.progress = 0;
+      week.conquered = false;
+    }
+  }
+
+  // Calculate month progress
+  const weekCount = cycle.weeks.length;
+  if (weekCount === 0) {
+    cycle.progress = 0;
+    return;
+  }
+
+  const totalWeekProgress = cycle.weeks.reduce((sum, w) => sum + (w.progress || 0), 0);
+  const baseMonthProgress = Math.round(totalWeekProgress / weekCount);
+
+  // Optional bonus logic
+  let bonus = 0;
+  if (baseMonthProgress === 100) {
+    let optionalCompleted = 0;
+    for (const week of cycle.weeks) {
+      for (const day of week.days) {
+        optionalCompleted += day.tasks.filter(t => t.optional && t.completed).length;
+      }
+    }
+    bonus = Math.min(10, optionalCompleted * 2);
+  }
+
+  cycle.progress = Math.min(110, baseMonthProgress + bonus);
 }
 
 // Helper function to create a new empty month structure
@@ -47,6 +98,20 @@ function createEmptyMonth(name) {
     createdAt: new Date()
   };
 }
+
+// Get user profile (lifetime score)
+router.get('/profile', async (req, res) => {
+  try {
+    let userProfile = await UserProfile.findOne({ uuid: 'default-user' });
+    if (!userProfile) {
+      userProfile = new UserProfile({ uuid: 'default-user', lifetimeScore: 0 });
+      await userProfile.save();
+    }
+    res.json(userProfile);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 // Get current active cycle
 router.get('/current', async (req, res) => {
@@ -94,10 +159,12 @@ router.patch('/:id', async (req, res) => {
   try {
     const { type, updates, additions, taskUuids, recurrenceId } = req.body;
     const cycle = await Cycle.findOne({ uuid: req.params.id });
-    
+
     if (!cycle) {
       return res.status(404).json({ message: 'Cycle not found' });
     }
+
+    let pointsEarned = 0; // Track points earned in this operation
 
     // Handle different operation types
     if (type === 'updateTasks') {
@@ -107,7 +174,20 @@ router.patch('/:id', async (req, res) => {
           for (const day of week.days) {
             const task = day.tasks.find(t => t.uuid === update.uuid);
             if (task) {
+              const wasCompleted = task.completed;
               task.completed = update.completed;
+
+              // Calculate points if task was just completed (not uncompleted)
+              if (!wasCompleted && update.completed) {
+                const points = calculateTaskPoints(task.optional, cycle.progress);
+                pointsEarned += points;
+                cycle.score = (cycle.score || 0) + points;
+              } else if (wasCompleted && !update.completed) {
+                // Subtract points if task was uncompleted
+                const points = calculateTaskPoints(task.optional, cycle.progress);
+                cycle.score = Math.max(0, (cycle.score || 0) - points);
+                pointsEarned -= points;
+              }
             }
           }
         }
@@ -143,8 +223,29 @@ router.patch('/:id', async (req, res) => {
       }
     }
 
+    // Recalculate progress after any changes
+    calculateProgress(cycle);
+
+    // Update lifetime score if points were earned
+    if (pointsEarned > 0) {
+      let userProfile = await UserProfile.findOne({ uuid: 'default-user' });
+      if (!userProfile) {
+        userProfile = new UserProfile({ uuid: 'default-user', lifetimeScore: 0 });
+      }
+      userProfile.lifetimeScore += pointsEarned;
+      userProfile.updatedAt = new Date();
+      await userProfile.save();
+    }
+
     const savedCycle = await cycle.save();
-    res.json({ success: true, month: savedCycle });
+
+    // Return points earned so frontend can show floating animation
+    res.json({
+      success: true,
+      month: savedCycle,
+      pointsEarned: pointsEarned,
+      currentTier: require('../utils/scoreCalculator').getTierFromProgress(savedCycle.progress)
+    });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

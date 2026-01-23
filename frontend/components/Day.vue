@@ -67,6 +67,7 @@
         :dayUuid="dayUuid"
         :index="index"
         :icon="task.icon"
+        :gifUrl="task.gifUrl"
         @toggle-complete="toggleTaskComplete(index)"
         @editTask="emit('edit-task', $event)"
         @deleteTask="emit('delete-task', $event)"

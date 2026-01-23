@@ -14,6 +14,7 @@ type LazyComponent<T> = (T & DefineComponent<HydrationStrategies, {}, {}, {}, {}
 interface _GlobalComponents {
       'BackgroundParticles': typeof import("../components/BackgroundParticles.vue")['default']
     'Day': typeof import("../components/Day.vue")['default']
+    'FloatingPoints': typeof import("../components/FloatingPoints.vue")['default']
     'MonthSelector': typeof import("../components/MonthSelector.vue")['default']
     'ProgressParticles': typeof import("../components/ProgressParticles.vue")['default']
     'SettingsDrawer': typeof import("../components/SettingsDrawer.vue")['default']
@@ -49,6 +50,7 @@ interface _GlobalComponents {
     'NuxtRouteAnnouncer': typeof import("../node_modules/nuxt/dist/app/components/server-placeholder")['default']
       'LazyBackgroundParticles': LazyComponent<typeof import("../components/BackgroundParticles.vue")['default']>
     'LazyDay': LazyComponent<typeof import("../components/Day.vue")['default']>
+    'LazyFloatingPoints': LazyComponent<typeof import("../components/FloatingPoints.vue")['default']>
     'LazyMonthSelector': LazyComponent<typeof import("../components/MonthSelector.vue")['default']>
     'LazyProgressParticles': LazyComponent<typeof import("../components/ProgressParticles.vue")['default']>
     'LazySettingsDrawer': LazyComponent<typeof import("../components/SettingsDrawer.vue")['default']>
@@ -90,6 +92,7 @@ declare module 'vue' {
 
 export const BackgroundParticles: typeof import("../components/BackgroundParticles.vue")['default']
 export const Day: typeof import("../components/Day.vue")['default']
+export const FloatingPoints: typeof import("../components/FloatingPoints.vue")['default']
 export const MonthSelector: typeof import("../components/MonthSelector.vue")['default']
 export const ProgressParticles: typeof import("../components/ProgressParticles.vue")['default']
 export const SettingsDrawer: typeof import("../components/SettingsDrawer.vue")['default']
@@ -125,6 +128,7 @@ export const NuxtIsland: typeof import("../node_modules/nuxt/dist/app/components
 export const NuxtRouteAnnouncer: typeof import("../node_modules/nuxt/dist/app/components/server-placeholder")['default']
 export const LazyBackgroundParticles: LazyComponent<typeof import("../components/BackgroundParticles.vue")['default']>
 export const LazyDay: LazyComponent<typeof import("../components/Day.vue")['default']>
+export const LazyFloatingPoints: LazyComponent<typeof import("../components/FloatingPoints.vue")['default']>
 export const LazyMonthSelector: LazyComponent<typeof import("../components/MonthSelector.vue")['default']>
 export const LazyProgressParticles: LazyComponent<typeof import("../components/ProgressParticles.vue")['default']>
 export const LazySettingsDrawer: LazyComponent<typeof import("../components/SettingsDrawer.vue")['default']>

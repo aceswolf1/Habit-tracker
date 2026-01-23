@@ -23,38 +23,103 @@
             />
           </label>
 
-          <!-- Icon Picker -->
+          <!-- Icon Type Selector -->
           <div class="mb-5">
-            <div class="text-white font-press text-xs mb-2">ICON (EMOJI)</div>
-            <div class="flex items-center gap-3">
-              <button
-                type="button"
-                @click="showEmojiPicker = !showEmojiPicker"
-                class="px-3 py-2 border-2 border-black bg-gray-700 hover:bg-gray-600 text-white font-press text-xs transition-colors"
-              >
-                {{ form.icon || "SELECT ICON" }}
-              </button>
-              <span v-if="form.icon" class="text-white text-xl animate-bounce"
-                >{{ form.icon }}</span
-              >
-              <button
-                v-if="form.icon"
-                type="button"
-                @click="form.icon = ''"
-                class="px-2 py-1 border-2 border-black bg-red-600 hover:bg-red-500 text-white font-press text-[10px] transition-colors"
-              >
-                CLEAR
-              </button>
+            <div class="text-white font-press text-xs mb-2">VISUAL TYPE</div>
+            <div class="flex gap-4 text-[10px] font-press mb-3">
+              <label class="flex items-center gap-2 text-white cursor-pointer hover:text-yellow-400 transition-colors">
+                <input type="radio" value="emoji" v-model="form.visualType" />
+                Emoji
+              </label>
+              <label class="flex items-center gap-2 text-white cursor-pointer hover:text-yellow-400 transition-colors">
+                <input type="radio" value="gif" v-model="form.visualType" />
+                GIF
+              </label>
             </div>
-            <div
-              v-if="showEmojiPicker"
-              class="mt-2 border-2 border-black bg-gray-800 p-2 max-h-60 overflow-y-auto absolute z-10 shadow-xl"
-            >
-              <div v-if="isClient">
-                <div ref="pickerRef"></div>
+
+            <!-- Emoji Picker -->
+            <div v-if="form.visualType === 'emoji'">
+              <div class="flex items-center gap-3">
+                <button
+                  type="button"
+                  @click="showEmojiPicker = !showEmojiPicker"
+                  class="px-3 py-2 border-2 border-black bg-gray-700 hover:bg-gray-600 text-white font-press text-xs transition-colors"
+                >
+                  {{ form.icon || "SELECT EMOJI" }}
+                </button>
+                <span v-if="form.icon" class="text-white text-xl animate-bounce"
+                  >{{ form.icon }}</span
+                >
+                <button
+                  v-if="form.icon"
+                  type="button"
+                  @click="form.icon = ''"
+                  class="px-2 py-1 border-2 border-black bg-red-600 hover:bg-red-500 text-white font-press text-[10px] transition-colors"
+                >
+                  CLEAR
+                </button>
               </div>
-              <div v-else class="text-[10px] font-press text-gray-400">
-                Loading...
+              <div
+                v-if="showEmojiPicker"
+                class="mt-2 border-2 border-black bg-gray-800 p-2 max-h-60 overflow-y-auto absolute z-10 shadow-xl"
+              >
+                <div v-if="isClient">
+                  <div ref="pickerRef"></div>
+                </div>
+                <div v-else class="text-[10px] font-press text-gray-400">
+                  Loading...
+                </div>
+              </div>
+            </div>
+
+            <!-- GIF Picker -->
+            <div v-if="form.visualType === 'gif'" class="space-y-3">
+              <input
+                v-model.trim="gifSearchQuery"
+                @input="onGifSearchInput"
+                class="w-full bg-gray-800 text-white p-2 border-2 border-black font-mono text-xs focus:outline-none focus:border-blue-500 transition-colors"
+                placeholder="Search for a GIF..."
+              />
+
+              <div v-if="isLoadingGifs" class="text-center text-white font-press text-[10px] py-4">
+                LOADING GIFS...
+              </div>
+
+              <div v-else-if="gifResults.length > 0" class="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto border-2 border-black bg-gray-900 p-2">
+                <button
+                  v-for="gif in gifResults"
+                  :key="gif.id"
+                  type="button"
+                  @click="selectGif(gif)"
+                  :class="[
+                    'border-2 transition-all overflow-hidden aspect-square',
+                    form.gifUrl && form.gifUrl === getGifUrl(gif)
+                      ? 'border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]'
+                      : 'border-gray-700 hover:border-blue-500'
+                  ]"
+                >
+                  <img
+                    :src="getGifUrl(gif)"
+                    :alt="gif.title"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </button>
+              </div>
+
+              <div v-else-if="gifSearchQuery" class="text-center text-gray-400 font-press text-[10px] py-4">
+                NO GIFS FOUND
+              </div>
+
+              <div v-if="form.gifUrl" class="flex items-center gap-2">
+                <img :src="form.gifUrl" alt="Selected GIF" class="w-16 h-16 object-cover border-2 border-yellow-500" />
+                <button
+                  type="button"
+                  @click="clearGif"
+                  class="px-2 py-1 border-2 border-black bg-red-600 hover:bg-red-500 text-white font-press text-[10px] transition-colors"
+                >
+                  CLEAR GIF
+                </button>
               </div>
             </div>
           </div>
@@ -215,11 +280,18 @@ import {
 } from "vue";
 import { useMonthStore } from "../stores/monthStore";
 import data from "@emoji-mart/data";
+import { searchGifs, getTrendingGifs, getGifUrl as getGifUrlUtil, type KlipyGif } from "../utils/klipyApi";
 
 const pickerRef = ref<HTMLElement | null>(null);
 
 const showEmojiPicker = ref(false);
 const emojiData = data;
+
+// GIF search state
+const gifSearchQuery = ref("");
+const gifResults = ref<KlipyGif[]>([]);
+const isLoadingGifs = ref(false);
+let gifSearchTimeout: ReturnType<typeof setTimeout> | null = null;
 
 watch(showEmojiPicker, async (val) => {
   if (val) {
@@ -267,6 +339,8 @@ const form = reactive({
   weekScope: "single" as "single" | "multiple" | "all",
   repeatAcrossWeeks: false,
   icon: "" as string,
+  visualType: "emoji" as "emoji" | "gif",
+  gifUrl: "" as string,
 });
 
 const isClient = ref(false);
@@ -364,6 +438,8 @@ watch(
         form.description = (editingTask.value as any).description;
         form.optional = (editingTask.value as any).optional;
         form.icon = (editingTask.value as any).icon || "";
+        form.gifUrl = (editingTask.value as any).gifUrl || "";
+        form.visualType = (editingTask.value as any).gifUrl ? "gif" : "emoji";
       } else {
         resetForm();
         if (props.prefillDayUuid) {
@@ -377,16 +453,89 @@ watch(
   }
 );
 
+// GIF search functions
+function getGifUrl(gif: KlipyGif): string {
+  return getGifUrlUtil(gif, 'sm');
+}
+
+function selectGif(gif: KlipyGif) {
+  form.gifUrl = getGifUrlUtil(gif, 'sm');
+  form.icon = ''; // Clear emoji when GIF is selected
+}
+
+function clearGif() {
+  form.gifUrl = '';
+}
+
+async function performGifSearch(query: string) {
+  if (!query.trim()) {
+    gifResults.value = [];
+    return;
+  }
+
+  isLoadingGifs.value = true;
+  try {
+    const response = await searchGifs(query, 1, 24);
+    if (response.result && response.data?.data) {
+      gifResults.value = response.data.data;
+    } else {
+      gifResults.value = [];
+    }
+  } catch (error) {
+    console.error('Failed to search GIFs:', error);
+    gifResults.value = [];
+  } finally {
+    isLoadingGifs.value = false;
+  }
+}
+
+function onGifSearchInput() {
+  // Clear previous timeout
+  if (gifSearchTimeout) {
+    clearTimeout(gifSearchTimeout);
+  }
+
+  // Debounce search by 500ms
+  gifSearchTimeout = setTimeout(() => {
+    performGifSearch(gifSearchQuery.value);
+  }, 500);
+}
+
+// Watch for description changes to auto-suggest GIFs
+watch(() => form.description, (newDesc) => {
+  if (form.visualType === 'gif' && newDesc && !form.gifUrl && !gifSearchQuery.value) {
+    // Auto-search based on task description
+    gifSearchQuery.value = newDesc;
+    performGifSearch(newDesc);
+  }
+});
+
+// Watch for visual type changes
+watch(() => form.visualType, (newType) => {
+  if (newType === 'gif' && form.description && !form.gifUrl) {
+    // Auto-suggest GIFs based on description when switching to GIF mode
+    gifSearchQuery.value = form.description;
+    performGifSearch(form.description);
+  } else if (newType === 'emoji') {
+    // Clear GIF when switching to emoji
+    form.gifUrl = '';
+  }
+});
+
 function resetForm() {
   form.description = "";
   form.optional = false;
   form.weekScope = "single";
   form.repeatAcrossWeeks = false;
   form.icon = "";
+  form.visualType = "emoji";
+  form.gifUrl = "";
   selectedDayUuids.value = [];
   selectedWeekUuids.value = [];
   editScope.value = "single";
   isSubmitting.value = false;
+  gifSearchQuery.value = "";
+  gifResults.value = [];
 }
 
 
@@ -460,6 +609,7 @@ function submit() {
         dayUuidsByWeek,
         baseWeekUuid: props.weekUuid,
         icon: form.icon || undefined,
+        gifUrl: form.gifUrl || undefined,
       });
       emit("created");
     } else if (editingTask.value) {
@@ -467,6 +617,7 @@ function submit() {
         description: form.description,
         optional: form.optional,
         icon: form.icon || undefined,
+        gifUrl: form.gifUrl || undefined,
       });
       emit("updated");
     }

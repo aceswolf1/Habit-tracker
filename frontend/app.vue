@@ -23,6 +23,9 @@
   <!-- Toast Notifications -->
   <ToastNotification ref="toastRef" />
 
+  <!-- Floating Points Component -->
+  <FloatingPoints />
+
   <!-- Fixed gradient depth background -->
   <div class="background-depth" aria-hidden="true"></div>
   <!-- Ambient particles across whole viewport -->
@@ -52,7 +55,27 @@
           >
             {{ monthName }}
           </h1>
-          <div style="display: flex; align-items: center">
+          <div style="display: flex; align-items: center; gap: 1rem">
+            <!-- Score Display -->
+            <div v-if="hasMonth" style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem">
+              <div style="display: flex; align-items: center; gap: 0.5rem">
+                <span style="color: #ffd700; font-family: 'Press Start 2P', cursive; font-size: 0.7rem; text-shadow: 2px 2px 0 #000">
+                  MONTH
+                </span>
+                <span style="color: white; font-family: 'Press Start 2P', cursive; font-size: 0.9rem; text-shadow: 2px 2px 0 #000">
+                  {{ currentMonth?.score || 0 }} XP
+                </span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem">
+                <span style="color: #ff6b6b; font-family: 'Press Start 2P', cursive; font-size: 0.7rem; text-shadow: 2px 2px 0 #000">
+                  TOTAL
+                </span>
+                <span style="color: white; font-family: 'Press Start 2P', cursive; font-size: 0.9rem; text-shadow: 2px 2px 0 #000">
+                  {{ lifetimeScore }} XP
+                </span>
+              </div>
+            </div>
+
             <span
               style="
                 color: white;
@@ -448,6 +471,7 @@ import ProgressParticles from "./components/ProgressParticles.vue";
 import BackgroundParticles from "./components/BackgroundParticles.vue";
 import ToastNotification from "./components/ToastNotification.vue";
 import SettingsDrawer from "./components/SettingsDrawer.vue";
+import FloatingPoints from "./components/FloatingPoints.vue";
 import { storeToRefs } from "pinia";
 import { useMonthStore } from "./stores/monthStore";
 import { useSettingsStore } from "./stores/settingsStore";
@@ -520,6 +544,7 @@ const storeRefs: any = storeToRefs(monthStore as any);
 const currentMonth = storeRefs.currentMonth;
 const isLoading = storeRefs.isLoading;
 const months = storeRefs.months;
+const lifetimeScore = storeRefs.lifetimeScore;
 const isFinished = computed(() => currentMonth.value?.finished || false);
 
 const baseBtn = {

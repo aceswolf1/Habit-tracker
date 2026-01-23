@@ -2,6 +2,7 @@
   <div
     class="task-container"
     :class="{ 'optional-task': optional }"
+    :data-task-uuid="taskUuid"
     draggable="true"
     @dragstart="onDragStart"
     @dragend="onDragEnd"
@@ -10,7 +11,7 @@
       class="task"
       :style="taskStyles"
       @dblclick="emitEdit"
-      :class="{ completed }"
+      :class="{ completed, 'has-gif': !!gifUrl }"
     >
       <!-- Completion FX (mounts anew each time for replay) -->
       <div v-if="completed" class="completion-effect" :key="effectKey">
@@ -37,9 +38,24 @@
           :key="'p' + n"
         ></span>
       </div>
+
+      <!-- GIF Display (appears first) -->
+      <div v-if="gifUrl" class="task-gif-container">
+        <img
+          :src="gifUrl"
+          :alt="description"
+          class="task-gif"
+          loading="lazy"
+          @error="onGifError"
+        />
+      </div>
+
+      <!-- Task Description -->
       <span class="task-description"
-        >{{ icon ? icon + " " : "" }}{{ description }}</span
+        >{{ icon && !gifUrl ? icon + " " : "" }}{{ description }}</span
       >
+
+      <!-- Actions (appear last) -->
       <div class="flex items-center gap-1 border-t-[#1e232b] border-t pt-3 mt-1 w-full">
         <span
           class="task-check"
@@ -71,6 +87,7 @@ const props = defineProps({
   dayUuid: { type: String, required: true },
   index: { type: Number, required: true },
   icon: { type: String, default: "" },
+  gifUrl: { type: String, default: "" },
 });
 
 const emit = defineEmits([
@@ -101,6 +118,10 @@ function onDragStart(e) {
 }
 function onDragEnd() {
   emit("dragEnd", { taskUuid: props.taskUuid });
+}
+function onGifError(e) {
+  console.error("Failed to load GIF:", props.gifUrl);
+  e.target.style.display = "none";
 }
 
 const taskStyles = computed(() => ({
@@ -478,5 +499,34 @@ const checkStyles = computed(() => ({
 }
 .del-btn:hover {
   background: #dc2626;
+}
+
+/* GIF Container Styles */
+.task-gif-container {
+  width: 100%;
+  margin-bottom: 0.5rem;
+  border: 2px solid black;
+  overflow: hidden;
+  background: #1f2937;
+  max-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-gif {
+  width: 100%;
+  height: auto;
+  max-height: 150px;
+  object-fit: cover;
+  display: block;
+}
+
+.task.has-gif {
+  padding: 0.75rem;
+}
+
+.task.has-gif .task-description {
+  margin-top: 0.25rem;
 }
 </style>

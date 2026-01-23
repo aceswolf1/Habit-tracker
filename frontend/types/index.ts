@@ -3,6 +3,10 @@ export interface Task {
   description: string;
   optional: boolean;
   completed: boolean;
+  icon?: string;
+  gifUrl?: string;
+  recurrenceId?: string;
+  order?: number;
 }
 
 export interface Day {

@@ -14,6 +14,7 @@ interface Task {
   recurrenceId?: string; // link tasks in a recurrence pattern
   order?: number; // ordering within a day
   icon?: string; // emoji/icon representation
+  gifUrl?: string; // GIF URL from Klipy API
 }
 
 interface Day {
@@ -37,6 +38,7 @@ interface Month {
   name: string;
   subtitle: string;
   progress: number;
+  score?: number;
   weeks: Week[];
   finished?: boolean;
   createdAt?: string;
@@ -49,6 +51,7 @@ export const useMonthStore = defineStore("month", {
     months: [] as Month[],
     currentMonth: null as Month | null,
     currentMonthUuid: null as string | null,
+    lifetimeScore: 0,
     isLoading: false,
     error: null as string | null,
   }),
@@ -147,6 +150,20 @@ export const useMonthStore = defineStore("month", {
                 if (res?.month) {
                   this.currentMonth = res.month;
                   this.updateProgressValues();
+                }
+                // Emit event for floating points animation
+                if (res?.pointsEarned && res.pointsEarned !== 0) {
+                  window.dispatchEvent(new CustomEvent('pointsEarned', {
+                    detail: {
+                      points: res.pointsEarned,
+                      taskUuid: taskUuid,
+                      tier: res.currentTier
+                    }
+                  }));
+                }
+                // Update lifetime score
+                if (res?.pointsEarned && res.pointsEarned > 0) {
+                  this.lifetimeScore += res.pointsEarned;
                 }
               })
               .catch((err) => console.error("Persist toggle failed", err));
@@ -250,7 +267,8 @@ export const useMonthStore = defineStore("month", {
       dayUuid: string,
       description: string,
       optional: boolean = false,
-      icon?: string
+      icon?: string,
+      gifUrl?: string
     ) {
       if (!this.currentMonth || this.currentMonth.finished) return;
       for (const week of this.currentMonth.weeks) {
@@ -267,6 +285,7 @@ export const useMonthStore = defineStore("month", {
             optional,
             completed: false,
             icon,
+            gifUrl,
           });
           this.updateProgressValues();
           return;
@@ -316,6 +335,13 @@ export const useMonthStore = defineStore("month", {
         const allRes = await fetch("http://localhost:4000/api/cycles");
         if (allRes.ok) {
           this.months = await allRes.json();
+        }
+
+        // Fetch lifetime score
+        const profileRes = await fetch("http://localhost:4000/api/cycles/profile");
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          this.lifetimeScore = profile.lifetimeScore || 0;
         }
 
         // Server does not compute progress fields; recompute locally to avoid stale/reset values.
@@ -416,6 +442,7 @@ export const useMonthStore = defineStore("month", {
       recurrenceId?: string;
       persist?: boolean;
       icon?: string;
+      gifUrl?: string;
     }) {
       if (!this.currentMonth || this.currentMonth.finished) return;
       const recurrenceId =
@@ -426,6 +453,7 @@ export const useMonthStore = defineStore("month", {
         dayUuidsByWeek,
         persist = true,
         icon,
+        gifUrl,
       } = options;
       const additions: any[] = [];
       Object.entries(dayUuidsByWeek).forEach(([weekUuid, dayUuids]) => {
@@ -441,7 +469,8 @@ export const useMonthStore = defineStore("month", {
               (t) =>
                 t.description === description &&
                 t.optional === optional &&
-                (icon ? t.icon === icon : true)
+                (icon ? t.icon === icon : true) &&
+                (gifUrl ? t.gifUrl === gifUrl : true)
             )
           ) {
             return;
@@ -454,6 +483,7 @@ export const useMonthStore = defineStore("month", {
             recurrenceId,
             order: day.tasks.length,
             icon,
+            gifUrl,
           };
           day.tasks.push(newTask);
           additions.push({ weekUuid, dayUuid, task: newTask });
@@ -482,7 +512,7 @@ export const useMonthStore = defineStore("month", {
     },
     updateTask(
       taskUuid: string,
-      payload: Partial<Pick<Task, "description" | "optional" | "icon">>
+      payload: Partial<Pick<Task, "description" | "optional" | "icon" | "gifUrl">>
     ) {
       if (this.currentMonth?.finished) return;
       const task = this.getTaskByUuid(taskUuid) as Task | null;
@@ -491,6 +521,7 @@ export const useMonthStore = defineStore("month", {
         task.description = payload.description;
       if (payload.optional !== undefined) task.optional = payload.optional;
       if (payload.icon !== undefined) task.icon = payload.icon;
+      if (payload.gifUrl !== undefined) task.gifUrl = payload.gifUrl;
       this.updateProgressValues();
     },
     deleteTask(taskUuid: string, scope: "single" | "recurrence" = "single") {
