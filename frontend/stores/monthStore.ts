@@ -11,6 +11,7 @@ interface Task {
   description: string;
   optional: boolean;
   completed: boolean;
+  legendary?: boolean; // legendary tasks give 3x score
   recurrenceId?: string; // link tasks in a recurrence pattern
   order?: number; // ordering within a day
   icon?: string; // emoji/icon representation
@@ -136,8 +137,21 @@ export const useMonthStore = defineStore("month", {
             taskToggled = true;
             // Recalculate all progress values
             this.updateProgressValues();
+
+            // Emit particle burst event if completing (not uncompleting)
+            if (newStatus) {
+              window.dispatchEvent(new CustomEvent('taskCompleted', {
+                detail: {
+                  taskUuid: taskUuid,
+                  taskType: task.optional ? 'optional' : 'required',
+                  tier: null, // Will be set by backend response
+                  isLegendary: task.legendary || false
+                }
+              }));
+            }
+
             // Persist completion state to backend so it survives later mutations
-            fetch(`http://localhost:4000/api/cycles/${this.currentMonth!.uuid}`, {
+            fetch(`/api/cycles/${this.currentMonth!.uuid}`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -157,7 +171,8 @@ export const useMonthStore = defineStore("month", {
                     detail: {
                       points: res.pointsEarned,
                       taskUuid: taskUuid,
-                      tier: res.currentTier
+                      tier: res.currentTier,
+                      isLegendary: res.isLegendary || false
                     }
                   }));
                 }
@@ -323,26 +338,44 @@ export const useMonthStore = defineStore("month", {
       try {
         this.isLoading = true;
         this.error = null;
-        const res = await fetch("http://localhost:4000/api/cycles/current");
-        if (!res.ok) throw new Error("Failed to fetch month data");
-        const cycle = await res.json();
 
-        // Set current month from the active cycle
-        this.currentMonth = cycle;
-        this.currentMonthUuid = cycle?.uuid || null;
-
-        // Also fetch all cycles for the month selector
-        const allRes = await fetch("http://localhost:4000/api/cycles");
+        // First, fetch all cycles
+        const allRes = await fetch("/api/cycles");
         if (allRes.ok) {
           this.months = await allRes.json();
         }
 
         // Fetch lifetime score
-        const profileRes = await fetch("http://localhost:4000/api/cycles/profile");
+        const profileRes = await fetch("/api/cycles/profile");
         if (profileRes.ok) {
           const profile = await profileRes.json();
           this.lifetimeScore = profile.lifetimeScore || 0;
         }
+
+        // Try to find an unfinished month first, otherwise use the most recent one
+        let currentCycle = this.months.find(m => !m.finished);
+
+        if (!currentCycle && this.months.length > 0) {
+          // All months are finished, show the most recent one
+          currentCycle = this.months[0]; // Already sorted by createdAt desc
+        }
+
+        // If still no cycle, fetch /current which will auto-create one
+        if (!currentCycle) {
+          const res = await fetch("/api/cycles/current");
+          if (res.ok) {
+            currentCycle = await res.json();
+            // Refresh months list to include the new one
+            const refreshRes = await fetch("/api/cycles");
+            if (refreshRes.ok) {
+              this.months = await refreshRes.json();
+            }
+          }
+        }
+
+        // Set current month
+        this.currentMonth = currentCycle;
+        this.currentMonthUuid = currentCycle?.uuid || null;
 
         // Server does not compute progress fields; recompute locally to avoid stale/reset values.
         if (this.currentMonth) this.updateProgressValues();
@@ -357,14 +390,18 @@ export const useMonthStore = defineStore("month", {
     async setCurrentMonth(uuid: string) {
       try {
         this.isLoading = true;
-        const res = await fetch("/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "setCurrentMonth", monthUuid: uuid }),
-        });
-        const data = await res.json();
-        if (data?.success) {
-          await this.fetchMonthData();
+
+        // Find the month in our local months array
+        const selectedMonth = this.months.find(m => m.uuid === uuid);
+        if (selectedMonth) {
+          // Set it as current month
+          this.currentMonth = selectedMonth;
+          this.currentMonthUuid = uuid;
+
+          // Recalculate progress values
+          this.updateProgressValues();
+        } else {
+          console.error('Month not found with uuid:', uuid);
         }
       } finally {
         this.isLoading = false;
@@ -374,14 +411,29 @@ export const useMonthStore = defineStore("month", {
     async createMonth(name?: string) {
       try {
         this.isLoading = true;
+
+        // Create new month via legacy endpoint (it works)
         const res = await fetch("/api/tasks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ type: "createMonth", name }),
         });
         const data = await res.json();
+
         if (data?.success) {
-          await this.fetchMonthData();
+          // Refresh all months
+          const allRes = await fetch("/api/cycles");
+          if (allRes.ok) {
+            this.months = await allRes.json();
+
+            // Set the newly created month as current (should be the first unfinished one)
+            const newMonth = this.months.find(m => !m.finished);
+            if (newMonth) {
+              this.currentMonth = newMonth;
+              this.currentMonthUuid = newMonth.uuid;
+              this.updateProgressValues();
+            }
+          }
         }
       } finally {
         this.isLoading = false;
@@ -392,18 +444,32 @@ export const useMonthStore = defineStore("month", {
       if (!this.currentMonth || this.currentMonth.finished) return;
       try {
         this.isLoading = true;
-        const res = await fetch("/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "finishMonth",
-            monthUuid: this.currentMonth.uuid,
-          }),
-        });
+        const res = await fetch(
+          `/api/cycles/${this.currentMonth.uuid}/finish`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
         const data = await res.json();
-        if (data?.success) {
-          await this.fetchMonthData();
+        if (data?.success && data?.cycle) {
+          // Update current month with the finished cycle (including statistics)
+          this.currentMonth = data.cycle;
+
+          // Also refresh the months list to update the finished status
+          const allRes = await fetch("/api/cycles");
+          if (allRes.ok) {
+            this.months = await allRes.json();
+          }
+
+          // Recalculate progress values
+          this.updateProgressValues();
+
+          return data; // Return data for UI notifications
         }
+      } catch (error) {
+        console.error('Error finishing month:', error);
+        this.error = error instanceof Error ? error.message : 'Failed to finish month';
       } finally {
         this.isLoading = false;
       }
@@ -436,6 +502,7 @@ export const useMonthStore = defineStore("month", {
     bulkAddTasks(options: {
       description: string;
       optional?: boolean;
+      legendary?: boolean;
       dayUuidsByWeek: Record<string, string[]>;
       repeatWeeks?: string[];
       baseWeekUuid: string;
@@ -450,6 +517,7 @@ export const useMonthStore = defineStore("month", {
       const {
         description,
         optional = false,
+        legendary = false,
         dayUuidsByWeek,
         persist = true,
         icon,
@@ -469,6 +537,7 @@ export const useMonthStore = defineStore("month", {
               (t) =>
                 t.description === description &&
                 t.optional === optional &&
+                t.legendary === legendary &&
                 (icon ? t.icon === icon : true) &&
                 (gifUrl ? t.gifUrl === gifUrl : true)
             )
@@ -479,6 +548,7 @@ export const useMonthStore = defineStore("month", {
             uuid: `t-${Math.random().toString(36).slice(2)}`,
             description,
             optional,
+            legendary,
             completed: false,
             recurrenceId,
             order: day.tasks.length,
@@ -491,7 +561,7 @@ export const useMonthStore = defineStore("month", {
       });
       this.updateProgressValues();
       if (persist && additions.length) {
-        fetch(`http://localhost:4000/api/cycles/${this.currentMonth!.uuid}`, {
+        fetch(`/api/cycles/${this.currentMonth!.uuid}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -512,7 +582,7 @@ export const useMonthStore = defineStore("month", {
     },
     updateTask(
       taskUuid: string,
-      payload: Partial<Pick<Task, "description" | "optional" | "icon" | "gifUrl">>
+      payload: Partial<Pick<Task, "description" | "optional" | "legendary" | "icon" | "gifUrl">>
     ) {
       if (this.currentMonth?.finished) return;
       const task = this.getTaskByUuid(taskUuid) as Task | null;
@@ -520,9 +590,28 @@ export const useMonthStore = defineStore("month", {
       if (payload.description !== undefined)
         task.description = payload.description;
       if (payload.optional !== undefined) task.optional = payload.optional;
+      if (payload.legendary !== undefined) task.legendary = payload.legendary;
       if (payload.icon !== undefined) task.icon = payload.icon;
       if (payload.gifUrl !== undefined) task.gifUrl = payload.gifUrl;
       this.updateProgressValues();
+
+      // Persist changes to backend
+      fetch(`/api/cycles/${this.currentMonth!.uuid}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "updateTasks",
+          updates: [{ uuid: taskUuid, ...payload }],
+        }),
+      })
+        .then((r) => r.json())
+        .then((res) => {
+          if (res?.month) {
+            this.currentMonth = res.month;
+            this.updateProgressValues();
+          }
+        })
+        .catch((err) => console.error("Persist updateTask failed", err));
     },
     deleteTask(taskUuid: string, scope: "single" | "recurrence" = "single") {
       if (!this.currentMonth || this.currentMonth.finished) return;
@@ -539,7 +628,7 @@ export const useMonthStore = defineStore("month", {
               day.tasks.splice(idx, 1);
               this.updateProgressValues();
               // persist single deletion
-              fetch(`http://localhost:4000/api/cycles/${this.currentMonth!.uuid}`, {
+              fetch(`/api/cycles/${this.currentMonth!.uuid}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -572,7 +661,7 @@ export const useMonthStore = defineStore("month", {
       }
       if (scope === "recurrence") this.updateProgressValues();
       if (scope === "recurrence" && recurrenceId) {
-        fetch(`http://localhost:4000/api/cycles/${this.currentMonth!.uuid}`, {
+        fetch(`/api/cycles/${this.currentMonth!.uuid}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -634,12 +723,36 @@ export const useMonthStore = defineStore("month", {
       if (insertAt < 0) insertAt = 0;
       if (insertAt > targetDay.tasks.length) insertAt = targetDay.tasks.length;
       targetDay.tasks.splice(insertAt, 0, movingTask);
-      // Reassign order fields inside affected days (optional)
+      // Reassign order fields inside affected days
+      const updates: any[] = [];
       [sourceDay, targetDay].forEach((d) => {
         if (!d) return;
-        d.tasks.forEach((t: any, i: number) => (t.order = i));
+        d.tasks.forEach((t: any, i: number) => {
+          t.order = i;
+          updates.push({ uuid: t.uuid, order: i });
+        });
       });
       this.updateProgressValues();
+
+      // Persist task order changes to backend
+      if (updates.length > 0) {
+        fetch(`/api/cycles/${this.currentMonth!.uuid}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "updateTasks",
+            updates,
+          }),
+        })
+          .then((r) => r.json())
+          .then((res) => {
+            if (res?.month) {
+              this.currentMonth = res.month;
+              this.updateProgressValues();
+            }
+          })
+          .catch((err) => console.error("Persist moveTask failed", err));
+      }
     },
   },
 });

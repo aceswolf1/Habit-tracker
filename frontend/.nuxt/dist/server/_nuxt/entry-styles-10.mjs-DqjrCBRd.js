@@ -1,0 +1,5 @@
+const SettingsDrawer_vue_vue_type_style_index_0_scoped_347b2dad_lang = ".drawer-overlay[data-v-347b2dad]{background:#00000073;top:0;right:0;bottom:0;left:0;position:fixed;z-index:50}.settings-drawer[data-v-347b2dad]{background:#0b1220;border-left:3px solid #000;box-shadow:-8px 0 24px #0009;color:#fff;height:100vh;padding:1rem;position:fixed;right:0;top:0;transform:translate(110%);transition:transform .3s ease;width:320px;z-index:60}.settings-drawer.open[data-v-347b2dad]{transform:translate(0)}.drawer-header[data-v-347b2dad]{align-items:center;display:flex;justify-content:space-between;margin-bottom:1rem}.drawer-title[data-v-347b2dad]{font-family:Press Start\\ 2P,cursive}.close-btn[data-v-347b2dad]{background:transparent;border:none;color:#fff;cursor:pointer;font-size:1rem}.drawer-content[data-v-347b2dad]{margin-top:8px}.setting-row[data-v-347b2dad]{align-items:center;display:flex;justify-content:space-between;padding:.5rem 0}.setting-label[data-v-347b2dad]{font-size:.8rem}";
+export {
+  SettingsDrawer_vue_vue_type_style_index_0_scoped_347b2dad_lang as default
+};
+//# sourceMappingURL=entry-styles-10.mjs-DqjrCBRd.js.map

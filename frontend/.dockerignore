@@ -1,0 +1,12 @@
+node_modules
+.nuxt
+.output
+dist
+.env
+.git
+.gitignore
+Dockerfile
+.dockerignore
+*.log
+.DS_Store
+*.bak

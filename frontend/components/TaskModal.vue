@@ -136,6 +136,18 @@
             <span class="group-hover:text-blue-400 transition-colors">OPTIONAL SIDE QUEST</span>
           </label>
 
+          <!-- Legendary Flag -->
+          <label
+            class="flex items-center gap-3 mb-5 text-white font-press text-xs cursor-pointer group"
+          >
+            <div class="relative">
+              <input type="checkbox" v-model="form.legendary" class="peer sr-only" />
+              <div class="w-5 h-5 border-2 border-purple-500 bg-gray-800 peer-checked:bg-purple-600 transition-colors"></div>
+              <div class="absolute inset-0 flex items-center justify-center text-white opacity-0 peer-checked:opacity-100 pointer-events-none">⭐</div>
+            </div>
+            <span class="group-hover:text-purple-400 transition-colors">LEGENDARY QUEST (3X SCORE)</span>
+          </label>
+
           <!-- Scope inside week -->
           <div class="mb-5">
             <div class="text-white font-press text-xs mb-2">
@@ -336,6 +348,7 @@ const store = useMonthStore();
 const form = reactive({
   description: "",
   optional: false,
+  legendary: false,
   weekScope: "single" as "single" | "multiple" | "all",
   repeatAcrossWeeks: false,
   icon: "" as string,
@@ -434,9 +447,13 @@ watch(
   () => props.open,
   (o) => {
     if (o) {
+      // Always reset isSubmitting when modal opens
+      isSubmitting.value = false;
+
       if (isEdit.value && editingTask.value) {
         form.description = (editingTask.value as any).description;
         form.optional = (editingTask.value as any).optional;
+        form.legendary = (editingTask.value as any).legendary || false;
         form.icon = (editingTask.value as any).icon || "";
         form.gifUrl = (editingTask.value as any).gifUrl || "";
         form.visualType = (editingTask.value as any).gifUrl ? "gif" : "emoji";
@@ -525,6 +542,7 @@ watch(() => form.visualType, (newType) => {
 function resetForm() {
   form.description = "";
   form.optional = false;
+  form.legendary = false;
   form.weekScope = "single";
   form.repeatAcrossWeeks = false;
   form.icon = "";
@@ -606,6 +624,7 @@ function submit() {
       store.bulkAddTasks({
         description: form.description,
         optional: form.optional,
+        legendary: form.legendary,
         dayUuidsByWeek,
         baseWeekUuid: props.weekUuid,
         icon: form.icon || undefined,
@@ -616,6 +635,7 @@ function submit() {
       store.updateTask((editingTask.value as any).uuid, {
         description: form.description,
         optional: form.optional,
+        legendary: form.legendary,
         icon: form.icon || undefined,
         gifUrl: form.gifUrl || undefined,
       });
@@ -636,6 +656,7 @@ function emitDelete() {
 }
 
 function close() {
+  isSubmitting.value = false; // Reset submitting state when closing
   emit("close");
 }
 </script>

@@ -52,17 +52,18 @@
 
     <!-- Tasks List -->
     <div style="padding: 0.25rem; position: relative; z-index: 2; min-height: 100px; display: flex; flex-direction: column;">
-      <div v-if="tasks.length === 0" class="flex-1 flex flex-col items-center justify-center opacity-50 py-4">
+      <div v-if="sortedTasks.length === 0" class="flex-1 flex flex-col items-center justify-center opacity-50 py-4">
         <div class="text-2xl mb-1 animate-pulse">💤</div>
         <div class="font-press text-[8px] text-center text-gray-400">NO QUESTS</div>
       </div>
 
       <Task
-        v-for="(task, index) in tasks"
+        v-for="(task, index) in sortedTasks"
         :key="task.uuid"
         :description="task.description"
         :completed="task.completed"
         :optional="task.optional"
+        :legendary="task.legendary"
         :taskUuid="task.uuid"
         :dayUuid="dayUuid"
         :index="index"
@@ -78,7 +79,7 @@
       <div v-if="dragOver" class="drop-indicator">Drop here</div>
 
       <!-- Add Task Button -->
-      <div style="display: flex; justify-content: center; margin-top: auto; padding-top: 0.75rem;">
+      <div v-if="!readonly" style="display: flex; justify-content: center; margin-top: auto; padding-top: 0.75rem;">
         <button
           style="
             width: 1.5rem;
@@ -113,6 +114,16 @@ const props = defineProps({
   headerColor: { type: String, default: "#4b5563" },
   headerTextColor: { type: String, default: "white" },
   dayUuid: { type: String, required: true },
+  readonly: { type: Boolean, default: false },
+});
+
+// Sort tasks by order field
+const sortedTasks = computed(() => {
+  return [...props.tasks].sort((a, b) => {
+    const orderA = a.order ?? 999999;
+    const orderB = b.order ?? 999999;
+    return orderA - orderB;
+  });
 });
 
 const emit = defineEmits([
@@ -125,14 +136,14 @@ const emit = defineEmits([
 
 // Calculate progress based on completed tasks
 const progress = computed(() => {
-  const requiredTasks = props.tasks.filter((task) => !task.optional);
+  const requiredTasks = sortedTasks.value.filter((task) => !task.optional);
   if (requiredTasks.length === 0) return 0;
   const completedRequiredTasks = requiredTasks.filter(
     (task) => task.completed
   ).length;
   let calculatedProgress =
     (completedRequiredTasks / requiredTasks.length) * 100;
-  const completedOptionalTasks = props.tasks.filter(
+  const completedOptionalTasks = sortedTasks.value.filter(
     (task) => task.optional && task.completed
   ).length;
   if (calculatedProgress === 100 && completedOptionalTasks > 0) {
@@ -170,7 +181,7 @@ const progressBarColor = computed(() => {
 });
 
 function toggleTaskComplete(index) {
-  emit("toggle-task", props.tasks[index].uuid);
+  emit("toggle-task", sortedTasks.value[index].uuid);
 }
 
 const dragOver = ref(false);

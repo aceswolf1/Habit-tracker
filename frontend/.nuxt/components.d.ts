@@ -16,8 +16,12 @@ interface _GlobalComponents {
     'Day': typeof import("../components/Day.vue")['default']
     'FloatingPoints': typeof import("../components/FloatingPoints.vue")['default']
     'MonthSelector': typeof import("../components/MonthSelector.vue")['default']
+    'MonthStatistics': typeof import("../components/MonthStatistics.vue")['default']
+    'ParticleBurst': typeof import("../components/ParticleBurst.vue")['default']
     'ProgressParticles': typeof import("../components/ProgressParticles.vue")['default']
+    'ReadOnlyMonthView': typeof import("../components/ReadOnlyMonthView.vue")['default']
     'SettingsDrawer': typeof import("../components/SettingsDrawer.vue")['default']
+    'StatCard': typeof import("../components/StatCard.vue")['default']
     'StreakCounter': typeof import("../components/StreakCounter.vue")['default']
     'Task': typeof import("../components/Task.vue")['default']
     'TaskModal': typeof import("../components/TaskModal.vue")['default']
@@ -52,8 +56,12 @@ interface _GlobalComponents {
     'LazyDay': LazyComponent<typeof import("../components/Day.vue")['default']>
     'LazyFloatingPoints': LazyComponent<typeof import("../components/FloatingPoints.vue")['default']>
     'LazyMonthSelector': LazyComponent<typeof import("../components/MonthSelector.vue")['default']>
+    'LazyMonthStatistics': LazyComponent<typeof import("../components/MonthStatistics.vue")['default']>
+    'LazyParticleBurst': LazyComponent<typeof import("../components/ParticleBurst.vue")['default']>
     'LazyProgressParticles': LazyComponent<typeof import("../components/ProgressParticles.vue")['default']>
+    'LazyReadOnlyMonthView': LazyComponent<typeof import("../components/ReadOnlyMonthView.vue")['default']>
     'LazySettingsDrawer': LazyComponent<typeof import("../components/SettingsDrawer.vue")['default']>
+    'LazyStatCard': LazyComponent<typeof import("../components/StatCard.vue")['default']>
     'LazyStreakCounter': LazyComponent<typeof import("../components/StreakCounter.vue")['default']>
     'LazyTask': LazyComponent<typeof import("../components/Task.vue")['default']>
     'LazyTaskModal': LazyComponent<typeof import("../components/TaskModal.vue")['default']>
@@ -94,8 +102,12 @@ export const BackgroundParticles: typeof import("../components/BackgroundParticl
 export const Day: typeof import("../components/Day.vue")['default']
 export const FloatingPoints: typeof import("../components/FloatingPoints.vue")['default']
 export const MonthSelector: typeof import("../components/MonthSelector.vue")['default']
+export const MonthStatistics: typeof import("../components/MonthStatistics.vue")['default']
+export const ParticleBurst: typeof import("../components/ParticleBurst.vue")['default']
 export const ProgressParticles: typeof import("../components/ProgressParticles.vue")['default']
+export const ReadOnlyMonthView: typeof import("../components/ReadOnlyMonthView.vue")['default']
 export const SettingsDrawer: typeof import("../components/SettingsDrawer.vue")['default']
+export const StatCard: typeof import("../components/StatCard.vue")['default']
 export const StreakCounter: typeof import("../components/StreakCounter.vue")['default']
 export const Task: typeof import("../components/Task.vue")['default']
 export const TaskModal: typeof import("../components/TaskModal.vue")['default']
@@ -130,8 +142,12 @@ export const LazyBackgroundParticles: LazyComponent<typeof import("../components
 export const LazyDay: LazyComponent<typeof import("../components/Day.vue")['default']>
 export const LazyFloatingPoints: LazyComponent<typeof import("../components/FloatingPoints.vue")['default']>
 export const LazyMonthSelector: LazyComponent<typeof import("../components/MonthSelector.vue")['default']>
+export const LazyMonthStatistics: LazyComponent<typeof import("../components/MonthStatistics.vue")['default']>
+export const LazyParticleBurst: LazyComponent<typeof import("../components/ParticleBurst.vue")['default']>
 export const LazyProgressParticles: LazyComponent<typeof import("../components/ProgressParticles.vue")['default']>
+export const LazyReadOnlyMonthView: LazyComponent<typeof import("../components/ReadOnlyMonthView.vue")['default']>
 export const LazySettingsDrawer: LazyComponent<typeof import("../components/SettingsDrawer.vue")['default']>
+export const LazyStatCard: LazyComponent<typeof import("../components/StatCard.vue")['default']>
 export const LazyStreakCounter: LazyComponent<typeof import("../components/StreakCounter.vue")['default']>
 export const LazyTask: LazyComponent<typeof import("../components/Task.vue")['default']>
 export const LazyTaskModal: LazyComponent<typeof import("../components/TaskModal.vue")['default']>

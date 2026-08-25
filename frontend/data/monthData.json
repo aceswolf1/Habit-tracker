@@ -3743,7 +3743,5457 @@
       ],
       "finished": false,
       "createdAt": "2025-12-22T00:43:33.094Z"
+    },
+    {
+      "uuid": "m-su6t7fss0r",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-su6t7fss0r",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-su6t7fss0r",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-su6t7fss0r",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-su6t7fss0r",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-su6t7fss0r",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-su6t7fss0r",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-su6t7fss0r",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-su6t7fss0r",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-su6t7fss0r",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-su6t7fss0r",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-su6t7fss0r",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-su6t7fss0r",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-su6t7fss0r",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-su6t7fss0r",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-su6t7fss0r",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-su6t7fss0r",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-su6t7fss0r",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-su6t7fss0r",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-su6t7fss0r",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-su6t7fss0r",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-su6t7fss0r",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-su6t7fss0r",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-su6t7fss0r",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-su6t7fss0r",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-su6t7fss0r",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-su6t7fss0r",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-su6t7fss0r",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-su6t7fss0r",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-su6t7fss0r",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-su6t7fss0r",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-su6t7fss0r",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-su6t7fss0r",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:07.406Z"
+    },
+    {
+      "uuid": "m-5ouoipx38bi",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-5ouoipx38bi",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-5ouoipx38bi",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-5ouoipx38bi",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-5ouoipx38bi",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-5ouoipx38bi",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-5ouoipx38bi",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-5ouoipx38bi",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-5ouoipx38bi",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-5ouoipx38bi",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-5ouoipx38bi",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-5ouoipx38bi",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-5ouoipx38bi",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-5ouoipx38bi",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-5ouoipx38bi",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-5ouoipx38bi",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-5ouoipx38bi",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-5ouoipx38bi",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-5ouoipx38bi",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-5ouoipx38bi",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-5ouoipx38bi",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-5ouoipx38bi",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-5ouoipx38bi",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-5ouoipx38bi",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-5ouoipx38bi",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-5ouoipx38bi",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-5ouoipx38bi",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-5ouoipx38bi",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-5ouoipx38bi",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-5ouoipx38bi",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-5ouoipx38bi",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-5ouoipx38bi",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-5ouoipx38bi",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:15.954Z"
+    },
+    {
+      "uuid": "m-o2vo7cecnb",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-o2vo7cecnb",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-o2vo7cecnb",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-o2vo7cecnb",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-o2vo7cecnb",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-o2vo7cecnb",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-o2vo7cecnb",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-o2vo7cecnb",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-o2vo7cecnb",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-o2vo7cecnb",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-o2vo7cecnb",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-o2vo7cecnb",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-o2vo7cecnb",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-o2vo7cecnb",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-o2vo7cecnb",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-o2vo7cecnb",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-o2vo7cecnb",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-o2vo7cecnb",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-o2vo7cecnb",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-o2vo7cecnb",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-o2vo7cecnb",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-o2vo7cecnb",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-o2vo7cecnb",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-o2vo7cecnb",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-o2vo7cecnb",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-o2vo7cecnb",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-o2vo7cecnb",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-o2vo7cecnb",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-o2vo7cecnb",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-o2vo7cecnb",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-o2vo7cecnb",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-o2vo7cecnb",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-o2vo7cecnb",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:16.651Z"
+    },
+    {
+      "uuid": "m-9nkwfa828eh",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-9nkwfa828eh",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-9nkwfa828eh",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-9nkwfa828eh",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-9nkwfa828eh",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-9nkwfa828eh",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-9nkwfa828eh",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-9nkwfa828eh",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-9nkwfa828eh",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-9nkwfa828eh",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-9nkwfa828eh",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-9nkwfa828eh",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-9nkwfa828eh",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-9nkwfa828eh",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-9nkwfa828eh",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-9nkwfa828eh",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-9nkwfa828eh",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-9nkwfa828eh",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-9nkwfa828eh",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-9nkwfa828eh",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-9nkwfa828eh",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-9nkwfa828eh",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-9nkwfa828eh",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-9nkwfa828eh",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-9nkwfa828eh",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-9nkwfa828eh",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-9nkwfa828eh",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-9nkwfa828eh",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-9nkwfa828eh",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-9nkwfa828eh",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-9nkwfa828eh",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-9nkwfa828eh",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-9nkwfa828eh",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:16.821Z"
+    },
+    {
+      "uuid": "m-5e01qgflgao",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-5e01qgflgao",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-5e01qgflgao",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-5e01qgflgao",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-5e01qgflgao",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-5e01qgflgao",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-5e01qgflgao",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-5e01qgflgao",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-5e01qgflgao",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-5e01qgflgao",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-5e01qgflgao",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-5e01qgflgao",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-5e01qgflgao",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-5e01qgflgao",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-5e01qgflgao",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-5e01qgflgao",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-5e01qgflgao",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-5e01qgflgao",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-5e01qgflgao",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-5e01qgflgao",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-5e01qgflgao",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-5e01qgflgao",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-5e01qgflgao",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-5e01qgflgao",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-5e01qgflgao",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-5e01qgflgao",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-5e01qgflgao",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-5e01qgflgao",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-5e01qgflgao",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-5e01qgflgao",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-5e01qgflgao",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-5e01qgflgao",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-5e01qgflgao",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:17.008Z"
+    },
+    {
+      "uuid": "m-lktybavojt",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-lktybavojt",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-lktybavojt",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-lktybavojt",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-lktybavojt",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-lktybavojt",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-lktybavojt",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-lktybavojt",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-lktybavojt",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-lktybavojt",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-lktybavojt",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-lktybavojt",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-lktybavojt",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-lktybavojt",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-lktybavojt",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-lktybavojt",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-lktybavojt",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-lktybavojt",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-lktybavojt",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-lktybavojt",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-lktybavojt",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-lktybavojt",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-lktybavojt",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-lktybavojt",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-lktybavojt",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-lktybavojt",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-lktybavojt",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-lktybavojt",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-lktybavojt",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-lktybavojt",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-lktybavojt",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-lktybavojt",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-lktybavojt",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:17.201Z"
+    },
+    {
+      "uuid": "m-uj9pihdr63j",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-uj9pihdr63j",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-uj9pihdr63j",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-uj9pihdr63j",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-uj9pihdr63j",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-uj9pihdr63j",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-uj9pihdr63j",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-uj9pihdr63j",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-uj9pihdr63j",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-uj9pihdr63j",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-uj9pihdr63j",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-uj9pihdr63j",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-uj9pihdr63j",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-uj9pihdr63j",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-uj9pihdr63j",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-uj9pihdr63j",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-uj9pihdr63j",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-uj9pihdr63j",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-uj9pihdr63j",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-uj9pihdr63j",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-uj9pihdr63j",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-uj9pihdr63j",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-uj9pihdr63j",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-uj9pihdr63j",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-uj9pihdr63j",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-uj9pihdr63j",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-uj9pihdr63j",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-uj9pihdr63j",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-uj9pihdr63j",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-uj9pihdr63j",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-uj9pihdr63j",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-uj9pihdr63j",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-uj9pihdr63j",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:17.365Z"
+    },
+    {
+      "uuid": "m-j0oudx9wc8",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-j0oudx9wc8",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-j0oudx9wc8",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-j0oudx9wc8",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-j0oudx9wc8",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-j0oudx9wc8",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-j0oudx9wc8",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-j0oudx9wc8",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-j0oudx9wc8",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-j0oudx9wc8",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-j0oudx9wc8",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-j0oudx9wc8",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-j0oudx9wc8",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-j0oudx9wc8",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-j0oudx9wc8",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-j0oudx9wc8",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-j0oudx9wc8",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-j0oudx9wc8",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-j0oudx9wc8",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-j0oudx9wc8",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-j0oudx9wc8",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-j0oudx9wc8",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-j0oudx9wc8",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-j0oudx9wc8",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-j0oudx9wc8",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-j0oudx9wc8",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-j0oudx9wc8",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-j0oudx9wc8",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-j0oudx9wc8",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-j0oudx9wc8",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-j0oudx9wc8",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-j0oudx9wc8",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-j0oudx9wc8",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:17.550Z"
+    },
+    {
+      "uuid": "m-dzzxctoep35",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-dzzxctoep35",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-dzzxctoep35",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-dzzxctoep35",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-dzzxctoep35",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-dzzxctoep35",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-dzzxctoep35",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-dzzxctoep35",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-dzzxctoep35",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-dzzxctoep35",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-dzzxctoep35",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-dzzxctoep35",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-dzzxctoep35",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-dzzxctoep35",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-dzzxctoep35",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-dzzxctoep35",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-dzzxctoep35",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-dzzxctoep35",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-dzzxctoep35",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-dzzxctoep35",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-dzzxctoep35",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-dzzxctoep35",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-dzzxctoep35",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-dzzxctoep35",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-dzzxctoep35",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-dzzxctoep35",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-dzzxctoep35",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-dzzxctoep35",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-dzzxctoep35",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-dzzxctoep35",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-dzzxctoep35",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-dzzxctoep35",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-dzzxctoep35",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:17.741Z"
+    },
+    {
+      "uuid": "m-7szfhjunlsu",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-7szfhjunlsu",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-7szfhjunlsu",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-7szfhjunlsu",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-7szfhjunlsu",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-7szfhjunlsu",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-7szfhjunlsu",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-7szfhjunlsu",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-7szfhjunlsu",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-7szfhjunlsu",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-7szfhjunlsu",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-7szfhjunlsu",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-7szfhjunlsu",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-7szfhjunlsu",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-7szfhjunlsu",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-7szfhjunlsu",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-7szfhjunlsu",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-7szfhjunlsu",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-7szfhjunlsu",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-7szfhjunlsu",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-7szfhjunlsu",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-7szfhjunlsu",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-7szfhjunlsu",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-7szfhjunlsu",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-7szfhjunlsu",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-7szfhjunlsu",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-7szfhjunlsu",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-7szfhjunlsu",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-7szfhjunlsu",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-7szfhjunlsu",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-7szfhjunlsu",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-7szfhjunlsu",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-7szfhjunlsu",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:17.930Z"
+    },
+    {
+      "uuid": "m-8j7fc0pba3r",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-8j7fc0pba3r",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-8j7fc0pba3r",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-8j7fc0pba3r",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-8j7fc0pba3r",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-8j7fc0pba3r",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-8j7fc0pba3r",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-8j7fc0pba3r",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-8j7fc0pba3r",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-8j7fc0pba3r",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-8j7fc0pba3r",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-8j7fc0pba3r",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-8j7fc0pba3r",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-8j7fc0pba3r",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-8j7fc0pba3r",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-8j7fc0pba3r",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-8j7fc0pba3r",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-8j7fc0pba3r",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-8j7fc0pba3r",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-8j7fc0pba3r",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-8j7fc0pba3r",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-8j7fc0pba3r",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-8j7fc0pba3r",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-8j7fc0pba3r",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-8j7fc0pba3r",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-8j7fc0pba3r",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-8j7fc0pba3r",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-8j7fc0pba3r",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-8j7fc0pba3r",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-8j7fc0pba3r",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-8j7fc0pba3r",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-8j7fc0pba3r",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-8j7fc0pba3r",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:18.118Z"
+    },
+    {
+      "uuid": "m-h71vz3rzyyg",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-h71vz3rzyyg",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-h71vz3rzyyg",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-h71vz3rzyyg",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-h71vz3rzyyg",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-h71vz3rzyyg",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-h71vz3rzyyg",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-h71vz3rzyyg",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-h71vz3rzyyg",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-h71vz3rzyyg",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-h71vz3rzyyg",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-h71vz3rzyyg",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-h71vz3rzyyg",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-h71vz3rzyyg",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-h71vz3rzyyg",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-h71vz3rzyyg",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-h71vz3rzyyg",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-h71vz3rzyyg",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-h71vz3rzyyg",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-h71vz3rzyyg",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-h71vz3rzyyg",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-h71vz3rzyyg",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-h71vz3rzyyg",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-h71vz3rzyyg",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-h71vz3rzyyg",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-h71vz3rzyyg",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-h71vz3rzyyg",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-h71vz3rzyyg",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-h71vz3rzyyg",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-h71vz3rzyyg",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-h71vz3rzyyg",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-h71vz3rzyyg",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-h71vz3rzyyg",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:18.262Z"
+    },
+    {
+      "uuid": "m-aulqrky38mv",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-aulqrky38mv",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-aulqrky38mv",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-aulqrky38mv",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-aulqrky38mv",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-aulqrky38mv",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-aulqrky38mv",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-aulqrky38mv",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-aulqrky38mv",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-aulqrky38mv",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-aulqrky38mv",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-aulqrky38mv",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-aulqrky38mv",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-aulqrky38mv",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-aulqrky38mv",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-aulqrky38mv",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-aulqrky38mv",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-aulqrky38mv",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-aulqrky38mv",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-aulqrky38mv",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-aulqrky38mv",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-aulqrky38mv",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-aulqrky38mv",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-aulqrky38mv",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-aulqrky38mv",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-aulqrky38mv",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-aulqrky38mv",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-aulqrky38mv",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-aulqrky38mv",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-aulqrky38mv",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-aulqrky38mv",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-aulqrky38mv",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-aulqrky38mv",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:18.464Z"
+    },
+    {
+      "uuid": "m-meacayg9sj",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-meacayg9sj",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-meacayg9sj",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-meacayg9sj",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-meacayg9sj",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-meacayg9sj",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-meacayg9sj",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-meacayg9sj",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-meacayg9sj",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-meacayg9sj",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-meacayg9sj",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-meacayg9sj",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-meacayg9sj",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-meacayg9sj",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-meacayg9sj",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-meacayg9sj",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-meacayg9sj",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-meacayg9sj",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-meacayg9sj",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-meacayg9sj",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-meacayg9sj",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-meacayg9sj",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-meacayg9sj",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-meacayg9sj",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-meacayg9sj",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-meacayg9sj",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-meacayg9sj",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-meacayg9sj",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-meacayg9sj",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-meacayg9sj",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-meacayg9sj",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-meacayg9sj",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-meacayg9sj",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:18.642Z"
+    },
+    {
+      "uuid": "m-jdzkqo56xe",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-jdzkqo56xe",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-jdzkqo56xe",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-jdzkqo56xe",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-jdzkqo56xe",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-jdzkqo56xe",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-jdzkqo56xe",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-jdzkqo56xe",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-jdzkqo56xe",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-jdzkqo56xe",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-jdzkqo56xe",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-jdzkqo56xe",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-jdzkqo56xe",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-jdzkqo56xe",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-jdzkqo56xe",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-jdzkqo56xe",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-jdzkqo56xe",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-jdzkqo56xe",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-jdzkqo56xe",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-jdzkqo56xe",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-jdzkqo56xe",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-jdzkqo56xe",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-jdzkqo56xe",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-jdzkqo56xe",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-jdzkqo56xe",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-jdzkqo56xe",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-jdzkqo56xe",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-jdzkqo56xe",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-jdzkqo56xe",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-jdzkqo56xe",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-jdzkqo56xe",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-jdzkqo56xe",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-jdzkqo56xe",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:18.833Z"
+    },
+    {
+      "uuid": "m-z23n1b6adqi",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-z23n1b6adqi",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-z23n1b6adqi",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-z23n1b6adqi",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-z23n1b6adqi",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-z23n1b6adqi",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-z23n1b6adqi",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-z23n1b6adqi",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-z23n1b6adqi",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-z23n1b6adqi",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-z23n1b6adqi",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-z23n1b6adqi",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-z23n1b6adqi",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-z23n1b6adqi",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-z23n1b6adqi",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-z23n1b6adqi",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-z23n1b6adqi",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-z23n1b6adqi",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-z23n1b6adqi",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-z23n1b6adqi",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-z23n1b6adqi",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-z23n1b6adqi",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-z23n1b6adqi",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-z23n1b6adqi",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-z23n1b6adqi",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-z23n1b6adqi",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-z23n1b6adqi",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-z23n1b6adqi",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-z23n1b6adqi",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-z23n1b6adqi",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-z23n1b6adqi",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-z23n1b6adqi",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-z23n1b6adqi",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:19.018Z"
+    },
+    {
+      "uuid": "m-1a63dqy14k",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-1a63dqy14k",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-1a63dqy14k",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-1a63dqy14k",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-1a63dqy14k",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-1a63dqy14k",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-1a63dqy14k",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-1a63dqy14k",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-1a63dqy14k",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-1a63dqy14k",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-1a63dqy14k",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-1a63dqy14k",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-1a63dqy14k",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-1a63dqy14k",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-1a63dqy14k",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-1a63dqy14k",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-1a63dqy14k",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-1a63dqy14k",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-1a63dqy14k",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-1a63dqy14k",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-1a63dqy14k",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-1a63dqy14k",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-1a63dqy14k",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-1a63dqy14k",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-1a63dqy14k",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-1a63dqy14k",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-1a63dqy14k",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-1a63dqy14k",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-1a63dqy14k",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-1a63dqy14k",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-1a63dqy14k",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-1a63dqy14k",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-1a63dqy14k",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:41:19.196Z"
+    },
+    {
+      "uuid": "m-6ltj7ar9b7d",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-6ltj7ar9b7d",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-6ltj7ar9b7d",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-6ltj7ar9b7d",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-6ltj7ar9b7d",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-6ltj7ar9b7d",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-6ltj7ar9b7d",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-6ltj7ar9b7d",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-6ltj7ar9b7d",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-6ltj7ar9b7d",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-6ltj7ar9b7d",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-6ltj7ar9b7d",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-6ltj7ar9b7d",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-6ltj7ar9b7d",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-6ltj7ar9b7d",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-6ltj7ar9b7d",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-6ltj7ar9b7d",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-6ltj7ar9b7d",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-6ltj7ar9b7d",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-6ltj7ar9b7d",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-6ltj7ar9b7d",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-6ltj7ar9b7d",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-6ltj7ar9b7d",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-6ltj7ar9b7d",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-6ltj7ar9b7d",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-6ltj7ar9b7d",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-6ltj7ar9b7d",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-6ltj7ar9b7d",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-6ltj7ar9b7d",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-6ltj7ar9b7d",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-6ltj7ar9b7d",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-6ltj7ar9b7d",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-6ltj7ar9b7d",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:43:03.657Z"
+    },
+    {
+      "uuid": "m-3i0xnxsqkmv",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-3i0xnxsqkmv",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-3i0xnxsqkmv",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-3i0xnxsqkmv",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-3i0xnxsqkmv",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-3i0xnxsqkmv",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-3i0xnxsqkmv",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-3i0xnxsqkmv",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-3i0xnxsqkmv",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-3i0xnxsqkmv",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-3i0xnxsqkmv",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-3i0xnxsqkmv",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-3i0xnxsqkmv",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-3i0xnxsqkmv",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-3i0xnxsqkmv",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-3i0xnxsqkmv",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-3i0xnxsqkmv",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-3i0xnxsqkmv",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-3i0xnxsqkmv",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-3i0xnxsqkmv",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-3i0xnxsqkmv",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-3i0xnxsqkmv",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-3i0xnxsqkmv",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-3i0xnxsqkmv",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-3i0xnxsqkmv",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-3i0xnxsqkmv",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-3i0xnxsqkmv",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-3i0xnxsqkmv",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-3i0xnxsqkmv",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-3i0xnxsqkmv",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-3i0xnxsqkmv",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-3i0xnxsqkmv",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-3i0xnxsqkmv",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:43:04.083Z"
+    },
+    {
+      "uuid": "m-supb3ix4iyr",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-supb3ix4iyr",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-supb3ix4iyr",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-supb3ix4iyr",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-supb3ix4iyr",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-supb3ix4iyr",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-supb3ix4iyr",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-supb3ix4iyr",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-supb3ix4iyr",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-supb3ix4iyr",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-supb3ix4iyr",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-supb3ix4iyr",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-supb3ix4iyr",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-supb3ix4iyr",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-supb3ix4iyr",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-supb3ix4iyr",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-supb3ix4iyr",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-supb3ix4iyr",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-supb3ix4iyr",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-supb3ix4iyr",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-supb3ix4iyr",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-supb3ix4iyr",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-supb3ix4iyr",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-supb3ix4iyr",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-supb3ix4iyr",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-supb3ix4iyr",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-supb3ix4iyr",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-supb3ix4iyr",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-supb3ix4iyr",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-supb3ix4iyr",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-supb3ix4iyr",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-supb3ix4iyr",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-supb3ix4iyr",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:43:04.280Z"
+    },
+    {
+      "uuid": "m-053s10owe04r",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-053s10owe04r",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-053s10owe04r",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-053s10owe04r",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-053s10owe04r",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-053s10owe04r",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-053s10owe04r",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-053s10owe04r",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-053s10owe04r",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-053s10owe04r",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-053s10owe04r",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-053s10owe04r",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-053s10owe04r",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-053s10owe04r",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-053s10owe04r",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-053s10owe04r",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-053s10owe04r",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-053s10owe04r",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-053s10owe04r",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-053s10owe04r",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-053s10owe04r",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-053s10owe04r",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-053s10owe04r",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-053s10owe04r",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-053s10owe04r",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-053s10owe04r",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-053s10owe04r",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-053s10owe04r",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-053s10owe04r",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-053s10owe04r",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-053s10owe04r",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-053s10owe04r",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-053s10owe04r",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:43:04.484Z"
+    },
+    {
+      "uuid": "m-c38xj8yi885",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-c38xj8yi885",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-c38xj8yi885",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-c38xj8yi885",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-c38xj8yi885",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-c38xj8yi885",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-c38xj8yi885",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-c38xj8yi885",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-c38xj8yi885",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-c38xj8yi885",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-c38xj8yi885",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-c38xj8yi885",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-c38xj8yi885",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-c38xj8yi885",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-c38xj8yi885",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-c38xj8yi885",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-c38xj8yi885",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-c38xj8yi885",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-c38xj8yi885",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-c38xj8yi885",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-c38xj8yi885",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-c38xj8yi885",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-c38xj8yi885",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-c38xj8yi885",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-c38xj8yi885",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-c38xj8yi885",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-c38xj8yi885",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-c38xj8yi885",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-c38xj8yi885",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-c38xj8yi885",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-c38xj8yi885",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-c38xj8yi885",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-c38xj8yi885",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:43:04.676Z"
+    },
+    {
+      "uuid": "m-wtbubvzh0d",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-wtbubvzh0d",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-wtbubvzh0d",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-wtbubvzh0d",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-wtbubvzh0d",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-wtbubvzh0d",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-wtbubvzh0d",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-wtbubvzh0d",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-wtbubvzh0d",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-wtbubvzh0d",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-wtbubvzh0d",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-wtbubvzh0d",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-wtbubvzh0d",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-wtbubvzh0d",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-wtbubvzh0d",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-wtbubvzh0d",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-wtbubvzh0d",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-wtbubvzh0d",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-wtbubvzh0d",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-wtbubvzh0d",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-wtbubvzh0d",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-wtbubvzh0d",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-wtbubvzh0d",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-wtbubvzh0d",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-wtbubvzh0d",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-wtbubvzh0d",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-wtbubvzh0d",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-wtbubvzh0d",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-wtbubvzh0d",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-wtbubvzh0d",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-wtbubvzh0d",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-wtbubvzh0d",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-wtbubvzh0d",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:43:07.791Z"
+    },
+    {
+      "uuid": "m-qlc7kka6g9",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-qlc7kka6g9",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-qlc7kka6g9",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-qlc7kka6g9",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-qlc7kka6g9",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-qlc7kka6g9",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-qlc7kka6g9",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-qlc7kka6g9",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-qlc7kka6g9",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-qlc7kka6g9",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-qlc7kka6g9",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-qlc7kka6g9",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-qlc7kka6g9",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-qlc7kka6g9",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-qlc7kka6g9",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-qlc7kka6g9",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-qlc7kka6g9",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-qlc7kka6g9",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-qlc7kka6g9",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-qlc7kka6g9",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-qlc7kka6g9",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-qlc7kka6g9",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-qlc7kka6g9",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-qlc7kka6g9",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-qlc7kka6g9",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-qlc7kka6g9",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-qlc7kka6g9",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-qlc7kka6g9",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-qlc7kka6g9",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-qlc7kka6g9",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-qlc7kka6g9",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-qlc7kka6g9",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-qlc7kka6g9",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T15:43:17.558Z"
+    },
+    {
+      "uuid": "m-s5t98nwpkxa",
+      "name": "February 2026",
+      "subtitle": "",
+      "progress": 0,
+      "weeks": [
+        {
+          "uuid": "w-1-m-s5t98nwpkxa",
+          "name": "Week One",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w1-d1-m-s5t98nwpkxa",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d2-m-s5t98nwpkxa",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d3-m-s5t98nwpkxa",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d4-m-s5t98nwpkxa",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d5-m-s5t98nwpkxa",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d6-m-s5t98nwpkxa",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w1-d7-m-s5t98nwpkxa",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-2-m-s5t98nwpkxa",
+          "name": "Week Two",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w2-d1-m-s5t98nwpkxa",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d2-m-s5t98nwpkxa",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d3-m-s5t98nwpkxa",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d4-m-s5t98nwpkxa",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d5-m-s5t98nwpkxa",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d6-m-s5t98nwpkxa",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w2-d7-m-s5t98nwpkxa",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-3-m-s5t98nwpkxa",
+          "name": "Week Three",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w3-d1-m-s5t98nwpkxa",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d2-m-s5t98nwpkxa",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d3-m-s5t98nwpkxa",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d4-m-s5t98nwpkxa",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d5-m-s5t98nwpkxa",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d6-m-s5t98nwpkxa",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w3-d7-m-s5t98nwpkxa",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        },
+        {
+          "uuid": "w-4-m-s5t98nwpkxa",
+          "name": "Week Four",
+          "subtitle": "",
+          "progress": 0,
+          "conquered": false,
+          "backgroundImages": [],
+          "days": [
+            {
+              "uuid": "w4-d1-m-s5t98nwpkxa",
+              "name": "Day 1",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d2-m-s5t98nwpkxa",
+              "name": "Day 2",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d3-m-s5t98nwpkxa",
+              "name": "Day 3",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d4-m-s5t98nwpkxa",
+              "name": "Day 4",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d5-m-s5t98nwpkxa",
+              "name": "Day 5",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d6-m-s5t98nwpkxa",
+              "name": "Day 6",
+              "subtitle": "",
+              "tasks": []
+            },
+            {
+              "uuid": "w4-d7-m-s5t98nwpkxa",
+              "name": "Day 7",
+              "subtitle": "",
+              "tasks": []
+            }
+          ]
+        }
+      ],
+      "finished": false,
+      "createdAt": "2026-02-09T16:26:22.776Z"
     }
   ],
-  "currentMonthUuid": "m-2xc6q770vr9"
+  "currentMonthUuid": "m-s5t98nwpkxa"
 }

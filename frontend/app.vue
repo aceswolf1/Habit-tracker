@@ -26,6 +26,9 @@
   <!-- Floating Points Component -->
   <FloatingPoints />
 
+  <!-- Particle Burst Component -->
+  <ParticleBurst />
+
   <!-- Fixed gradient depth background -->
   <div class="background-depth" aria-hidden="true"></div>
   <!-- Ambient particles across whole viewport -->
@@ -54,6 +57,7 @@
             "
           >
             {{ monthName }}
+            <span v-if="isFinished" style="color: #ef4444; font-size: 0.75rem; margin-left: 1rem;">🔒 LOCKED</span>
           </h1>
           <div style="display: flex; align-items: center; gap: 1rem">
             <!-- Score Display -->
@@ -302,8 +306,44 @@
         </div>
       </header>
 
+      <!-- Toggle Button for Finished Months -->
+      <div v-if="isFinished && hasMonth" style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
+        <button
+          @click="toggleView"
+          style="
+            font-family: 'Press Start 2P', cursive;
+            color: white;
+            border: 3px solid #fbbf24;
+            background-color: #1d4ed8;
+            font-size: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.8);
+            transition: transform 0.1s, box-shadow 0.1s;
+            cursor: pointer;
+          "
+          class="hover:transform hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_rgba(0,0,0,0.8)]"
+        >
+          {{ viewMode === 'stats' ? '📋 VIEW FULL MONTH' : '📊 VIEW STATISTICS' }}
+        </button>
+      </div>
+
+      <!-- Statistics View for Finished Months -->
+      <MonthStatistics
+        v-if="isFinished && viewMode === 'stats' && hasMonth"
+        :month="currentMonth"
+        :statistics="currentMonth?.statistics"
+      />
+
+      <!-- Read-Only Month View for Finished Months -->
+      <ReadOnlyMonthView
+        v-else-if="isFinished && viewMode === 'details' && hasMonth"
+        :month="currentMonth"
+      />
+
+      <!-- Normal Editable View for Active Months -->
+      <div v-else-if="!isFinished && hasMonth">
       <!-- Weekly Boss Section -->
-      <div v-if="hasMonth" class="weekly-boss-section">
+      <div class="weekly-boss-section">
         <WeeklyBossPortrait
           v-for="(week, index) in weeks"
           :key="week.uuid"
@@ -445,6 +485,8 @@
           {{ isFinished ? "FINISHED" : "FINISH MONTH" }}
         </button>
       </div>
+      </div>
+      <!-- End of Normal Editable View -->
     </div>
   </div>
   <TaskModal
@@ -472,6 +514,9 @@ import BackgroundParticles from "./components/BackgroundParticles.vue";
 import ToastNotification from "./components/ToastNotification.vue";
 import SettingsDrawer from "./components/SettingsDrawer.vue";
 import FloatingPoints from "./components/FloatingPoints.vue";
+import ParticleBurst from "./components/ParticleBurst.vue";
+import MonthStatistics from "./components/MonthStatistics.vue";
+import ReadOnlyMonthView from "./components/ReadOnlyMonthView.vue";
 import { storeToRefs } from "pinia";
 import { useMonthStore } from "./stores/monthStore";
 import { useSettingsStore } from "./stores/settingsStore";
@@ -486,6 +531,7 @@ const taskModalOpen = ref(false);
 const selectedDayUuid = ref<string | null>(null);
 const editingTaskUuid = ref<string | null>(null);
 const toastRef = ref<InstanceType<typeof ToastNotification> | null>(null);
+const viewMode = ref<'stats' | 'details'>('stats'); // For finished months
 
 function openEditTask(taskUuid: string) {
   editingTaskUuid.value = taskUuid;
@@ -682,14 +728,26 @@ onMounted(async () => {
   }
 });
 
+function toggleView() {
+  viewMode.value = viewMode.value === 'stats' ? 'details' : 'stats';
+}
+
 function finishMonth() {
   if (isFinished.value) return;
-  if (confirm("Finish this month? This will lock all tasks.")) {
-    monthStore.finishCurrentMonth();
-    toastRef.value?.add({
-      title: "MONTH COMPLETED",
-      message: "Your journey is recorded in history.",
-      type: "success",
+  const tier = getTierText.value;
+  const score = currentMonth.value?.score || 0;
+
+  if (confirm(`Finish this month? You achieved ${tier} with ${score} XP.\n\nThis will lock all tasks and calculate statistics.`)) {
+    monthStore.finishCurrentMonth().then((result) => {
+      if (result?.success) {
+        toastRef.value?.add({
+          title: "MONTH COMPLETED!",
+          message: `${tier} earned! ${score} XP added to your legacy!`,
+          type: "success",
+        });
+        // Switch to stats view
+        viewMode.value = 'stats';
+      }
     });
   }
 }

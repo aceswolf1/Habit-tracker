@@ -31,4 +31,3 @@ export { searchGifs, getTrendingGifs, getGifUrl, trackGifShare, KlipyGif, KlipyG
 export { useMonthStore } from '../stores/monthStore';
 export { useSettingsStore } from '../stores/settingsStore';
 export { defineStore, acceptHMRUpdate, usePinia, storeToRefs } from '../node_modules/@pinia/nuxt/dist/runtime/composables';
-export { useNuxtDevTools } from '../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools';

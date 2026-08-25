@@ -7,6 +7,8 @@
  * - Gold (50-74%): Required = 20, Optional = 10
  * - Champion (75-99%): Required = 25, Optional = 12
  * - Final (100%+): Required = 30, Optional = 15
+ *
+ * Legendary tasks receive 3x score multiplier
  */
 
 // Get the tier name based on progress percentage
@@ -31,10 +33,17 @@ function getPointsForTier(tier) {
 }
 
 // Calculate points for completing a task based on current progress
-function calculateTaskPoints(isOptional, currentProgress) {
+function calculateTaskPoints(isOptional, currentProgress, isLegendary = false) {
   const tier = getTierFromProgress(currentProgress);
   const points = getPointsForTier(tier);
-  return isOptional ? points.optional : points.required;
+  let basePoints = isOptional ? points.optional : points.required;
+
+  // Apply 3x multiplier for legendary tasks
+  if (isLegendary) {
+    basePoints *= 3;
+  }
+
+  return basePoints;
 }
 
 // Calculate total score for a month based on all completed tasks
@@ -48,7 +57,11 @@ function calculateMonthScore(month) {
       for (const task of day.tasks) {
         if (task.completed) {
           // For recalculating score, we use current progress as baseline
-          const points = calculateTaskPoints(task.optional, month.progress || 0);
+          const points = calculateTaskPoints(
+            task.optional,
+            month.progress || 0,
+            task.legendary || false
+          );
           totalScore += points;
         }
       }

@@ -3,6 +3,7 @@ const router = express.Router();
 const Cycle = require('../models/Cycle');
 const UserProfile = require('../models/UserProfile');
 const { calculateTaskPoints, calculateMonthScore } = require('../utils/scoreCalculator');
+const { calculateAllStatistics } = require('../utils/statisticsCalculator');
 
 // Helper function to generate UUID
 function generateUuid(prefix = 'c') {
@@ -168,23 +169,31 @@ router.patch('/:id', async (req, res) => {
 
     // Handle different operation types
     if (type === 'updateTasks') {
-      // Update task completion status
+      // Update task properties (completion status, description, optional, legendary, icon, gifUrl)
       for (const update of updates) {
         for (const week of cycle.weeks) {
           for (const day of week.days) {
             const task = day.tasks.find(t => t.uuid === update.uuid);
             if (task) {
               const wasCompleted = task.completed;
-              task.completed = update.completed;
+
+              // Update all provided properties
+              if (update.completed !== undefined) task.completed = update.completed;
+              if (update.description !== undefined) task.description = update.description;
+              if (update.optional !== undefined) task.optional = update.optional;
+              if (update.legendary !== undefined) task.legendary = update.legendary;
+              if (update.icon !== undefined) task.icon = update.icon;
+              if (update.gifUrl !== undefined) task.gifUrl = update.gifUrl;
+              if (update.order !== undefined) task.order = update.order;
 
               // Calculate points if task was just completed (not uncompleted)
               if (!wasCompleted && update.completed) {
-                const points = calculateTaskPoints(task.optional, cycle.progress);
+                const points = calculateTaskPoints(task.optional, cycle.progress, task.legendary);
                 pointsEarned += points;
                 cycle.score = (cycle.score || 0) + points;
               } else if (wasCompleted && !update.completed) {
                 // Subtract points if task was uncompleted
-                const points = calculateTaskPoints(task.optional, cycle.progress);
+                const points = calculateTaskPoints(task.optional, cycle.progress, task.legendary);
                 cycle.score = Math.max(0, (cycle.score || 0) - points);
                 pointsEarned -= points;
               }
@@ -239,12 +248,28 @@ router.patch('/:id', async (req, res) => {
 
     const savedCycle = await cycle.save();
 
+    // Find if the task that was updated is legendary
+    let isLegendary = false;
+    if (type === 'updateTasks' && updates && updates.length > 0) {
+      for (const week of savedCycle.weeks) {
+        for (const day of week.days) {
+          const task = day.tasks.find(t => t.uuid === updates[0].uuid);
+          if (task) {
+            isLegendary = task.legendary || false;
+            break;
+          }
+        }
+        if (isLegendary !== false) break;
+      }
+    }
+
     // Return points earned so frontend can show floating animation
     res.json({
       success: true,
       month: savedCycle,
       pointsEarned: pointsEarned,
-      currentTier: require('../utils/scoreCalculator').getTierFromProgress(savedCycle.progress)
+      currentTier: require('../utils/scoreCalculator').getTierFromProgress(savedCycle.progress),
+      isLegendary: isLegendary
     });
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -270,13 +295,30 @@ router.post('/:id/finish', async (req, res) => {
     if (!cycle) {
       return res.status(404).json({ message: 'Cycle not found' });
     }
-    
+
+    // Don't recalculate if already finished and has statistics
+    if (cycle.finished && cycle.statistics) {
+      return res.json({ success: true, cycle, alreadyFinished: true });
+    }
+
+    // Calculate progress one final time before finishing
+    calculateProgress(cycle);
+
+    // Calculate comprehensive statistics
+    console.log('Calculating statistics for finished month:', cycle.name);
+    const statistics = calculateAllStatistics(cycle);
+
+    // Set finished status and store statistics
     cycle.finished = true;
     cycle.finishedAt = new Date();
+    cycle.statistics = statistics;
+
     await cycle.save();
-    
-    res.json({ success: true });
+
+    console.log('Month finished successfully with statistics calculated');
+    res.json({ success: true, cycle, statistics });
   } catch (err) {
+    console.error('Error finishing cycle:', err);
     res.status(400).json({ message: err.message });
   }
 });

@@ -4,6 +4,7 @@ const TaskSchema = new mongoose.Schema({
   uuid: String,
   description: String,
   optional: { type: Boolean, default: false },
+  legendary: { type: Boolean, default: false },
   completed: { type: Boolean, default: false },
   recurrenceId: String,
   order: Number,
@@ -36,7 +37,8 @@ const CycleSchema = new mongoose.Schema({
   weeks: [WeekSchema],
   finished: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
-  finishedAt: Date
+  finishedAt: Date,
+  statistics: { type: mongoose.Schema.Types.Mixed, default: null }
 });
 
 module.exports = mongoose.model('Cycle', CycleSchema);

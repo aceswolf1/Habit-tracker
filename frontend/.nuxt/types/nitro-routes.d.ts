@@ -6,6 +6,9 @@ declare module "nitropack/types" {
     '/api/tasks': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/tasks').default>>>>
     }
+    '/api/cycles/**:path': {
+      'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/routes/api/cycles/[...path]').default>>>>
+    }
     '/__nuxt_error': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../node_modules/nuxt/dist/core/runtime/nitro/handlers/renderer').default>>>>
     }

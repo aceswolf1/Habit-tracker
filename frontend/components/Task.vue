@@ -1,7 +1,7 @@
 <template>
   <div
     class="task-container"
-    :class="{ 'optional-task': optional }"
+    :class="{ 'optional-task': optional, 'legendary-task': legendary, 'just-completed': justCompleted }"
     :data-task-uuid="taskUuid"
     draggable="true"
     @dragstart="onDragStart"
@@ -11,7 +11,7 @@
       class="task"
       :style="taskStyles"
       @dblclick="emitEdit"
-      :class="{ completed, 'has-gif': !!gifUrl }"
+      :class="{ completed, 'has-gif': !!gifUrl, 'legendary': legendary, 'legendary-completed': legendary && completed }"
     >
       <!-- Completion FX (mounts anew each time for replay) -->
       <div v-if="completed" class="completion-effect" :key="effectKey">
@@ -73,6 +73,7 @@
       </div>
     </div>
     <div v-if="optional" class="optional-badge">OPTIONAL</div>
+    <div v-if="legendary" class="legendary-badge">⭐ LEGENDARY</div>
   </div>
 </template>
 
@@ -83,6 +84,7 @@ const props = defineProps({
   description: { type: String, required: true },
   completed: { type: Boolean, default: false },
   optional: { type: Boolean, default: false },
+  legendary: { type: Boolean, default: false },
   taskUuid: { type: String, required: true },
   dayUuid: { type: String, required: true },
   index: { type: Number, required: true },
@@ -141,12 +143,20 @@ const taskStyles = computed(() => ({
 
 // Effect replay key
 const effectKey = ref(0);
+const justCompleted = ref(false);
+
 watch(
   () => props.completed,
   (val) => {
     if (val) {
       // Small timeout to ensure DOM reflow if rapidly toggled
       requestAnimationFrame(() => effectKey.value++);
+
+      // Add "just-completed" pulse class
+      justCompleted.value = true;
+      setTimeout(() => {
+        justCompleted.value = false;
+      }, 600); // Duration of pulse animation
     }
   }
 );
@@ -170,6 +180,65 @@ const checkStyles = computed(() => ({
   font-family: "Press Start 2P", cursive;
   font-size: 0.75rem;
 }
+
+/* Task completion pulse animation */
+.task-container.just-completed .task {
+  animation: completion-pulse 0.6s ease-out;
+}
+
+@keyframes completion-pulse {
+  0% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.05);
+  }
+  30% {
+    transform: scale(0.98);
+  }
+  45% {
+    transform: scale(1.02);
+  }
+  60% {
+    transform: scale(0.99);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Legendary tasks get more dramatic pulse */
+.task-container.legendary-task.just-completed .task {
+  animation: legendary-completion-pulse 0.8s ease-out;
+}
+
+@keyframes legendary-completion-pulse {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  10% {
+    transform: scale(1.1) rotate(2deg);
+  }
+  20% {
+    transform: scale(0.95) rotate(-1deg);
+  }
+  30% {
+    transform: scale(1.08) rotate(1deg);
+  }
+  40% {
+    transform: scale(0.97) rotate(-0.5deg);
+  }
+  50% {
+    transform: scale(1.05) rotate(0.5deg);
+  }
+  60% {
+    transform: scale(0.99) rotate(0deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
 /* Completion Effect inspired by CodePen Sparkle Button */
 .task.completed {
   background: linear-gradient(#374151, #374151) padding-box,
@@ -528,5 +597,168 @@ const checkStyles = computed(() => ({
 
 .task.has-gif .task-description {
   margin-top: 0.25rem;
+}
+
+/* Legendary Task Styles - Purple/Epic theme when not completed */
+.task.legendary:not(.completed) {
+  background: linear-gradient(#374151, #374151) padding-box,
+    linear-gradient(
+        130deg,
+        #4a148c,
+        #7b1fa2,
+        #9c27b0,
+        #ce93d8,
+        #9c27b0,
+        #7b1fa2,
+        #4a148c
+      )
+      border-box;
+  border: 2px solid transparent;
+  background-size: 200% 200%, 400% 400%;
+  animation: legendary-border-pulse 4s linear infinite, legendary-glow 2s ease-in-out infinite;
+  box-shadow: 0 0 8px 2px #9c27b055, 0 0 20px 4px #ce93d844,
+    0 0 35px 10px #9c27b022;
+  position: relative;
+}
+
+.task.legendary:not(.completed)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(156, 39, 176, 0.1) 45%,
+    rgba(206, 147, 216, 0.3) 50%,
+    rgba(156, 39, 176, 0.1) 55%,
+    transparent 100%
+  );
+  background-size: 250% 250%;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: legendary-sweep 3s linear infinite;
+}
+
+/* Sparkle effect for legendary tasks */
+.task.legendary:not(.completed)::after {
+  content: "✨";
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-size: 1rem;
+  animation: sparkle-rotate 3s linear infinite;
+  opacity: 0.7;
+}
+
+@keyframes legendary-border-pulse {
+  0% {
+    background-position: 0% 0%, 0% 50%;
+  }
+  50% {
+    background-position: 100% 100%, 50% 50%;
+  }
+  100% {
+    background-position: 0% 0%, 100% 50%;
+  }
+}
+
+@keyframes legendary-glow {
+  0% {
+    box-shadow: 0 0 6px 2px #9c27b066, 0 0 16px 3px #ce93d855,
+      0 0 28px 6px #9c27b022;
+  }
+  50% {
+    box-shadow: 0 0 12px 3px #9c27b0aa, 0 0 28px 8px #ce93d866,
+      0 0 44px 14px #9c27b033;
+  }
+  100% {
+    box-shadow: 0 0 6px 2px #9c27b066, 0 0 16px 3px #ce93d855,
+      0 0 28px 6px #9c27b022;
+  }
+}
+
+@keyframes legendary-sweep {
+  0% {
+    background-position: 200% 0%;
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  23% {
+    background-position: 0% 100%;
+    opacity: 0.9;
+  }
+  30% {
+    opacity: 0;
+  }
+  100% {
+    background-position: 0% 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes sparkle-rotate {
+  0% {
+    transform: rotate(0deg) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: rotate(180deg) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    opacity: 0.7;
+  }
+}
+
+/* Legendary Task Completed - Golden theme (enhanced gold) */
+.task.legendary-completed {
+  background: linear-gradient(#374151, #374151) padding-box,
+    linear-gradient(
+        130deg,
+        #6d5206,
+        #b8860b,
+        #ffd700,
+        #fff7c2,
+        #ffd700,
+        #b8860b,
+        #6d5206
+      )
+      border-box;
+  background-size: 200% 200%, 400% 400%;
+  animation: border-shine 5s linear infinite, legendary-gold-glow 2.5s ease-in-out infinite;
+  box-shadow: 0 0 10px 3px #ffd70077, 0 0 24px 6px #ffeb8a55,
+    0 0 40px 12px #ffd70033;
+}
+
+@keyframes legendary-gold-glow {
+  0% {
+    box-shadow: 0 0 8px 2px #ffd70088, 0 0 20px 4px #ffec8f66,
+      0 0 32px 8px #ffd70033;
+  }
+  50% {
+    box-shadow: 0 0 16px 4px #ffd700cc, 0 0 34px 10px #ffec8f88,
+      0 0 52px 18px #ffd70044;
+  }
+  100% {
+    box-shadow: 0 0 8px 2px #ffd70088, 0 0 20px 4px #ffec8f66,
+      0 0 32px 8px #ffd70033;
+  }
+}
+
+.legendary-badge {
+  font-family: "Press Start 2P", cursive;
+  font-size: 0.5rem;
+  color: #ce93d8;
+  text-align: right;
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 10px #9c27b088;
+}
+
+.legendary-task {
+  position: relative;
 }
 </style>
