@@ -16,6 +16,9 @@ services:
   backend:
     image: ghcr.io/YOUR_GH_USERNAME/pixelpaladin-backend:latest
     restart: unless-stopped
+    # Let Watchtower auto-update this service when a new :latest is published.
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     environment:
       PORT: 4000
       MONGODB_URI: mongodb://mongo:27017/pixelpaladin
@@ -32,6 +35,9 @@ services:
   frontend:
     image: ghcr.io/YOUR_GH_USERNAME/pixelpaladin-frontend:latest
     restart: unless-stopped
+    # Let Watchtower auto-update this service when a new :latest is published.
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     environment:
       NITRO_HOST: 0.0.0.0
       NITRO_PORT: 3000

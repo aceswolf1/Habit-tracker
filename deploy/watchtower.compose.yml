@@ -1,0 +1,37 @@
+# Watchtower — auto-updates the PixelPaladin containers on the NAS.
+#
+# Deploy this as a SEPARATE TrueNAS Custom App (Apps -> Discover -> Custom App
+# -> Install via YAML), or add it to any Docker host. It polls GHCR and, when a
+# new `:latest` image digest appears, pulls it and recreates the container.
+#
+# Safe by design:
+#   - WATCHTOWER_LABEL_ENABLE=true means it ONLY touches containers labelled
+#     `com.centurylinklabs.watchtower.enable=true` (backend + frontend). The
+#     mongo container is left alone so your database is never surprise-upgraded.
+#   - Pull-only: nothing on the NAS is exposed to the internet.
+#
+# Private packages: if your GHCR packages are private, provide pull credentials
+# (see deploy/AUTOMATION.md, "Private GHCR images"). If they are public, delete
+# the /config.json volume line below.
+
+services:
+  watchtower:
+    image: containrrr/watchtower:latest
+    restart: unless-stopped
+    environment:
+      # Poll interval in seconds (300 = every 5 minutes).
+      WATCHTOWER_POLL_INTERVAL: "300"
+      # Only update containers explicitly opted in via label.
+      WATCHTOWER_LABEL_ENABLE: "true"
+      # Delete the old image after a successful update.
+      WATCHTOWER_CLEANUP: "true"
+      # Skip re-checking images that haven't changed (quieter logs).
+      WATCHTOWER_NO_STARTUP_MESSAGE: "true"
+      # Timezone for log timestamps.
+      TZ: "UTC"
+    volumes:
+      # Required: lets Watchtower see and recreate containers.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Only needed for PRIVATE GHCR images. Create this file on the NAS first
+      # (see deploy/AUTOMATION.md). Remove this line if your packages are public.
+      - /mnt/storage/pixelpaladin/watchtower-config.json:/config.json:ro

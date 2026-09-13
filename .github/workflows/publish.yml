@@ -1,0 +1,80 @@
+name: Build and publish images
+
+# Publishes multi-arch (amd64 + arm64) images to GHCR on every release tag.
+#
+#   git tag v1.2.0 && git push origin v1.2.0
+#
+# Each release pushes THREE tags per image so Watchtower on the NAS (which
+# watches the fixed `:latest` tag) picks up the new digest automatically:
+#   - pixelpaladin-backend:1.2.0   (exact version)
+#   - pixelpaladin-backend:1.2     (major.minor, moving)
+#   - pixelpaladin-backend:latest  (moving — what the NAS/Watchtower tracks)
+#
+# Uses the built-in GITHUB_TOKEN — no secrets to configure.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            context: ./backend
+            image: pixelpaladin-backend
+          - service: frontend
+            context: ./frontend
+            image: pixelpaladin-frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # GHCR image paths must be lowercase; the owner login may contain capitals.
+      - name: Compute lowercase owner
+        id: owner
+        run: echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU (arm64 emulation)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.owner.outputs.owner }}/${{ matrix.image }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      - name: Build and push (${{ matrix.service }})
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
