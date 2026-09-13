@@ -131,6 +131,10 @@ they run on an x86 NAS even when built on an Apple-Silicon Mac. It pushes:
 To update later: re-run the push script, then on the NAS
 `docker compose -f docker-compose.registry.yml pull && ... up -d`.
 
+> **Prefer automation?** See [`deploy/AUTOMATION.md`](deploy/AUTOMATION.md) to
+> have GitHub Actions build+publish on a release tag and Watchtower auto-update
+> the NAS — no manual push script, no SSH, nothing exposed to the internet.
+
 ### Persisting data to a TrueNAS dataset (recommended)
 
 Named volumes live under Docker's data dir. To store the database on a dedicated
