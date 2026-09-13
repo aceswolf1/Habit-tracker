@@ -3,7 +3,7 @@
 This stack runs the whole app in three containers on your NAS:
 
 ```
-frontend (Nuxt/Nitro, port 3000)  ──/api/cycles──▶  backend (Express, 4000)  ──▶  mongo (27017)
+frontend (Nuxt/Nitro, port 3000)  ──/api/cycles|/api/tasks──▶  backend (Express, 4000)  ──▶  mongo (27017)
         ▲
         └── the only published port (default host 3001)
 ```
@@ -59,6 +59,8 @@ docker compose up -d --build      # rebuild after code changes
 | `MONGODB_URI` | `mongodb://mongo:27017/pixelpaladin` | Set to a MongoDB Atlas URI to use an external DB instead of the bundled container |
 | `IMAGE_PREFIX` | `ghcr.io/your-name` | Registry namespace for prebuilt images (see below) |
 | `IMAGE_TAG` | `latest` | Tag for prebuilt images |
+| `KLIPY_API_KEY` | _(empty)_ | Injected into the **frontend** container for Nitro `/api/klipy/*`. Required for GIF search; leave empty only if you do not use GIFs |
+| `KLIPY_BASE_URL` | `https://api.klipy.com` | Optional Klipy API base override |
 
 > The current `backend/.env` (MongoDB Atlas connection string) is **not** used by
 > Docker — it is excluded via `.dockerignore`. To keep using Atlas, set

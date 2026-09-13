@@ -165,11 +165,20 @@ router.patch('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Cycle not found' });
     }
 
+    // UB-02 / BUG-02: finished months are immutable server-side
+    if (cycle.finished) {
+      return res.status(409).json({
+        message: 'Cannot modify a finished cycle. Finished months are locked and immutable.'
+      });
+    }
+
     let pointsEarned = 0; // Track points earned in this operation
+    // UB-06: track completion flips so points use progress AFTER recalculation
+    const completionFlips = [];
 
     // Handle different operation types
     if (type === 'updateTasks') {
-      // Update task properties (completion status, description, optional, legendary, icon, gifUrl)
+      // Apply property updates first; defer point scoring until after progress recalc
       for (const update of updates) {
         for (const week of cycle.weeks) {
           for (const day of week.days) {
@@ -186,16 +195,13 @@ router.patch('/:id', async (req, res) => {
               if (update.gifUrl !== undefined) task.gifUrl = update.gifUrl;
               if (update.order !== undefined) task.order = update.order;
 
-              // Calculate points if task was just completed (not uncompleted)
-              if (!wasCompleted && update.completed) {
-                const points = calculateTaskPoints(task.optional, cycle.progress, task.legendary);
-                pointsEarned += points;
-                cycle.score = (cycle.score || 0) + points;
-              } else if (wasCompleted && !update.completed) {
-                // Subtract points if task was uncompleted
-                const points = calculateTaskPoints(task.optional, cycle.progress, task.legendary);
-                cycle.score = Math.max(0, (cycle.score || 0) - points);
-                pointsEarned -= points;
+              // Record completion flips for post-recalc scoring (UB-06)
+              if (update.completed !== undefined && wasCompleted !== update.completed) {
+                completionFlips.push({
+                  optional: task.optional,
+                  legendary: task.legendary || false,
+                  direction: !wasCompleted && update.completed ? 'complete' : 'uncomplete'
+                });
               }
             }
           }
@@ -232,10 +238,22 @@ router.patch('/:id', async (req, res) => {
       }
     }
 
-    // Recalculate progress after any changes
+    // Recalculate progress after any changes (must run before scoring toggles)
     calculateProgress(cycle);
 
-    // Update lifetime score if points were earned
+    // UB-06: score completion flips using post-recalc progress / tier
+    for (const flip of completionFlips) {
+      const points = calculateTaskPoints(flip.optional, cycle.progress, flip.legendary);
+      if (flip.direction === 'complete') {
+        pointsEarned += points;
+        cycle.score = (cycle.score || 0) + points;
+      } else {
+        cycle.score = Math.max(0, (cycle.score || 0) - points);
+        pointsEarned -= points;
+      }
+    }
+
+    // Update lifetime score if points were earned (positive-only this wave; UB-10 later)
     if (pointsEarned > 0) {
       let userProfile = await UserProfile.findOne({ uuid: 'default-user' });
       if (!userProfile) {

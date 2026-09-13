@@ -109,6 +109,28 @@ export const useMonthStore = defineStore("month", {
   },
 
   actions: {
+    notifyPersistError(operation: string) {
+      if (typeof window === "undefined") return;
+      window.dispatchEvent(
+        new CustomEvent("appToast", {
+          detail: {
+            type: "error",
+            title: "SAVE FAILED",
+            message: `Could not save ${operation}. Restored latest data.`,
+          },
+        })
+      );
+    },
+
+    async recoverFromPersistFailure(operation: string) {
+      try {
+        await this.fetchMonthData();
+      } catch (recoveryError) {
+        console.error(`Recovery after ${operation} failed`, recoveryError);
+      }
+      this.notifyPersistError(operation);
+    },
+
     // Toggle the completion status of a task
     toggleTaskCompletion(taskUuid: string) {
       console.log("Toggle task completion for UUID:", taskUuid);
@@ -159,8 +181,15 @@ export const useMonthStore = defineStore("month", {
                 updates: [{ uuid: task.uuid, completed: task.completed }],
               }),
             })
-              .then((r) => r.json())
+              .then(async (r) => {
+                if (!r.ok) {
+                  await this.recoverFromPersistFailure("task toggle");
+                  return null;
+                }
+                return r.json();
+              })
               .then((res) => {
+                if (!res) return;
                 if (res?.month) {
                   this.currentMonth = res.month;
                   this.updateProgressValues();
@@ -181,7 +210,10 @@ export const useMonthStore = defineStore("month", {
                   this.lifetimeScore += res.pointsEarned;
                 }
               })
-              .catch((err) => console.error("Persist toggle failed", err));
+              .catch(async (err) => {
+                console.error("Persist toggle failed", err);
+                await this.recoverFromPersistFailure("task toggle");
+              });
             return;
           }
         }
@@ -569,15 +601,25 @@ export const useMonthStore = defineStore("month", {
             additions,
           }),
         })
-          .then((r) => r.json())
+          .then(async (r) => {
+            if (!r.ok) {
+              await this.recoverFromPersistFailure("adding habits");
+              return null;
+            }
+            return r.json();
+          })
           .then((res) => {
+            if (!res) return;
             if (res?.month) {
               this.currentMonth = res.month;
               // Recompute progress after merging server changes.
               this.updateProgressValues();
             }
           })
-          .catch((err) => console.error("Persist addTasks failed", err));
+          .catch(async (err) => {
+            console.error("Persist addTasks failed", err);
+            await this.recoverFromPersistFailure("adding habits");
+          });
       }
     },
     updateTask(
@@ -604,14 +646,24 @@ export const useMonthStore = defineStore("month", {
           updates: [{ uuid: taskUuid, ...payload }],
         }),
       })
-        .then((r) => r.json())
+        .then(async (r) => {
+          if (!r.ok) {
+            await this.recoverFromPersistFailure("habit update");
+            return null;
+          }
+          return r.json();
+        })
         .then((res) => {
+          if (!res) return;
           if (res?.month) {
             this.currentMonth = res.month;
             this.updateProgressValues();
           }
         })
-        .catch((err) => console.error("Persist updateTask failed", err));
+        .catch(async (err) => {
+          console.error("Persist updateTask failed", err);
+          await this.recoverFromPersistFailure("habit update");
+        });
     },
     deleteTask(taskUuid: string, scope: "single" | "recurrence" = "single") {
       if (!this.currentMonth || this.currentMonth.finished) return;
@@ -636,16 +688,24 @@ export const useMonthStore = defineStore("month", {
                   taskUuids: [taskUuid],
                 }),
               })
-                .then((r) => r.json())
+                .then(async (r) => {
+                  if (!r.ok) {
+                    await this.recoverFromPersistFailure("habit delete");
+                    return null;
+                  }
+                  return r.json();
+                })
                 .then((res) => {
+                  if (!res) return;
                   if (res?.month) {
                     this.currentMonth = res.month;
                     this.updateProgressValues();
                   }
                 })
-                .catch((err) =>
-                  console.error("Persist deleteTask failed", err)
-                );
+                .catch(async (err) => {
+                  console.error("Persist deleteTask failed", err);
+                  await this.recoverFromPersistFailure("habit delete");
+                });
               return;
             }
           } else if (scope === "recurrence" && recurrenceId) {
@@ -669,16 +729,24 @@ export const useMonthStore = defineStore("month", {
             recurrenceId,
           }),
         })
-          .then((r) => r.json())
+          .then(async (r) => {
+            if (!r.ok) {
+              await this.recoverFromPersistFailure("recurring habit delete");
+              return null;
+            }
+            return r.json();
+          })
           .then((res) => {
+            if (!res) return;
             if (res?.month) {
               this.currentMonth = res.month;
               this.updateProgressValues();
             }
           })
-          .catch((err) =>
-            console.error("Persist delete recurrence failed", err)
-          );
+          .catch(async (err) => {
+            console.error("Persist delete recurrence failed", err);
+            await this.recoverFromPersistFailure("recurring habit delete");
+          });
       }
     },
     moveTask(taskUuid: string, targetDayUuid: string, targetIndex?: number) {
@@ -744,14 +812,24 @@ export const useMonthStore = defineStore("month", {
             updates,
           }),
         })
-          .then((r) => r.json())
+          .then(async (r) => {
+            if (!r.ok) {
+              await this.recoverFromPersistFailure("habit move");
+              return null;
+            }
+            return r.json();
+          })
           .then((res) => {
+            if (!res) return;
             if (res?.month) {
               this.currentMonth = res.month;
               this.updateProgressValues();
             }
           })
-          .catch((err) => console.error("Persist moveTask failed", err));
+          .catch(async (err) => {
+            console.error("Persist moveTask failed", err);
+            await this.recoverFromPersistFailure("habit move");
+          });
       }
     },
   },

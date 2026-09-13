@@ -503,7 +503,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import WeeklyBossPortrait from "./components/WeeklyBossPortrait.vue";
 import StreakCounter from "./components/StreakCounter.vue";
 import Day from "./components/Day.vue";
@@ -721,11 +721,25 @@ watch(
   { deep: true }
 );
 
+function handleAppToast(event: Event) {
+  const detail = (event as CustomEvent).detail || {};
+  toastRef.value?.add({
+    type: detail.type || "info",
+    title: detail.title || "NOTICE",
+    message: detail.message || "",
+  });
+}
+
 onMounted(async () => {
+  window.addEventListener("appToast", handleAppToast);
   await monthStore.fetchMonthData();
   if (!currentWeek.value && weeks.value.length) {
     setCurrentWeek(weeks.value[0]);
   }
+});
+
+onUnmounted(() => {
+  window.removeEventListener("appToast", handleAppToast);
 });
 
 function toggleView() {

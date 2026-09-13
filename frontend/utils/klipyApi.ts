@@ -1,10 +1,10 @@
 /**
- * Klipy GIF API Service
+ * Klipy GIF API client (same-origin Nitro proxy).
  * Documentation: https://docs.klipy.com/gifs-api
+ *
+ * The API key lives only on the server (`KLIPY_API_KEY`).
+ * Browser code must call `/api/klipy/...` — never embed secrets here.
  */
-
-const KLIPY_API_KEY = 'yROS4WFGLe6QDzOgOlkzbq0bK9JHM3WMGC0CpFSd0QsYNPPlAgskJ5jAriIrSKJ8';
-const BASE_URL = 'https://api.klipy.com';
 
 export interface KlipyGif {
   id: string;
@@ -49,11 +49,11 @@ export interface KlipySearchResponse {
  */
 function getCustomerId(): string {
   // Try to get from localStorage, or generate a new one
-  if (typeof window !== 'undefined') {
-    let customerId = localStorage.getItem('klipy_customer_id');
+  if (typeof window !== "undefined") {
+    let customerId = localStorage.getItem("klipy_customer_id");
     if (!customerId) {
       customerId = `pixelpaladin_${Math.random().toString(36).slice(2, 11)}_${Date.now()}`;
-      localStorage.setItem('klipy_customer_id', customerId);
+      localStorage.setItem("klipy_customer_id", customerId);
     }
     return customerId;
   }
@@ -62,7 +62,7 @@ function getCustomerId(): string {
 }
 
 /**
- * Search for GIFs by query
+ * Search for GIFs by query via same-origin Nitro proxy
  */
 export async function searchGifs(
   query: string,
@@ -70,11 +70,13 @@ export async function searchGifs(
   perPage: number = 24
 ): Promise<KlipySearchResponse> {
   const customerId = getCustomerId();
-  const url = `${BASE_URL}/api/v1/${KLIPY_API_KEY}/gifs/search?q=${encodeURIComponent(
-    query
-  )}&customer_id=${encodeURIComponent(customerId)}&page=${page}&per_page=${perPage}`;
-
-  const response = await fetch(url);
+  const params = new URLSearchParams({
+    q: query,
+    customer_id: customerId,
+    page: String(page),
+    per_page: String(perPage),
+  });
+  const response = await fetch(`/api/klipy/search?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Klipy API error: ${response.statusText}`);
   }
@@ -83,18 +85,19 @@ export async function searchGifs(
 }
 
 /**
- * Get trending GIFs
+ * Get trending GIFs via same-origin Nitro proxy
  */
 export async function getTrendingGifs(
   page: number = 1,
   perPage: number = 24
 ): Promise<KlipySearchResponse> {
   const customerId = getCustomerId();
-  const url = `${BASE_URL}/api/v1/${KLIPY_API_KEY}/gifs/trending?customer_id=${encodeURIComponent(
-    customerId
-  )}&page=${page}&per_page=${perPage}`;
-
-  const response = await fetch(url);
+  const params = new URLSearchParams({
+    customer_id: customerId,
+    page: String(page),
+    per_page: String(perPage),
+  });
+  const response = await fetch(`/api/klipy/trending?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Klipy API error: ${response.statusText}`);
   }
@@ -105,24 +108,25 @@ export async function getTrendingGifs(
 /**
  * Get the best GIF URL for display (prefers small size for task cards)
  */
-export function getGifUrl(gif: KlipyGif, size: 'xs' | 'sm' | 'md' | 'hd' = 'sm'): string {
+export function getGifUrl(gif: KlipyGif, size: "xs" | "sm" | "md" | "hd" = "sm"): string {
   const format = gif.file[size];
   if (!format) {
     // Fallback to other sizes
     const fallbackFormat = gif.file.sm || gif.file.xs || gif.file.md || gif.file.hd;
-    return fallbackFormat?.gif?.url || fallbackFormat?.webp?.url || '';
+    return fallbackFormat?.gif?.url || fallbackFormat?.webp?.url || "";
   }
-  return format.gif?.url || format.webp?.url || '';
+  return format.gif?.url || format.webp?.url || "";
 }
 
 /**
- * Track GIF share (optional, for analytics)
+ * Track GIF share (optional, for analytics) via same-origin Nitro proxy
  */
 export async function trackGifShare(slug: string): Promise<void> {
   try {
-    const url = `${BASE_URL}/api/v1/${KLIPY_API_KEY}/gifs/share/${slug}`;
-    await fetch(url, { method: 'POST' });
+    await fetch(`/api/klipy/share/${encodeURIComponent(slug)}`, {
+      method: "POST",
+    });
   } catch (error) {
-    console.warn('Failed to track GIF share:', error);
+    console.warn("Failed to track GIF share:", error);
   }
 }

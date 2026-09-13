@@ -11,3 +11,5 @@ backend/node_modules/*
 /cache/
 *.bak
 *.swp
+/development
+.claude/
