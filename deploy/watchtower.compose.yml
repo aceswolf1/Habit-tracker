@@ -32,6 +32,7 @@ services:
     volumes:
       # Required: lets Watchtower see and recreate containers.
       - /var/run/docker.sock:/var/run/docker.sock
-      # Only needed for PRIVATE GHCR images. Create this file on the NAS first
-      # (see deploy/AUTOMATION.md). Remove this line if your packages are public.
-      - /mnt/storage/pixelpaladin/watchtower-config.json:/config.json:ro
+      # Packages are PUBLIC, so no registry credentials are needed. If you ever
+      # switch them to private, add a config.json mount here (see
+      # deploy/AUTOMATION.md, "Private GHCR images").
+      # - /mnt/storage/pixelpaladin/watchtower-config.json:/config.json:ro
