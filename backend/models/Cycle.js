@@ -29,7 +29,7 @@ const WeekSchema = new mongoose.Schema({
 });
 
 const CycleSchema = new mongoose.Schema({
-  uuid: String,
+  uuid: { type: String, unique: true },
   name: String,
   subtitle: String,
   progress: { type: Number, default: 0 },
@@ -40,5 +40,8 @@ const CycleSchema = new mongoose.Schema({
   finishedAt: Date,
   statistics: { type: mongoose.Schema.Types.Mixed, default: null }
 });
+
+// UB-15: support listing unfinished/finished cycles by recency
+CycleSchema.index({ finished: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Cycle', CycleSchema);

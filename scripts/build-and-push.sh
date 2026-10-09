@@ -49,15 +49,17 @@ echo "==> Building & pushing backend"
 docker buildx build \
   --platform "${PLATFORMS}" \
   --tag "${BACKEND_IMAGE}" \
+  --file backend/Dockerfile \
   --push \
-  ./backend
+  .
 
 echo "==> Building & pushing frontend"
 docker buildx build \
   --platform "${PLATFORMS}" \
   --tag "${FRONTEND_IMAGE}" \
+  --file frontend/Dockerfile \
   --push \
-  ./frontend
+  .
 
 echo
 echo "Done. On the NAS, deploy with docker-compose.registry.yml and set:"

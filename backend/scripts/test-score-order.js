@@ -168,5 +168,47 @@ check('route source scores after calculateProgress (UB-06)', () => {
   );
 });
 
+/** UB-10 pure helper mirroring cycleRoutes lifetime update */
+function applyLifetimeDelta(lifetimeScore, pointsEarned) {
+  if (pointsEarned === 0) return lifetimeScore;
+  return Math.max(0, lifetimeScore + pointsEarned);
+}
+
+check('UB-10: negative pointsEarned reduces lifetimeScore', () => {
+  assert.strictEqual(applyLifetimeDelta(100, -15), 85);
+  assert.strictEqual(applyLifetimeDelta(50, -20), 30);
+});
+
+check('UB-10: lifetimeScore floors at 0', () => {
+  assert.strictEqual(applyLifetimeDelta(10, -15), 0);
+  assert.strictEqual(applyLifetimeDelta(0, -10), 0);
+  assert.strictEqual(applyLifetimeDelta(5, -5), 0);
+});
+
+check('UB-10: zero pointsEarned is a no-op', () => {
+  assert.strictEqual(applyLifetimeDelta(42, 0), 42);
+});
+
+check('UB-10: positive pointsEarned still increases lifetimeScore', () => {
+  assert.strictEqual(applyLifetimeDelta(10, 15), 25);
+});
+
+check('route source applies lifetime on pointsEarned !== 0 with floor (UB-10)', () => {
+  const routePath = path.join(__dirname, '../routes/cycleRoutes.js');
+  const src = fs.readFileSync(routePath, 'utf8');
+  assert.ok(
+    /pointsEarned\s*!==\s*0/.test(src),
+    'lifetime update must gate on pointsEarned !== 0'
+  );
+  assert.ok(
+    /Math\.max\(\s*0\s*,\s*userProfile\.lifetimeScore\s*\+\s*pointsEarned\s*\)/.test(src),
+    'lifetimeScore must use Math.max(0, lifetimeScore + pointsEarned)'
+  );
+  assert.ok(
+    !/if\s*\(\s*pointsEarned\s*>\s*0\s*\)/.test(src),
+    'positive-only pointsEarned > 0 gate must be removed'
+  );
+});
+
 console.log(`\n${passed} checks passed.`);
 process.exit(0);

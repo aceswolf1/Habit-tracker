@@ -6,6 +6,10 @@ const logState = (message: string, data: any) => {
 };
 //import { Month } from "../types/index";
 
+// UB-12: serial promise queue keyed by monthUuid so overlapping cycle
+// PATCH mutations cannot apply an older response over newer local state.
+const cycleMutationQueues: Record<string, Promise<unknown>> = {};
+
 interface Task {
   uuid: string;
   description: string;
@@ -131,6 +135,84 @@ export const useMonthStore = defineStore("month", {
       this.notifyPersistError(operation);
     },
 
+    /**
+     * UB-10 FE: apply pointsEarned when !== 0; keep lifetimeScore >= 0.
+     * Floating UI may still show a negative delta via the pointsEarned event.
+     */
+    applyPointsEarned(
+      pointsEarned: number | undefined | null,
+      detail: {
+        taskUuid?: string;
+        tier?: string | null;
+        isLegendary?: boolean;
+      } = {}
+    ) {
+      if (pointsEarned == null || pointsEarned === 0) return;
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("pointsEarned", {
+            detail: {
+              points: pointsEarned,
+              taskUuid: detail.taskUuid,
+              tier: detail.tier,
+              isLegendary: detail.isLegendary || false,
+            },
+          })
+        );
+      }
+      this.lifetimeScore = Math.max(0, this.lifetimeScore + pointsEarned);
+    },
+
+    /**
+     * UB-12: enqueue a cycle PATCH behind any in-flight mutation for the same month.
+     * On failure uses recoverFromPersistFailure / appToast. Drops stale month responses
+     * when currentMonth.uuid no longer matches the queued monthUuid.
+     */
+    enqueueCycleMutation(
+      monthUuid: string,
+      operation: string,
+      body: Record<string, unknown>,
+      onSuccess?: (res: any) => void
+    ) {
+      const run = async () => {
+        try {
+          const r = await fetch(`/api/cycles/${monthUuid}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          if (!r.ok) {
+            await this.recoverFromPersistFailure(operation);
+            return null;
+          }
+          const res = await r.json();
+          // Stale guard: month switched while this request was queued/in-flight
+          if (this.currentMonth?.uuid !== monthUuid) {
+            return res;
+          }
+          if (res?.month) {
+            this.currentMonth = res.month;
+            this.updateProgressValues();
+          }
+          if (onSuccess) onSuccess(res);
+          return res;
+        } catch (err) {
+          console.error(`Persist ${operation} failed`, err);
+          await this.recoverFromPersistFailure(operation);
+          return null;
+        }
+      };
+
+      const prev = cycleMutationQueues[monthUuid] || Promise.resolve();
+      const next = prev.then(run, run);
+      // Keep the chain unbroken even if a mutation recovers/rejects internally
+      cycleMutationQueues[monthUuid] = next.then(
+        () => undefined,
+        () => undefined
+      );
+      return next;
+    },
+
     // Toggle the completion status of a task
     toggleTaskCompletion(taskUuid: string) {
       console.log("Toggle task completion for UUID:", taskUuid);
@@ -173,47 +255,21 @@ export const useMonthStore = defineStore("month", {
             }
 
             // Persist completion state to backend so it survives later mutations
-            fetch(`/api/cycles/${this.currentMonth!.uuid}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
+            this.enqueueCycleMutation(
+              this.currentMonth!.uuid,
+              "task toggle",
+              {
                 type: "updateTasks",
                 updates: [{ uuid: task.uuid, completed: task.completed }],
-              }),
-            })
-              .then(async (r) => {
-                if (!r.ok) {
-                  await this.recoverFromPersistFailure("task toggle");
-                  return null;
-                }
-                return r.json();
-              })
-              .then((res) => {
-                if (!res) return;
-                if (res?.month) {
-                  this.currentMonth = res.month;
-                  this.updateProgressValues();
-                }
-                // Emit event for floating points animation
-                if (res?.pointsEarned && res.pointsEarned !== 0) {
-                  window.dispatchEvent(new CustomEvent('pointsEarned', {
-                    detail: {
-                      points: res.pointsEarned,
-                      taskUuid: taskUuid,
-                      tier: res.currentTier,
-                      isLegendary: res.isLegendary || false
-                    }
-                  }));
-                }
-                // Update lifetime score
-                if (res?.pointsEarned && res.pointsEarned > 0) {
-                  this.lifetimeScore += res.pointsEarned;
-                }
-              })
-              .catch(async (err) => {
-                console.error("Persist toggle failed", err);
-                await this.recoverFromPersistFailure("task toggle");
-              });
+              },
+              (res) => {
+                this.applyPointsEarned(res?.pointsEarned, {
+                  taskUuid,
+                  tier: res?.currentTier,
+                  isLegendary: res?.isLegendary || false,
+                });
+              }
+            );
             return;
           }
         }
@@ -593,33 +649,10 @@ export const useMonthStore = defineStore("month", {
       });
       this.updateProgressValues();
       if (persist && additions.length) {
-        fetch(`/api/cycles/${this.currentMonth!.uuid}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "addTasks",
-            additions,
-          }),
-        })
-          .then(async (r) => {
-            if (!r.ok) {
-              await this.recoverFromPersistFailure("adding habits");
-              return null;
-            }
-            return r.json();
-          })
-          .then((res) => {
-            if (!res) return;
-            if (res?.month) {
-              this.currentMonth = res.month;
-              // Recompute progress after merging server changes.
-              this.updateProgressValues();
-            }
-          })
-          .catch(async (err) => {
-            console.error("Persist addTasks failed", err);
-            await this.recoverFromPersistFailure("adding habits");
-          });
+        this.enqueueCycleMutation(this.currentMonth!.uuid, "adding habits", {
+          type: "addTasks",
+          additions,
+        });
       }
     },
     updateTask(
@@ -638,32 +671,10 @@ export const useMonthStore = defineStore("month", {
       this.updateProgressValues();
 
       // Persist changes to backend
-      fetch(`/api/cycles/${this.currentMonth!.uuid}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "updateTasks",
-          updates: [{ uuid: taskUuid, ...payload }],
-        }),
-      })
-        .then(async (r) => {
-          if (!r.ok) {
-            await this.recoverFromPersistFailure("habit update");
-            return null;
-          }
-          return r.json();
-        })
-        .then((res) => {
-          if (!res) return;
-          if (res?.month) {
-            this.currentMonth = res.month;
-            this.updateProgressValues();
-          }
-        })
-        .catch(async (err) => {
-          console.error("Persist updateTask failed", err);
-          await this.recoverFromPersistFailure("habit update");
-        });
+      this.enqueueCycleMutation(this.currentMonth!.uuid, "habit update", {
+        type: "updateTasks",
+        updates: [{ uuid: taskUuid, ...payload }],
+      });
     },
     deleteTask(taskUuid: string, scope: "single" | "recurrence" = "single") {
       if (!this.currentMonth || this.currentMonth.finished) return;
@@ -680,32 +691,14 @@ export const useMonthStore = defineStore("month", {
               day.tasks.splice(idx, 1);
               this.updateProgressValues();
               // persist single deletion
-              fetch(`/api/cycles/${this.currentMonth!.uuid}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
+              this.enqueueCycleMutation(
+                this.currentMonth!.uuid,
+                "habit delete",
+                {
                   type: "deleteTasks",
                   taskUuids: [taskUuid],
-                }),
-              })
-                .then(async (r) => {
-                  if (!r.ok) {
-                    await this.recoverFromPersistFailure("habit delete");
-                    return null;
-                  }
-                  return r.json();
-                })
-                .then((res) => {
-                  if (!res) return;
-                  if (res?.month) {
-                    this.currentMonth = res.month;
-                    this.updateProgressValues();
-                  }
-                })
-                .catch(async (err) => {
-                  console.error("Persist deleteTask failed", err);
-                  await this.recoverFromPersistFailure("habit delete");
-                });
+                }
+              );
               return;
             }
           } else if (scope === "recurrence" && recurrenceId) {
@@ -721,39 +714,20 @@ export const useMonthStore = defineStore("month", {
       }
       if (scope === "recurrence") this.updateProgressValues();
       if (scope === "recurrence" && recurrenceId) {
-        fetch(`/api/cycles/${this.currentMonth!.uuid}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        this.enqueueCycleMutation(
+          this.currentMonth!.uuid,
+          "recurring habit delete",
+          {
             type: "deleteTasks",
             recurrenceId,
-          }),
-        })
-          .then(async (r) => {
-            if (!r.ok) {
-              await this.recoverFromPersistFailure("recurring habit delete");
-              return null;
-            }
-            return r.json();
-          })
-          .then((res) => {
-            if (!res) return;
-            if (res?.month) {
-              this.currentMonth = res.month;
-              this.updateProgressValues();
-            }
-          })
-          .catch(async (err) => {
-            console.error("Persist delete recurrence failed", err);
-            await this.recoverFromPersistFailure("recurring habit delete");
-          });
+          }
+        );
       }
     },
     moveTask(taskUuid: string, targetDayUuid: string, targetIndex?: number) {
       if (!this.currentMonth || this.currentMonth.finished) return;
       let movingTask: any = null;
       let sourceDay: any = null;
-      let sourceWeek: any = null;
       // Locate and remove task from its current day
       for (const week of this.currentMonth.weeks) {
         for (const day of week.days) {
@@ -761,7 +735,6 @@ export const useMonthStore = defineStore("month", {
           if (idx !== -1) {
             movingTask = day.tasks[idx];
             sourceDay = day;
-            sourceWeek = week;
             day.tasks.splice(idx, 1);
             break;
           }
@@ -791,46 +764,23 @@ export const useMonthStore = defineStore("month", {
       if (insertAt < 0) insertAt = 0;
       if (insertAt > targetDay.tasks.length) insertAt = targetDay.tasks.length;
       targetDay.tasks.splice(insertAt, 0, movingTask);
-      // Reassign order fields inside affected days
-      const updates: any[] = [];
+      // Reassign order fields locally for optimistic UI
       [sourceDay, targetDay].forEach((d) => {
         if (!d) return;
         d.tasks.forEach((t: any, i: number) => {
           t.order = i;
-          updates.push({ uuid: t.uuid, order: i });
         });
       });
       this.updateProgressValues();
 
-      // Persist task order changes to backend
-      if (updates.length > 0) {
-        fetch(`/api/cycles/${this.currentMonth!.uuid}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "updateTasks",
-            updates,
-          }),
-        })
-          .then(async (r) => {
-            if (!r.ok) {
-              await this.recoverFromPersistFailure("habit move");
-              return null;
-            }
-            return r.json();
-          })
-          .then((res) => {
-            if (!res) return;
-            if (res?.month) {
-              this.currentMonth = res.month;
-              this.updateProgressValues();
-            }
-          })
-          .catch(async (err) => {
-            console.error("Persist moveTask failed", err);
-            await this.recoverFromPersistFailure("habit move");
-          });
-      }
+      // UB-11 FE: persist via moveTasks (not order-only updateTasks).
+      // If BE contract (task 20) is not yet live, recoverFromPersistFailure restores.
+      this.enqueueCycleMutation(this.currentMonth!.uuid, "habit move", {
+        type: "moveTasks",
+        taskUuid,
+        targetDayUuid,
+        targetIndex: insertAt,
+      });
     },
   },
 });

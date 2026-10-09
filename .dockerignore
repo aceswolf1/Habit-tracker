@@ -1,0 +1,24 @@
+# Repo-root Docker builds (backend/Dockerfile + frontend/Dockerfile) COPY shared/
+# Keep contexts lean — do not ship host node_modules or Nuxt artifacts into the image.
+
+**/node_modules
+**/npm-debug.log*
+**/.git
+**/.nuxt
+**/.output
+**/dist
+**/.DS_Store
+**/coverage
+**/.env
+**/.env.*
+!**/.env.example
+development
+research
+**/*.md
+!DOCKER.md
+frontend/data
+backend/src
+backend/ormconfig.js
+backend/ormconfig.ts
+**/.claude
+**/tmux-*.log

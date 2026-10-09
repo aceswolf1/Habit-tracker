@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const UserProfileSchema = new mongoose.Schema({
-  uuid: { type: String, default: 'default-user' },
+  uuid: { type: String, default: 'default-user', unique: true },
   lifetimeScore: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

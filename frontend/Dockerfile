@@ -1,16 +1,26 @@
 # PixelPaladin frontend — Nuxt 3 (Nitro node-server output)
+#
+# Build context MUST be the repo root so `shared/` is available:
+#   docker build -f frontend/Dockerfile .
+#
+# Layout mirrors monorepo paths so Nuxt alias `#shared` → `../shared` works:
+#   /app/frontend/nuxt.config.ts
+#   /app/shared/{progress,scoring}.js
 
 # ---- Build stage ----
 FROM node:22-alpine AS build
 
 WORKDIR /app
 
-# Install all deps (incl. dev) — needed to build
-COPY package*.json ./
+COPY frontend/package*.json ./frontend/
+WORKDIR /app/frontend
 RUN npm ci
 
-# Build the Nuxt app -> produces self-contained .output/
-COPY . .
+WORKDIR /app
+COPY frontend/ ./frontend/
+COPY shared/ ./shared/
+
+WORKDIR /app/frontend
 RUN npm run build
 
 # ---- Runtime stage ----
@@ -25,7 +35,7 @@ ENV NITRO_PORT=3000
 ENV BACKEND_URL=http://backend:4000
 
 # The Nitro output bundles its own node_modules — copy only what we need
-COPY --from=build /app/.output ./.output
+COPY --from=build /app/frontend/.output ./.output
 
 EXPOSE 3000
 

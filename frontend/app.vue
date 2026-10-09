@@ -389,41 +389,6 @@
         />
       </div>
 
-      <!-- Stats Section -->
-      <div
-        v-if="hasMonth"
-        class="stats-section"
-        style="
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 1rem;
-          margin-bottom: 1.5rem;
-        "
-      >
-        <StreakCounter
-          title="MONTHLY STREAK"
-          :count="42"
-          subtitle="Months Completed"
-          color="#4ade80"
-        />
-
-        <StreakCounter
-          title="WEEK STREAK"
-          count="4 Weeks"
-          subtitle="Keep it up!"
-          icon="🔥"
-          color="#fb923c"
-        />
-
-        <StreakCounter
-          title="CURRENT STREAK"
-          count="4 Days"
-          subtitle="Keep it up!"
-          icon="🔥"
-          color="#fb923c"
-        />
-      </div>
-
       <!-- Action Buttons -->
       <div
         class="action-buttons"
@@ -434,23 +399,6 @@
           flex-wrap: wrap;
         "
       >
-        <button
-          style="
-            font-family: 'Press Start 2P', cursive;
-            color: white;
-            border: 2px solid black;
-            position: relative;
-            display: inline-block;
-            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.8);
-            transform: translate(-2px, -2px);
-            transition: transform 0.1s, box-shadow 0.1s;
-            background-color: #1d4ed8;
-            font-size: 0.75rem;
-            padding: 0.5rem 1rem;
-          "
-        >
-          CERTIFICATE
-        </button>
         <button
           @click="refreshDataFromStore"
           style="
@@ -505,7 +453,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import WeeklyBossPortrait from "./components/WeeklyBossPortrait.vue";
-import StreakCounter from "./components/StreakCounter.vue";
 import Day from "./components/Day.vue";
 import TaskModal from "./components/TaskModal.vue";
 import MonthSelector from "./components/MonthSelector.vue";

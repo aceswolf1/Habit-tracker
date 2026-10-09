@@ -23,7 +23,9 @@ services:
 
   backend:
     image: ${IMAGE_PREFIX:-ghcr.io/your-name}/pixelpaladin-backend:${IMAGE_TAG:-latest}
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     environment:
       PORT: 4000
@@ -33,7 +35,8 @@ services:
       mongo:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4000/"]
+      # UB-16: probe /readyz (mongoose connected) via node http — no wget dependency
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:4000/readyz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -41,7 +44,9 @@ services:
 
   frontend:
     image: ${IMAGE_PREFIX:-ghcr.io/your-name}/pixelpaladin-frontend:${IMAGE_TAG:-latest}
-    build: ./frontend
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
     restart: unless-stopped
     environment:
       NITRO_HOST: 0.0.0.0
@@ -55,7 +60,14 @@ services:
       - "${APP_PORT:-3001}:3000"
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      # UB-16: Nitro /api/health (lightweight; backend gated by depends_on healthy)
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 volumes:
   mongo-data:

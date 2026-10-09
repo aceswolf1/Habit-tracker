@@ -1,4 +1,12 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+// Repo-root shared/ (progress + scoring). In Docker build the tree is
+// /app/frontend + /app/shared, so ../shared resolves the same as locally.
+const sharedDir = resolve(__dirname, '../shared')
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
@@ -6,6 +14,10 @@ export default defineNuxtConfig({
     '@pinia/nuxt'
   ],
   css: ['~/assets/css/main.css'],
+  alias: {
+    // UB-13/14: single source of truth for progress + scoring
+    '#shared': sharedDir,
+  },
   postcss: {
     plugins: {
       tailwindcss: {},

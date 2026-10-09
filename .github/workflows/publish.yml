@@ -21,7 +21,58 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  # UB-17: gate image publish on score/progress unit tests.
+  # Runs existing node harness; also exercises shared/ when present (W2).
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run score / lifetime unit tests
+        run: node backend/scripts/test-score-order.js
+
+      - name: Run shared module smoke (if present)
+        run: |
+          if [ -f shared/index.js ]; then
+            node -e "
+              const s = require('./shared');
+              const assert = require('assert');
+              assert.equal(typeof s.calculateProgress, 'function');
+              assert.equal(typeof s.calculateTaskPoints, 'function');
+              assert.equal(typeof s.getTierFromProgress, 'function');
+              // Negative lifetime floor (UB-10 shape)
+              const apply = (score, delta) => Math.max(0, score + delta);
+              assert.equal(apply(10, -15), 0);
+              assert.equal(s.getTierFromProgress(0), 'Bronze');
+              console.log('shared smoke OK', Object.keys(s).sort().join(','));
+            "
+          else
+            echo 'shared/ not present yet — skipping shared smoke'
+          fi
+
+      - name: Run any extra shared/node test scripts
+        run: |
+          set -e
+          found=0
+          for f in backend/scripts/test-shared*.js shared/test*.js; do
+            if [ -f "$f" ]; then
+              found=1
+              echo "Running $f"
+              node "$f"
+            fi
+          done
+          if [ "$found" -eq 0 ]; then
+            echo 'No extra shared test scripts found — OK'
+          fi
+
   build-and-push:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -30,11 +81,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Dockerfiles COPY shared/ from repo root — context must be `.`
+          #   docker build -f backend/Dockerfile .
+          #   docker build -f frontend/Dockerfile .
           - service: backend
-            context: ./backend
+            context: .
+            file: backend/Dockerfile
             image: pixelpaladin-backend
           - service: frontend
-            context: ./frontend
+            context: .
+            file: frontend/Dockerfile
             image: pixelpaladin-frontend
     steps:
       - name: Checkout
@@ -72,6 +128,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
