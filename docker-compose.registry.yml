@@ -43,7 +43,9 @@ services:
       NITRO_HOST: 0.0.0.0
       NITRO_PORT: 3000
       BACKEND_URL: http://backend:4000
-      # GIF search/trending (Nitro /api/klipy/*). Set in root `.env` next to this compose file.
+      # GIF search/trending (Nitro /api/klipy/*). Plain docker compose: set in `.env` next to
+      # this file. TrueNAS Custom App: no .env — paste the key here in the app YAML only
+      # (never commit it). See deploy/AUTOMATION.md "TrueNAS Custom Apps don't read .env".
       KLIPY_API_KEY: ${KLIPY_API_KEY:-}
       KLIPY_BASE_URL: ${KLIPY_BASE_URL:-https://api.klipy.com}
     ports:

@@ -161,3 +161,64 @@ the watchtower label from that service, or just re-tag a previous release.
   very first `docker-compose.registry.yml` deploy is done via the Apps UI.
 - **`scripts/build-and-push.sh` is now optional** — keep it for manual/local
   publishing, but day-to-day you just push a tag.
+
+### Gotcha: Watchtower logs `Scanned=0` and never updates
+
+```
+level=info msg="Session done" Failed=0 Scanned=0 Updated=0
+```
+
+`Scanned=0` means Watchtower found **no opted-in containers**. Because of
+`WATCHTOWER_LABEL_ENABLE=true` it only watches containers carrying
+`com.centurylinklabs.watchtower.enable=true` — so the app was deployed from a
+YAML **without** those labels (e.g. an older copy pasted into the TrueNAS app).
+Watchtower itself is fine; it just has nothing to do.
+
+Check on the NAS:
+
+```bash
+sudo docker inspect -f '{{.Name}} label={{index .Config.Labels "com.centurylinklabs.watchtower.enable"}}' \
+  ix-pixelpaladin-backend-1 ix-pixelpaladin-frontend-1
+```
+
+Empty `label=` → fix:
+
+1. **Apps → pixelpaladin → Edit** and replace the YAML with the current
+   `docker-compose.registry.yml` (it has the labels on `backend` + `frontend`).
+2. Pull the latest images first so the redeploy doesn't reuse a stale cached `:latest`:
+   ```bash
+   sudo docker pull ghcr.io/aceswolf1/pixelpaladin-backend:latest
+   sudo docker pull ghcr.io/aceswolf1/pixelpaladin-frontend:latest
+   ```
+3. Save/redeploy. Within one poll interval the log should show `Scanned=2`.
+
+> Any time you edit the app YAML in TrueNAS, keep the two `labels:` blocks —
+> dropping them silently turns auto-deploy off.
+
+### Gotcha: TrueNAS Custom Apps don't read `.env`
+
+`docker-compose.registry.yml` references `${KLIPY_API_KEY:-}`. With plain
+`docker compose` that comes from a `.env` file next to the compose file, but a
+**TrueNAS Custom App has no `.env`** — the variable resolves to empty, the
+frontend starts without a key, and GIF search returns 500
+(`KLIPY_API_KEY is not configured`).
+
+Fix: in the YAML pasted into TrueNAS, put the value directly under the
+`frontend` service's `environment:`:
+
+```yaml
+KLIPY_API_KEY: "<your key>"
+```
+
+The key then lives in the TrueNAS app config only — **never commit it** to
+`docker-compose.registry.yml` in git. Verify on the NAS (prints no secret):
+
+```bash
+sudo docker exec ix-pixelpaladin-frontend-1 sh -c 'test -n "$KLIPY_API_KEY" && echo KLIPY_OK || echo KLIPY_MISSING'
+```
+
+### Tip: running Docker commands on TrueNAS
+
+The admin user isn't in the `docker` group, so every command needs `sudo` —
+including ones inside `$(...)`. Use explicit container names (as above) rather
+than `$(docker ps -q …)` substitutions, or run `sudo -i` first.
