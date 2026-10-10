@@ -3,7 +3,7 @@
 This stack runs the whole app in three containers on your NAS:
 
 ```
-frontend (Nuxt/Nitro, port 3000)  ──/api/cycles|/api/tasks──▶  backend (Express, 4000)  ──▶  mongo (27017)
+frontend (Nuxt/Nitro, port 3000)  ──/api/cycles──▶  backend (Express, 4000)  ──▶  mongo (27017)
         ▲
         └── the only published port (default host 3001)
 ```
@@ -66,6 +66,58 @@ docker compose up -d --build      # rebuild after code changes
 > Docker — it is excluded via `.dockerignore`. To keep using Atlas, set
 > `MONGODB_URI` in the root `.env`. Otherwise the self-contained `mongo` container
 > is used and all data stays on the NAS.
+
+---
+
+## API surface (v2)
+
+Only one host port matters: **`APP_PORT`** (the frontend, default `3001`).
+Everything else is internal — backend (`4000`) and mongo (`27017`) live on
+the Docker network and are **not** published to the host. The browser talks
+only to the Nuxt server; the Nitro middleware in
+`frontend/server/middleware/backend-proxy.ts` forwards `/api/cycles*` to the
+backend over the internal network.
+
+| Path                  | Owner    | What happens                                       |
+|-----------------------|----------|----------------------------------------------------|
+| `/api/cycles*`        | Express  | Forwarded to backend on `http://backend:4000`.     |
+| `/api/klipy/*`        | Nitro    | GIF search + trending. Needs `KLIPY_API_KEY`.      |
+| `/api/health`         | Nitro    | Lightweight health endpoint (compose healthcheck). |
+| Anything else         | Nitro    | Renders the SPA; non-route `/api/*` returns 404.    |
+
+The `backend-proxy.ts` middleware exports a single typed constant,
+`PROXIED_API_PREFIXES = ["/api/cycles"]`, that is the source of truth for what
+gets forwarded. Widening it is a security-relevant change.
+
+The full v2 contract (envelope shape, PATCH `type` union, zod-strict body
+rules, error codes) is at
+[`development/remediation-w2/orchestration-ctx/decisions/api-contract-v2.md`](development/remediation-w2/orchestration-ctx/decisions/api-contract-v2.md).
+Treat that document, not this file, as the source of truth.
+
+---
+
+## Memory limits
+
+Both `docker-compose.yml` and `docker-compose.registry.yml` set a hard `mem_limit`
+on every service so a single misbehaving container cannot starve the rest of the
+NAS. Defaults are tuned for **single-user LAN use** on a small TrueNAS box; if
+you self-host for a family or run heavier GIF-search traffic, raise the frontend
+limit (the Nitro SSR cache + asset buffers are usually the first to feel it).
+
+| Service   | `mem_limit` | Why                                                             |
+|-----------|-------------|-----------------------------------------------------------------|
+| `mongo`   | `512m`      | Caps RSS under heavy writes / index builds; single DB is small  |
+| `backend` | `256m`      | Express + mongoose is lean; 256m leaves headroom for V8 bursts  |
+| `frontend`| `384m`      | Nitro node + Nuxt SSR cache + emoji/asset buffers; largest user |
+
+Total ≈ **1.15 GB** across the three containers. On an 8 GB-class NAS that leaves
+plenty for the host OS, ZFS ARC, and other apps.
+
+To raise a limit (e.g. for a multi-user setup), edit the service block in the
+compose file you deploy and `docker compose up -d` again — no rebuild needed
+when using `docker-compose.registry.yml`. The values are intentionally **hard
+caps** (Docker will OOM-kill the container if exceeded); no `mem_reservation` is
+set, so the kernel is free to reclaim idle pages.
 
 ---
 

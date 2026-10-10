@@ -73,14 +73,7 @@ function initParticles() {
       hue: rand(205, 250), // cool subtle blues -> violets
     });
   }
-  if (debug)
-    console.log(
-      "[BackgroundParticles] init count=",
-      particles.length,
-      "canvas",
-      width,
-      height
-    );
+  // (debug log removed; the `debug` prop still gates the visual overlay)
 }
 
 function resize() {
@@ -95,8 +88,7 @@ function resize() {
   ctx = canvasEl.value.getContext("2d");
   if (ctx) ctx.scale(dpr, dpr);
   initParticles();
-  if (debug)
-    console.log("[BackgroundParticles] resize", { width, height, dpr });
+  // (debug log removed; resize paths are exercised via visual overlay)
 }
 
 function step(ts: number) {
@@ -222,7 +214,7 @@ onMounted(() => {
   resize();
   window.addEventListener("resize", resize, { passive: true });
   start();
-  if (debug) console.log("[BackgroundParticles] mounted");
+  // (debug log removed)
 });
 
 onBeforeUnmount(() => {

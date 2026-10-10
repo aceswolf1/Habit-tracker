@@ -1,29 +1,33 @@
 /**
  * Thin FE re-export of shared scoring helpers (UB-13/14).
- * Nuxt/Vite consumers can also import `#shared/scoring` via the alias in nuxt.config.
+ *
+ * `shared/scoring.js` is a CJS file (`module.exports = { … }`). See
+ * `sharedProgress.ts` for the rationale on the namespace import.
  */
 
-import { createRequire } from 'node:module'
+import * as scoringModule from "#shared/scoring";
 
-const require = createRequire(import.meta.url)
-const scoring = require('../../../shared/scoring')
+type AnyModule = Record<string, any>;
 
-export const getTierFromProgress = scoring.getTierFromProgress as (
-  progress: number
-) => string
-export const getPointsForTier = scoring.getPointsForTier as (tier: string) => {
-  required: number
-  optional: number
-}
-export const calculateTaskPoints = scoring.calculateTaskPoints as (
+const pick = <K extends string>(key: K): any =>
+  (scoringModule as unknown as AnyModule)[key] ??
+  (scoringModule as unknown as AnyModule).default?.[key];
+
+export const getTierFromProgress = pick("getTierFromProgress") as (
+  progress: number,
+) => string;
+export const getPointsForTier = pick("getPointsForTier") as (
+  tier: string,
+) => { required: number; optional: number };
+export const calculateTaskPoints = pick("calculateTaskPoints") as (
   isOptional: boolean,
   currentProgress: number,
-  isLegendary?: boolean
-) => number
-export const calculateMonthScore = scoring.calculateMonthScore as (
-  month: any
-) => number
-export const TIER_POINTS = scoring.TIER_POINTS
-export const TIER_THRESHOLDS = scoring.TIER_THRESHOLDS
+  isLegendary?: boolean,
+) => number;
+export const calculateMonthScore = pick("calculateMonthScore") as (
+  month: any,
+) => number;
+export const TIER_POINTS = pick("TIER_POINTS");
+export const TIER_THRESHOLDS = pick("TIER_THRESHOLDS");
 
-export default scoring
+export default scoringModule;

@@ -107,6 +107,11 @@
 import { ref, computed } from "vue";
 import Task from "./Task.vue";
 import ProgressParticles from "./ProgressParticles.vue";
+// UB-44: day progress must use the same rule as backend (required-only,
+// 0–100, empty → 0). Optional bonus is applied at the MONTH level by
+// `calculateProgress`; Day.vue used to add a +2% per optional here which
+// let a single day exceed 100 and was inconsistent with the cycle math.
+import { calculateDayProgress } from "../utils/sharedProgress";
 
 const props = defineProps({
   name: { type: String, required: true },
@@ -134,23 +139,9 @@ const emit = defineEmits([
   "delete-task",
 ]);
 
-// Calculate progress based on completed tasks
-const progress = computed(() => {
-  const requiredTasks = sortedTasks.value.filter((task) => !task.optional);
-  if (requiredTasks.length === 0) return 0;
-  const completedRequiredTasks = requiredTasks.filter(
-    (task) => task.completed
-  ).length;
-  let calculatedProgress =
-    (completedRequiredTasks / requiredTasks.length) * 100;
-  const completedOptionalTasks = sortedTasks.value.filter(
-    (task) => task.optional && task.completed
-  ).length;
-  if (calculatedProgress === 100 && completedOptionalTasks > 0) {
-    calculatedProgress = 100 + Math.min(10, completedOptionalTasks * 2); // allow some bonus >100
-  }
-  return calculatedProgress;
-});
+// Day progress — shared helper (UB-44). Optional bonus is intentionally NOT
+// applied here; that's a month-level rule in `calculateProgress`.
+const progress = computed(() => calculateDayProgress({ tasks: sortedTasks.value }));
 
 const progressText = computed(
   () => `${Math.min(100, Math.round(progress.value))}%`

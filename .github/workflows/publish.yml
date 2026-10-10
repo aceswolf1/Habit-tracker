@@ -34,9 +34,6 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Run score / lifetime unit tests
-        run: node backend/scripts/test-score-order.js
-
       - name: Run shared module smoke (if present)
         run: |
           if [ -f shared/index.js ]; then
@@ -56,19 +53,25 @@ jobs:
             echo 'shared/ not present yet — skipping shared smoke'
           fi
 
-      - name: Run any extra shared/node test scripts
+      # W2a / A-OP-3: glob every node test script in backend/scripts and shared/.
+      # Previously the loop only matched `backend/scripts/test-shared*.js`, which
+      # silently skipped test-score-order.js and test-move-tasks.js. Adding a new
+      # test script under either directory now runs it on the next release — no
+      # workflow edit required.
+      - name: Run every backend/scripts/test-*.js and shared/test*.js
         run: |
           set -e
           found=0
-          for f in backend/scripts/test-shared*.js shared/test*.js; do
-            if [ -f "$f" ]; then
-              found=1
-              echo "Running $f"
-              node "$f"
-            fi
+          # `shopt -s nullglob` so an empty pattern expands to nothing instead of
+          # the literal string, which would make `node` fail.
+          shopt -s nullglob
+          for f in backend/scripts/test-*.js shared/test*.js; do
+            found=1
+            echo "Running $f"
+            node "$f"
           done
           if [ "$found" -eq 0 ]; then
-            echo 'No extra shared test scripts found — OK'
+            echo 'No node test scripts found under backend/scripts/ or shared/ — OK'
           fi
 
   build-and-push:

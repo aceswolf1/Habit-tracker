@@ -329,9 +329,21 @@ function onEmojiSelect(emoji: any) {
   showEmojiPicker.value = false;
 }
 
-interface DayMeta {
+interface DayChip {
   uuid: string;
   short: string;
+}
+
+// UB-40: surface synchronous task-mutation failures via appToast (same
+// envelope as monthStore.notifyPersistError) and keep the modal open so the
+// user can retry or adjust instead of silently losing the form.
+function notifyError(title: string, message: string) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent("appToast", {
+      detail: { type: "error", title, message },
+    })
+  );
 }
 
 const props = defineProps<{
@@ -378,7 +390,7 @@ const hasRecurrence = computed(
 const baseWeek = computed(() =>
   store.currentMonth?.weeks.find((w) => w.uuid === props.weekUuid)
 );
-const weekDays = computed<DayMeta[]>(() => {
+const weekDays = computed<DayChip[]>(() => {
   if (!baseWeek.value) return [];
   return baseWeek.value.days.map((d) => ({
     uuid: d.uuid,
@@ -644,15 +656,32 @@ function submit() {
     close();
   } catch (e) {
     console.error(e);
+    // Keep modal open and surface the failure to the user via appToast
+    notifyError(
+      isEdit.value ? "UPDATE FAILED" : "CREATE FAILED",
+      isEdit.value
+        ? "Could not save quest changes. Please retry."
+        : "Could not create quest. Please retry."
+    );
     isSubmitting.value = false;
   }
 }
 
 function emitDelete() {
   if (!editingTask.value) return;
-  store.deleteTask((editingTask.value as any).uuid, editScope.value);
-  emit("deleted");
-  close();
+  try {
+    store.deleteTask((editingTask.value as any).uuid, editScope.value);
+    emit("deleted");
+    close();
+  } catch (e) {
+    console.error(e);
+    // UB-40: keep modal open on delete failure; surface via appToast
+    notifyError(
+      "DELETE FAILED",
+      "Could not remove quest. Please retry."
+    );
+    isSubmitting.value = false;
+  }
 }
 
 function close() {

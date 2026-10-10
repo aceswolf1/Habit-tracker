@@ -619,7 +619,7 @@ function getWeekImage(week: any, index: number | string) {
 
 // Function to refresh all reactive data from the store
 function refreshDataFromStore() {
-  console.log("Refreshing UI data from store...");
+  if (import.meta.dev) console.log("Refreshing UI data from store...");
   if (currentWeek.value) {
     const updatedWeek = monthStore.getWeekByUuid(currentWeek.value.uuid);
     if (updatedWeek) {
@@ -632,14 +632,6 @@ function refreshDataFromStore() {
 function toggleTask(taskUuid: string) {
   monthStore.toggleTaskCompletion(taskUuid);
   refreshDataFromStore();
-}
-
-function addTask() {
-  toastRef.value?.add({
-    title: "COMING SOON",
-    message: "Feature under construction",
-    type: "info",
-  });
 }
 
 const setCurrentWeek = (weekOrUuid: any) => {
@@ -700,7 +692,7 @@ function finishMonth() {
 
   if (confirm(`Finish this month? You achieved ${tier} with ${score} XP.\n\nThis will lock all tasks and calculate statistics.`)) {
     monthStore.finishCurrentMonth().then((result) => {
-      if (result?.success) {
+      if (result?.cycle) {
         toastRef.value?.add({
           title: "MONTH COMPLETED!",
           message: `${tier} earned! ${score} XP added to your legacy!`,

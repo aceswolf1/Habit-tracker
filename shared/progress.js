@@ -65,6 +65,25 @@ function calculateProgress(cycle) {
 }
 
 /**
+ * Day progress in the same shape `calculateProgress` uses internally:
+ * required (non-optional) tasks only, integer 0–100, empty day → 0.
+ *
+ * Optional tasks are intentionally ignored here — the optional bonus is
+ * applied at the MONTH level (see `calculateProgress`) once every week's
+ * required work is done. A single day cannot be "more than done".
+ *
+ * @param {object|undefined|null} day  `{ tasks: Task[] }` shape
+ * @returns {number} integer 0–100
+ */
+function calculateDayProgress(day) {
+  if (!day || !Array.isArray(day.tasks)) return 0;
+  const required = day.tasks.filter((t) => !t.optional);
+  if (required.length === 0) return 0;
+  const completed = required.filter((t) => t.completed).length;
+  return Math.round((completed / required.length) * 100);
+}
+
+/**
  * Create a new empty month structure (4 weeks × 7 days).
  * @param {string} [name]
  * @returns {object}
@@ -118,5 +137,6 @@ function createEmptyMonth(name) {
 module.exports = {
   generateUuid,
   calculateProgress,
+  calculateDayProgress,
   createEmptyMonth,
 };

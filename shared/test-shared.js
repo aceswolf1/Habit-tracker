@@ -10,6 +10,7 @@
 const assert = require('assert');
 const {
   calculateProgress,
+  calculateDayProgress,
   createEmptyMonth,
   generateUuid,
 } = require('./progress');
@@ -155,6 +156,37 @@ check('no bonus when base < 100 even with optionals', () => {
   assert.strictEqual(cycle.progress, 50);
 });
 
+check('UB-31: week with zero required tasks → progress=0, conquered=false (no stale carry)', () => {
+  // A week with only optional tasks (or no tasks at all) must reset progress
+  // and conquered rather than carrying stale values forward. Required count
+  // drives both signals.
+  const cycle = {
+    weeks: [
+      {
+        // Pre-seed stale values to prove calculateProgress overwrites them.
+        progress: 87,
+        conquered: true,
+        days: [
+          {
+            tasks: [
+              { optional: true, completed: true },
+              { optional: true, completed: false },
+            ],
+          },
+          {
+            tasks: [],
+          },
+        ],
+      },
+    ],
+    progress: 0,
+  };
+  calculateProgress(cycle);
+  assert.strictEqual(cycle.weeks[0].progress, 0);
+  assert.strictEqual(cycle.weeks[0].conquered, false);
+  assert.strictEqual(cycle.progress, 0);
+});
+
 check('calculateMonthScore sums completed task points at month progress tier', () => {
   const month = {
     progress: 100,
@@ -174,6 +206,60 @@ check('calculateMonthScore sums completed task points at month progress tier', (
   };
   // Final tier: required 30 + optional 15 = 45
   assert.strictEqual(calculateMonthScore(month), 45);
+});
+
+check('UB-44: calculateDayProgress (required only, 0–100, empty → 0)', () => {
+  // Empty day
+  assert.strictEqual(calculateDayProgress({ tasks: [] }), 0);
+  assert.strictEqual(calculateDayProgress({ tasks: undefined }), 0);
+  assert.strictEqual(calculateDayProgress(null), 0);
+  assert.strictEqual(calculateDayProgress(undefined), 0);
+
+  // Only optional tasks → still 0 (required count drives the prop)
+  assert.strictEqual(
+    calculateDayProgress({
+      tasks: [
+        { optional: true, completed: true },
+        { optional: true, completed: false },
+      ],
+    }),
+    0
+  );
+
+  // Partial required completion → rounds toward nearest int
+  // 1 of 3 done = 33.3 → 33
+  assert.strictEqual(
+    calculateDayProgress({
+      tasks: [
+        { optional: false, completed: true },
+        { optional: false, completed: false },
+        { optional: false, completed: false },
+        { optional: true, completed: true }, // ignored at day level
+      ],
+    }),
+    33
+  );
+
+  // All required done → 100 (optional bonus NOT applied here — month level)
+  assert.strictEqual(
+    calculateDayProgress({
+      tasks: [
+        { optional: false, completed: true },
+        { optional: false, completed: true },
+        { optional: true, completed: true }, // ignored at day level
+        { optional: true, completed: false },
+      ],
+    }),
+    100
+  );
+
+  // None required, none completed → 0
+  assert.strictEqual(
+    calculateDayProgress({
+      tasks: [{ optional: false, completed: false }],
+    }),
+    0
+  );
 });
 
 check('backend thin re-export path resolves', () => {

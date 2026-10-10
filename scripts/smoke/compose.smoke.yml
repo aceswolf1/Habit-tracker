@@ -1,0 +1,13 @@
+# Smoke override — applied on top of docker-compose.yml by api-smoke.sh.
+#
+# Only the frontend port changes: the live stack publishes APP_PORT (3001 by
+# default), the smoke harness publishes 3099 so both can run side by side.
+# Everything else (mem_limit, depends_on, healthchecks, named mongo-data
+# volume) is inherited unchanged.
+#
+# `mongo-data` is scoped to the `-p pixelpaladin-smoke` project name (see
+# api-smoke.sh), so this stack never touches the live stack's data volume.
+services:
+  frontend:
+    ports:
+      - "3099:3000"

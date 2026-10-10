@@ -1,207 +1,150 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (claude.ai/code) when working on PixelPaladin.
 
-## Project Overview
+## Project overview
 
-**PixelPaladin** is a gamified habit tracker with 8-bit pixel graphics and RPG elements. The project consists of a Nuxt 3 frontend and an Express backend with MongoDB.
+**PixelPaladin** is a self-hosted gamified habit tracker with 8-bit pixel
+graphics and RPG-lite progression (Bronze → Silver → Gold → Champion → Final
+tiers, plus a legendary task multiplier). Nuxt 3 frontend, Express + Mongoose
+backend, MongoDB for persistence. Single-user or small-family deployment on a
+NAS (TrueNAS, Docker host, etc.).
 
-### Directory Structure
+## Layout
 
 ```
-Habit-tracker/
-├── frontend/
-│   ├── frontend/        # Nuxt 3 application (actual code)
-│   └── backend/         # Empty folder (not used)
-└── backend/             # Express + MongoDB backend (at project root)
+.
+├── frontend/        # Nuxt 3 app (UI + Nitro server + proxy middleware)
+├── backend/         # Express + Mongoose API
+├── shared/          # progress.js, scoring.js — single source of truth
+├── scripts/         # build-and-push.sh, smoke/api-smoke.sh
+├── deploy/          # automation docs (GitHub Actions → GHCR → Watchtower)
+├── docker-compose.yml          # build + run (local / build-on-NAS)
+├── docker-compose.registry.yml # deploy-only (pulls prebuilt images)
+├── DOCKER.md                   # self-host guide
+└── CLAUDE.md                   # this file
 ```
 
-**Note**: From the current working directory (`frontend/`), the backend is located at `../backend/`.
+## API (v2 — authoritative)
 
-## Development Commands
+All endpoints live under `/api/cycles` and use the v2 envelope:
 
-### Frontend (Nuxt 3)
-Working directory: `frontend/frontend/` (or `./frontend/` from current location)
+```json
+{ "success": true,  "data": <payload>, "meta": { ... } }
+{ "success": false, "error": { "code", "message", "details?" } }
+```
+
+Error codes: `VALIDATION_ERROR` (400), `NOT_FOUND` (404), `CYCLE_FINISHED`
+(409), `INTERNAL` (500).
+
+| Method + path           | Notes                                       |
+|-------------------------|---------------------------------------------|
+| `GET /api/cycles`       | Paginated summaries. `?limit=1..100` (default 50), `?offset≥0` (default 0). Sort `createdAt` desc. Excludes `weeks`. |
+| `GET /api/cycles/current` | Auto-creates an empty cycle if none open. |
+| `GET /api/cycles/:id`   | Full Cycle. 404 if missing. |
+| `GET /api/cycles/profile` | `{ uuid, lifetimeScore }`. |
+| `POST /api/cycles`      | Body `{ name?: string 1..80 }`. 201 + Cycle. Replaces old `POST /api/tasks`. |
+| `PATCH /api/cycles/:id` | Discriminated `type` ∈ `{ addTasks, updateTasks, deleteTasks, moveTasks }`. Strict body (extra keys → 400). Returns `{ cycle, pointsEarned, isLegendary, currentTier }`. 409 if finished. |
+| `POST /api/cycles/:id/finish` | Idempotent. Returns `{ cycle, statistics, alreadyFinished }`. |
+
+Plus `/readyz` on the backend (200 once mongoose connected; not under `/api/`).
+The full contract is at
+`development/remediation-w2/orchestration-ctx/decisions/api-contract-v2.md`
+— treat that document as the source of truth.
+
+## Frontend ↔ backend wiring
+
+- **One client module**: `frontend/services/cycleApi.ts` is the only file that
+  calls `fetch('/api/cycles…')`. It unwraps the envelope and throws a typed
+  `ApiError { status, code, message }` on `success:false`. Legacy un-enveloped
+  bodies are tolerated for image-skew safety.
+- **One proxy middleware**: `frontend/server/middleware/backend-proxy.ts`
+  exports `PROXIED_API_PREFIXES = ["/api/cycles"]`. That constant is the
+  single source of truth for what gets forwarded to Express vs owned by
+  Nitro (`/api/klipy/*`, `/api/health`). Widening it is a security-relevant
+  change.
+- **One state owner**: `frontend/stores/monthStore.ts` (Pinia). It uses
+  `cycleApi.ts` for transport and `utils/sharedProgress.ts` (re-export of
+  `shared/progress.js`) for progress math so the FE and BE never diverge.
+
+## Shared modules
+
+`shared/progress.js` and `shared/scoring.js` are loaded by:
+- backend (CJS `require`)
+- frontend (`#shared` alias in `nuxt.config.ts`, re-exported via
+  `frontend/utils/sharedProgress.ts` / `sharedScoring.ts`)
+
+`calculateProgress(cycle)` mutates the cycle in place; `calculateDayProgress(day)`
+returns 0–100 (required only; empty → 0). Tier / point tables are in
+`shared/scoring.js`.
+
+## Tests + CI
+
+Tests are standalone `node` runners — no framework dependency:
 
 ```bash
-# Install dependencies
-npm install
-
-# Development server (runs on http://localhost:3001)
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Prepare Nuxt
-npm run postinstall
+node backend/scripts/test-envelope.js
+node backend/scripts/test-validation.js
+node backend/scripts/test-pagination.js
+node backend/scripts/test-move-tasks.js
+node backend/scripts/test-score-order.js
+node shared/test-shared.js
+# shorthand (matches CI):
+for f in backend/scripts/test-*.js shared/test*.js; do node "$f"; done
 ```
 
-### Backend (Express + MongoDB)
-Working directory: `../backend/` (relative to current location at `frontend/`)
+`.github/workflows/publish.yml` runs the same glob on every release tag in its
+`test` job; `build-and-push` is `needs: test`. Adding any future
+`backend/scripts/test-foo.js` or `shared/test-bar.js` is picked up automatically.
 
-```bash
-# Install dependencies
-npm install
+## Docker / NAS
 
-# Development server with auto-reload (runs on http://localhost:4000)
-npm run dev
+Two compose files at the repo root:
+- `docker-compose.yml` — builds from source (local dev or NAS with SSH).
+- `docker-compose.registry.yml` — pulls prebuilt images (TrueNAS Apps UI,
+  Portainer).
 
-# Production server
-npm start
-```
+Both set `mem_limit` on mongo (512m), backend (256m), frontend (384m). Only
+the frontend port is published (`APP_PORT`, default `3001`). The backend
+and mongo live on the internal Docker network; the Nitro proxy at
+`/api/cycles` is the only thing the browser talks to.
 
-**Important**: Both frontend and backend must be running for the application to work. The frontend expects the backend API to be available at `http://localhost:4000`.
+Smoke harness: `scripts/smoke/api-smoke.sh` builds `local/pixelpaladin-*:smoke`,
+starts the stack on port 3099 under project name `pixelpaladin-smoke`,
+exercises the v2 envelope end-to-end, and tears it down with `down -v` + image
+cleanup on exit. Never touches the live stack.
 
-## Architecture
+Full self-host guide (build / push / Watchtower / TrueNAS gotchas) is in
+[DOCKER.md](./DOCKER.md). Automation details (GitHub Actions → GHCR →
+Watchtower) are in [deploy/AUTOMATION.md](./deploy/AUTOMATION.md).
 
-### Data Model Hierarchy
+## Working notes
 
-The application uses a nested hierarchical structure:
+- The Nuxt `#shared` alias (`nuxt.config.ts`) is the only place that knows
+  where `shared/` lives. Because `shared/*.js` is CJS (`module.exports = {...}`)
+  but every FE bundle is ESM, B-FE-5 applies the CJS→ESM transform in BOTH
+  pipelines:
+  - **Vite (client + dev)**: `vite.build.commonjsOptions` with
+    `defaultIsModuleExports: 'always'`, `transformMixedEsModules: true`,
+    and an `include` regex that matches both `/shared/` paths and the
+    `#shared/...` alias form.
+  - **Nitro (SSR)**: `nitro.rollupConfig.plugins` with the same
+    `@rollup/plugin-commonjs` plugin, configured identically. The plugin
+    is imported directly in `nuxt.config.ts` and declared as a devDep
+    (`@rollup/plugin-commonjs ^28.0.9`) in `frontend/package.json` —
+    don't remove it, even though it's technically transitive via Vite,
+    because Nitro's rollup pipeline doesn't get Vite's plugin chain.
 
-```
-Month (1)
-  ├── Weeks (4)
-  │   ├── Days (7 per week)
-  │   │   ├── Tasks (n per day)
-```
-
-#### Key Entities
-
-- **Month**: Top-level container with overall progress tracking
-  - Fields: uuid, name, subtitle, progress, weeks[], finished, createdAt, finishedAt
-
-- **Week**: Represents a weekly "boss battle" challenge
-  - Fields: uuid, name, subtitle, progress, conquered, backgroundImages[], days[]
-
-- **Day**: Individual day within a week
-  - Fields: uuid, name, subtitle, tasks[]
-
-- **Task**: Individual habit/quest to complete
-  - Fields: uuid, description, optional, completed, recurrenceId, order, icon (emoji)
-
-### State Management (Pinia)
-
-**Primary Store**: `stores/monthStore.ts`
-
-The month store is the central source of truth for all application data. It:
-- Manages the current month and all months
-- Handles task CRUD operations (create, update, delete, move)
-- Calculates progress values for days, weeks, and months
-- Persists changes to the backend API
-- Implements recurrence patterns for repeating tasks
-
-**Key Store Actions**:
-- `fetchMonthData()`: Load current month from backend
-- `toggleTaskCompletion(taskUuid)`: Toggle task completion and persist
-- `bulkAddTasks(options)`: Add tasks to multiple days/weeks with recurrence support
-- `updateTask(taskUuid, payload)`: Update task properties
-- `deleteTask(taskUuid, scope)`: Delete single task or entire recurrence
-- `moveTask(taskUuid, targetDayUuid, targetIndex)`: Drag-and-drop task reordering
-- `finishCurrentMonth()`: Lock month as immutable
-- `updateProgressValues()`: Recalculate all progress percentages
-
-**Progress Calculation**:
-- **Day Progress**: Completed required tasks / Total required tasks
-- **Week Progress**: Average of all day progress values (0-100%)
-  - Week is "conquered" when all required tasks are complete
-- **Month Progress**: Average of all week progress values
-  - Base progress capped at 100%
-  - Bonus progress (+10% max) from optional tasks once base is 100%
-  - Final progress can reach 110%
-
-### Backend API
-
-**Base URL**: `http://localhost:4000/api/cycles`
-
-The backend uses Express + MongoDB with the following endpoints:
-
-- `GET /api/cycles/current` - Get current active month/cycle
-- `GET /api/cycles` - Get all months/cycles
-- `PATCH /api/cycles/:monthUuid` - Update month data
-  - Supported operations via `type` field:
-    - `addTasks`: Bulk add tasks to days
-    - `deleteTasks`: Remove tasks by UUID or recurrenceId
-    - `updateTasks`: Update task properties (completion, description, etc.)
-- `POST /api/tasks` - Legacy endpoint for various operations:
-  - `createMonth`: Create new empty month (4 weeks × 7 days)
-  - `setCurrentMonth`: Switch active month
-  - `finishMonth`: Mark month as immutable/finished
-
-**Important**: The backend recalculates and persists progress values using the same logic as the frontend store.
-
-### Frontend Structure
-
-**Main App**: `app.vue`
-- Single-page application with all UI in one file
-- Displays month/week/day hierarchy with progress tracking
-- Gamification elements: tier system (Bronze → Silver → Gold → Champion → Final)
-- Particle effects and 8-bit CRT aesthetic
-
-**Key Components**:
-- `TaskModal.vue`: Create/edit task dialog with emoji picker and recurrence options
-- `Day.vue`: Displays daily tasks with drag-and-drop support
-- `WeeklyBossPortrait.vue`: Visual representation of weekly progress
-- `MonthSelector.vue`: Switch between months
-- `ToastNotification.vue`: User feedback messages
-- `BackgroundParticles.vue` & `ProgressParticles.vue`: Visual effects
-
-**Styling**:
-- TailwindCSS with custom pixel art color palette
-- Custom font: "Press Start 2P" (8-bit style)
-- SCSS for advanced animations and effects
-- CSS variables defined for pixel theme colors
-
-### Type Definitions
-
-Located in `types/index.ts` - defines TypeScript interfaces for Month, Week, Day, Task entities. These are duplicated in the Pinia store file for convenience but should match the shared type definitions.
-
-## Important Development Notes
-
-### Working with Tasks
-
-1. **Recurrence Pattern**: Tasks can be linked via `recurrenceId` to create recurring habits across multiple days/weeks
-2. **Optional Tasks**: Tasks marked as `optional: true` contribute bonus progress only after all required tasks are complete
-3. **Task Icons**: Tasks support emoji icons for visual identification
-4. **Immutability**: Once a month is marked `finished: true`, no modifications are allowed
-
-### Progress System
-
-The progress calculation is critical to the gamification:
-- Required tasks contribute to base progress (0-100%)
-- Optional tasks add bonus progress (+2% each, max 10%) only when base is 100%
-- Progress is recalculated on every task state change
-- Week "conquered" status is binary (all required tasks must be complete)
-
-### State Synchronization
-
-- Frontend optimistically updates UI immediately
-- Changes are persisted to backend via PATCH requests
-- Backend response updates the store to ensure consistency
-- Always call `updateProgressValues()` after state mutations
-
-### Styling Conventions
-
-- Use `font-press` or `font-family: 'Press Start 2P'` for retro text
-- Pixel-perfect borders with `border-2 border-black`
-- Shadow effects: `shadow-pixel` or `box-shadow: 4px 4px 0 rgba(0,0,0,0.8)`
-- Color scheme: dark blues, amber/gold accents, pixel-dark backgrounds
-
-### Common Pitfalls
-
-1. **Don't modify tasks directly**: Always use store actions to ensure progress recalculation and persistence
-2. **Check `finished` state**: Prevent modifications to locked months
-3. **UUID generation**: Use format like `t-${Math.random().toString(36).slice(2)}` for consistency
-4. **Reactivity**: Use `storeToRefs()` when accessing Pinia state in components to maintain reactivity
-
-## Testing the Application
-
-1. Start MongoDB (ensure it's running on default port 27017)
-2. Start backend: `cd ../backend && npm run dev`
-3. Start frontend: `cd frontend && npm run dev` (from `frontend/` directory)
-4. Open browser to `http://localhost:3001`
-5. Create a new month if none exists
-6. Add tasks to days and toggle completion to see progress updates
+  `frontend/utils/sharedProgress.ts` uses a namespace import plus a
+  `pick()` helper that falls back to `.default[key]` — this works whether
+  the transform synthesises named exports, only the ESM `default`, or both,
+  across client / dev / SSR builds.
+- Backend `console.log` is gated behind `DEBUG` (UB-39); `console.error` stays
+  for real failures.
+- CORS is **off by default** (`CORS_ORIGIN` unset → no middleware). Only set
+  it if you bypass the Nitro proxy.
+- Fonts are self-hosted (`@fontsource/*`, UB-34); no Google Fonts CDN. The
+  smoke script greps the SSR HTML for `googleapis` and fails if found.
+- Debug + Vue devtools are **dev-only** (UB-35).
+- Once a cycle is `finished: true`, every mutation PATCH returns 409
+  `CYCLE_FINISHED`.

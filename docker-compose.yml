@@ -14,6 +14,8 @@ services:
       MONGO_INITDB_DATABASE: ${MONGO_DB:-pixelpaladin}
     volumes:
       - mongo-data:/data/db
+    # UB-33: cap RSS so mongo can't starve the NAS during heavy writes / index builds.
+    mem_limit: 512m
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -31,6 +33,8 @@ services:
       PORT: 4000
       # Defaults to the bundled mongo service. Override to point at MongoDB Atlas.
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/pixelpaladin}
+    # UB-33: Express API is small + single-user; 256m leaves headroom for V8 bursts.
+    mem_limit: 256m
     depends_on:
       mongo:
         condition: service_healthy
@@ -58,6 +62,9 @@ services:
       KLIPY_BASE_URL: ${KLIPY_BASE_URL:-https://api.klipy.com}
     ports:
       - "${APP_PORT:-3001}:3000"
+    # UB-33: Nitro node server + Nuxt SSR cache. Single-user LAN client load;
+    # 384m is the largest of the three because Nuxt's SSR rendering + emoji/asset buffers.
+    mem_limit: 384m
     depends_on:
       backend:
         condition: service_healthy

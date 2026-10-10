@@ -142,10 +142,16 @@ check('route source contains finished 409 guard (UB-02)', () => {
   const routePath = path.join(__dirname, '../routes/cycleRoutes.js');
   const src = fs.readFileSync(routePath, 'utf8');
   assert.ok(src.includes('cycle.finished'), 'missing cycle.finished check');
-  assert.ok(src.includes('status(409)'), 'missing 409 status');
+  // W2b: route uses envelope helper `failFinished(...)` which returns 409.
+  // The check must accept either the legacy `status(409)` form or the helper.
+  const uses409 =
+    src.includes('status(409)') ||
+    /failFinished\s*\(/.test(src) ||
+    /fail\(res,\s*409\s*,/.test(src);
+  assert.ok(uses409, 'missing 409 status (no status(409), failFinished, or fail(..., 409, ...))');
   assert.ok(
-    /if\s*\(\s*cycle\.finished\s*\)[\s\S]{0,200}status\(409\)/.test(src),
-    'finished guard must return 409'
+    /if\s*\(\s*cycle\.finished\s*\)[\s\S]{0,200}(status\(409\)|failFinished\(|fail\(res,\s*409)/.test(src),
+    'finished guard must return 409 (envelope helper or status code)'
   );
 });
 

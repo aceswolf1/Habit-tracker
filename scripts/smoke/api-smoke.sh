@@ -1,0 +1,338 @@
+#!/usr/bin/env bash
+# A-OP-4 / B-QA-2 — smoke harness for the PixelPaladin stack.
+#
+# Builds + starts mongo + backend + frontend under a SEPARATE docker compose
+# project (`pixelpaladin-smoke`) so it cannot touch the user's live stack or
+# its `mongo-data` volume. Builds images tagged `local/pixelpaladin-*:smoke`,
+# never `:latest`, so the live stack keeps running on `:latest` even while
+# this script runs.
+#
+# What it does, in order:
+#   1. Compose up (build) under -p pixelpaladin-smoke, with IMAGE_PREFIX=local
+#       IMAGE_TAG=smoke APP_PORT=3099 and the smoke override (port 3099).
+#   2. Poll http://localhost:3099/api/health until it returns 200.
+#   3. Confirm the backend service reports `healthy` via `docker compose ps`.
+#       (Backend's /readyz is internal-only; we can't curl it from the host
+#       without publishing backend's port. Inspecting compose health is the
+#       canonical way and matches how `docker compose ps` displays it.)
+#   4. Run the v2 end-to-end flow through the frontend proxy:
+#       GET /api/cycles/current  -> envelope {success,data:Cycle}
+#       POST /api/cycles         -> envelope, HTTP 201
+#       GET /api/cycles?limit=5  -> envelope, meta {total,limit,offset}
+#       GET /api/cycles/:id      -> envelope, full Cycle
+#       PATCH addTasks           -> envelope, pointsEarned=0
+#       PATCH updateTasks(complete) -> pointsEarned>0
+#       PATCH moveTasks          -> envelope, success
+#       PATCH updateTasks(uncomplete) -> pointsEarned<0
+#       invalid PATCH (strict extra key) -> 400 VALIDATION_ERROR
+#       POST /:id/finish         -> envelope, {cycle, statistics, alreadyFinished}
+#       PATCH again on finished cycle -> 409 CYCLE_FINISHED
+#       GET /api/tasks           -> 404 (proxy allowlist no longer relays)
+#   5. Verify SSR shell: curl / returns HTML containing "PixelPaladin" and
+#       NO `googleapis` references (UB-34: self-hosted @fontsource fonts only).
+#   6. On exit (any cause): docker compose -p pixelpaladin-smoke down -v,
+#      remove the two :smoke images, delete temp files.
+#
+# Requirements: bash 4+, jq, curl, docker, docker compose v2.
+
+set -euo pipefail
+
+# ---- Configuration (override via env if you must) ---------------------------
+: "${PROJECT:=pixelpaladin-smoke}"        # MUST stay this — live stack safety
+: "${COMPOSE_FILE:=docker-compose.yml}"
+: "${OVERRIDE_FILE:=scripts/smoke/compose.smoke.yml}"
+: "${FRONTEND_PORT:=3099}"
+: "${BASE_URL:=http://localhost:${FRONTEND_PORT}}"
+: "${HEALTH_URL:=${BASE_URL}/api/health}"
+: "${SMOKE_IMAGE_PREFIX:=local}"
+: "${SMOKE_IMAGE_TAG:=smoke}"
+: "${HEALTH_TIMEOUT_SEC:=180}"            # mongo + npm install + nuxt build
+: "${HEALTH_INTERVAL_SEC:=2}"
+
+# Resolve repo root (this script lives in <repo>/scripts/smoke/).
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." >/dev/null 2>&1 && pwd)"
+cd "${REPO_ROOT}"
+
+if [[ ! -f "${OVERRIDE_FILE}" ]]; then
+  echo "FATAL: override ${OVERRIDE_FILE} not found from ${REPO_ROOT}" >&2
+  exit 2
+fi
+
+# Temp .env scoped to this script so the smoke build cannot leak into the
+# user's real .env. Deleted in the trap.
+SMOKE_ENV="$(mktemp -t pixelpaladin-smoke.env.XXXXXX)"
+cat > "${SMOKE_ENV}" <<EOF
+IMAGE_PREFIX=${SMOKE_IMAGE_PREFIX}
+IMAGE_TAG=${SMOKE_IMAGE_TAG}
+APP_PORT=${FRONTEND_PORT}
+KLIPY_API_KEY=
+EOF
+
+# Response body scratch file (one per invocation; reused across steps).
+RESP_BODY="$(mktemp -t pixelpaladin-smoke-resp.XXXXXX.json)"
+
+# Compose command — pass SMOKE_ENV as the env file so it overrides any
+# inherited values from the user's .env. Always -p $PROJECT.
+DC=(docker compose --env-file "${SMOKE_ENV}" -p "${PROJECT}" -f "${COMPOSE_FILE}" -f "${OVERRIDE_FILE}")
+
+cleanup() {
+  local rc=$?
+  echo
+  echo "==> smoke cleanup (rc=${rc})"
+  "${DC[@]}" down -v --remove-orphans 2>&1 || true
+  docker image rm -f \
+    "${SMOKE_IMAGE_PREFIX}/pixelpaladin-backend:${SMOKE_IMAGE_TAG}" \
+    "${SMOKE_IMAGE_PREFIX}/pixelpaladin-frontend:${SMOKE_IMAGE_TAG}" \
+    2>&1 || true
+  rm -f "${SMOKE_ENV}" "${RESP_BODY}"
+  exit "${rc}"
+}
+trap cleanup EXIT INT TERM
+
+# ---- HTTP helpers -----------------------------------------------------------
+HTTP_CODE=""
+# req <METHOD> <PATH> [<JSON_BODY>] — populates HTTP_CODE, writes body to RESP_BODY
+req() {
+  local method="$1" path="$2" body="${3:-}"
+  if [[ -n "$body" ]]; then
+    HTTP_CODE="$(curl --silent --show-error \
+      --output "${RESP_BODY}" \
+      --write-out '%{http_code}' \
+      -H 'content-type: application/json' \
+      -X "${method}" "${BASE_URL}${path}" \
+      --data "${body}")"
+  else
+    HTTP_CODE="$(curl --silent --show-error \
+      --output "${RESP_BODY}" \
+      --write-out '%{http_code}' \
+      -X "${method}" "${BASE_URL}${path}")"
+  fi
+  echo "    HTTP ${HTTP_CODE}"
+}
+
+# Assert envelope: success:true, data present, error absent
+assert_envelope_ok() {
+  local label="${1:-ok}"
+  if ! jq -e '.success == true and (.data // null) != null and (.error // null) == null' "${RESP_BODY}" >/dev/null; then
+    echo "FATAL: envelope NOT OK at ${label}"
+    echo "----- response body -----"
+    cat "${RESP_BODY}"; echo
+    exit 10
+  fi
+  echo "    envelope OK (${label})"
+}
+
+# Assert envelope error: success:false, error.code == $1
+assert_envelope_err() {
+  local expected_code="$1" label="${2:-err}"
+  if ! jq -e --arg c "${expected_code}" \
+      '.success == false and (.data // null) == null and .error.code == $c' \
+      "${RESP_BODY}" >/dev/null; then
+    echo "FATAL: envelope error mismatch at ${label} (expected code=${expected_code})"
+    echo "----- response body -----"
+    cat "${RESP_BODY}"; echo
+    exit 11
+  fi
+  echo "    envelope error code=${expected_code} OK (${label})"
+}
+
+# ---- Compose up -------------------------------------------------------------
+echo "==> smoke: project=${PROJECT}  build=${SMOKE_IMAGE_PREFIX}/pixelpaladin-*:smoke  port=${FRONTEND_PORT}"
+
+echo "==> smoke: compose up --build (this may take a few minutes on first run)"
+if [[ "${SMOKE_NOCACHE:-0}" == "1" ]]; then
+  echo "==> smoke: SMOKE_NOCACHE=1 — building without cache"
+  "${DC[@]}" build --no-cache
+fi
+"${DC[@]}" up -d --build
+
+# ---- Wait for healthchecks --------------------------------------------------
+echo "==> smoke: waiting for frontend ${HEALTH_URL} (timeout ${HEALTH_TIMEOUT_SEC}s)"
+deadline=$(( $(date +%s) + HEALTH_TIMEOUT_SEC ))
+while :; do
+  if curl --silent --show-error --fail --output /dev/null "${HEALTH_URL}"; then
+    echo "==> smoke: frontend /api/health = 200"
+    break
+  fi
+  if (( $(date +%s) >= deadline )); then
+    echo "FATAL: frontend never became healthy at ${HEALTH_URL}" >&2
+    echo "--- last 40 lines of frontend logs ---" >&2
+    "${DC[@]}" logs --tail=40 frontend >&2 || true
+    exit 3
+  fi
+  sleep "${HEALTH_INTERVAL_SEC}"
+done
+
+echo "==> smoke: waiting for backend healthcheck via docker compose ps"
+deadline=$(( $(date +%s) + HEALTH_TIMEOUT_SEC ))
+while :; do
+  backend_state="$("${DC[@]}" ps --format json 2>/dev/null \
+    | awk -F'"' '/"Service":"backend"/{f=1} f && /"Health"/{print; exit}')"
+  if [[ "${backend_state}" == *'"Health":"healthy"'* ]]; then
+    echo "==> smoke: backend = healthy"
+    break
+  fi
+  if (( $(date +%s) >= deadline )); then
+    echo "FATAL: backend never became healthy" >&2
+    "${DC[@]}" ps >&2 || true
+    "${DC[@]}" logs --tail=40 backend >&2 || true
+    exit 4
+  fi
+  sleep "${HEALTH_INTERVAL_SEC}"
+done
+
+# ---- v2 end-to-end flow -----------------------------------------------------
+echo
+echo "==> smoke: === v2 flow ==="
+
+echo "==> smoke: [1] GET /api/cycles/current  (auto-create if none open)"
+req GET /api/cycles/current
+assert_envelope_ok "current"
+CURRENT_UUID="$(jq -r '.data.uuid' "${RESP_BODY}")"
+echo "    current cycle uuid: ${CURRENT_UUID}"
+
+echo "==> smoke: [2] POST /api/cycles  -> 201"
+req POST /api/cycles '{"name":"Smoke Test Cycle"}'
+if [[ "${HTTP_CODE}" != "201" ]]; then
+  echo "FATAL: POST /api/cycles expected 201, got ${HTTP_CODE}" >&2
+  cat "${RESP_BODY}" >&2; echo >&2
+  exit 12
+fi
+assert_envelope_ok "create"
+NEW_UUID="$(jq -r '.data.uuid' "${RESP_BODY}")"
+WEEK_UUID="$(jq -r '.data.weeks[0].uuid' "${RESP_BODY}")"
+DAY1_UUID="$(jq -r '.data.weeks[0].days[0].uuid' "${RESP_BODY}")"
+DAY2_UUID="$(jq -r '.data.weeks[0].days[1].uuid' "${RESP_BODY}")"
+echo "    new cycle uuid: ${NEW_UUID}  week: ${WEEK_UUID}"
+echo "    day1: ${DAY1_UUID}  day2: ${DAY2_UUID}"
+
+echo "==> smoke: [3] GET /api/cycles?limit=5  (summaries + meta)"
+req GET '/api/cycles?limit=5'
+assert_envelope_ok "list"
+if ! jq -e '.meta.total != null and .meta.limit == 5 and .meta.offset == 0' "${RESP_BODY}" >/dev/null; then
+  echo "FATAL: list response missing/wrong meta"; cat "${RESP_BODY}"; exit 13
+fi
+# Summaries must NOT carry `weeks` (projection excludes them)
+if jq -e '.data[0].weeks' "${RESP_BODY}" >/dev/null 2>&1; then
+  echo "FATAL: list response leaks weeks (should be summary projection)"; cat "${RESP_BODY}"; exit 13
+fi
+echo "    list meta OK; summaries omit weeks"
+
+echo "==> smoke: [4] GET /api/cycles/${NEW_UUID}  (detail)"
+req GET "/api/cycles/${NEW_UUID}"
+assert_envelope_ok "detail"
+if ! jq -e '.data.weeks | (length == 4 and (.[0].days | length == 7))' "${RESP_BODY}" >/dev/null; then
+  echo "FATAL: detail cycle not 4×7"; cat "${RESP_BODY}"; exit 14
+fi
+echo "    detail shape OK (4 weeks × 7 days)"
+
+echo "==> smoke: [5] PATCH addTasks  (pointsEarned should be 0)"
+req PATCH "/api/cycles/${NEW_UUID}" "$(jq -n \
+  --arg w "$WEEK_UUID" --arg d "$DAY1_UUID" \
+  '{type:"addTasks", additions:[{weekUuid:$w, dayUuid:$d, task:{description:"smoke task", optional:false, completed:false, uuid:"t-smoke-1"}}]}')"
+assert_envelope_ok "addTasks"
+PE="$(jq -r '.data.pointsEarned' "${RESP_BODY}")"
+if [[ "${PE}" != "0" ]]; then
+  echo "FATAL: addTasks pointsEarned expected 0, got ${PE}"; cat "${RESP_BODY}"; exit 15
+fi
+echo "    pointsEarned=0 OK"
+
+echo "==> smoke: [6] PATCH updateTasks complete -> pointsEarned > 0"
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-1","completed":true}]}'
+assert_envelope_ok "complete"
+PE="$(jq -r '.data.pointsEarned' "${RESP_BODY}")"
+if ! jq -e '.data.pointsEarned > 0' "${RESP_BODY}" >/dev/null; then
+  echo "FATAL: complete pointsEarned should be > 0, got ${PE}"; cat "${RESP_BODY}"; exit 16
+fi
+echo "    pointsEarned=${PE} (>0) OK; currentTier=$(jq -r '.data.currentTier' "${RESP_BODY}")"
+
+echo "==> smoke: [7] PATCH moveTasks  (day1 -> day2)"
+req PATCH "/api/cycles/${NEW_UUID}" "$(jq -n --arg d "$DAY2_UUID" \
+  '{type:"moveTasks", taskUuid:"t-smoke-1", targetDayUuid:$d, targetIndex:0}')"
+assert_envelope_ok "moveTasks"
+
+echo "==> smoke: [8] PATCH updateTasks uncomplete -> pointsEarned < 0"
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-1","completed":false}]}'
+assert_envelope_ok "uncomplete"
+if ! jq -e '.data.pointsEarned < 0' "${RESP_BODY}" >/dev/null; then
+  echo "FATAL: uncomplete pointsEarned should be < 0"; cat "${RESP_BODY}"; exit 17
+fi
+echo "    pointsEarned=$(jq -r '.data.pointsEarned' "${RESP_BODY}") (<0) OK"
+
+echo "==> smoke: [9] invalid PATCH (strict extra key) -> 400 VALIDATION_ERROR"
+req PATCH "/api/cycles/${NEW_UUID}" "$(jq -n \
+  --arg w "$WEEK_UUID" --arg d "$DAY1_UUID" \
+  '{type:"addTasks", additions:[{weekUuid:$w, dayUuid:$d, task:{description:"x", optional:false}}], evilExtraKey:true}')"
+if [[ "${HTTP_CODE}" != "400" ]]; then
+  echo "FATAL: invalid PATCH expected 400, got ${HTTP_CODE}"; cat "${RESP_BODY}"; exit 18
+fi
+assert_envelope_err VALIDATION_ERROR "invalid-patch"
+
+echo "==> smoke: [10] POST /api/cycles/${NEW_UUID}/finish"
+req POST "/api/cycles/${NEW_UUID}/finish"
+assert_envelope_ok "finish"
+if ! jq -e '.data.alreadyFinished == false and .data.cycle.finished == true' "${RESP_BODY}" >/dev/null; then
+  echo "FATAL: finish envelope wrong"; cat "${RESP_BODY}"; exit 19
+fi
+echo "    finished=true, alreadyFinished=false OK"
+
+echo "==> smoke: [11] PATCH on finished cycle -> 409 CYCLE_FINISHED"
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-1","completed":true}]}'
+if [[ "${HTTP_CODE}" != "409" ]]; then
+  echo "FATAL: PATCH-on-finished expected 409, got ${HTTP_CODE}"; cat "${RESP_BODY}"; exit 20
+fi
+assert_envelope_err CYCLE_FINISHED "finished-patch"
+
+echo "==> smoke: [12] GET /api/tasks  (proxy allowlist removed it -> 404)"
+req GET /api/tasks
+if [[ "${HTTP_CODE}" != "404" ]]; then
+  echo "FATAL: /api/tasks should be 404, got ${HTTP_CODE}"; cat "${RESP_BODY}"; exit 21
+fi
+echo "    /api/tasks = 404 (proxy no longer relays) OK"
+
+# ---- SSR shell + self-hosted fonts -----------------------------------------
+echo
+echo "==> smoke: [13] SSR shell on /  (must mention PixelPaladin + no googleapis)"
+INDEX_HTML="$(mktemp -t pixelpaladin-smoke-index.XXXXXX.html)"
+ROOT_HTTP="$(curl --silent --show-error --output "${INDEX_HTML}" --write-out '%{http_code}' "${BASE_URL}/")"
+echo "    GET /  -> HTTP ${ROOT_HTTP}"
+if ! grep -q "PixelPaladin" "${INDEX_HTML}"; then
+  echo "FATAL: SSR HTML missing app shell marker 'PixelPaladin'"
+  echo "----- captured SSR body (first 800 bytes) -----"
+  head -c 800 "${INDEX_HTML}"; echo
+  echo "----- end body -----"
+  echo "----- last 60 lines of frontend logs -----"
+  "${DC[@]}" logs --tail=60 frontend 2>&1 | tail -60 || true
+  echo "----- end logs -----"
+  cp "${INDEX_HTML}" /tmp/pixelpaladin-smoke-ssr-failure.html
+  exit 22
+fi
+if grep -qi "googleapis" "${INDEX_HTML}"; then
+  echo "FATAL: SSR HTML references googleapis (UB-34: fonts must be self-hosted)"; grep -i googleapis "${INDEX_HTML}"; exit 23
+fi
+echo "    app shell OK; no Google Fonts CDN"
+rm -f "${INDEX_HTML}"
+
+# ---- Report-only observability (orchestrator request — don't fail the run) --
+echo
+echo "==> smoke: [14] REPORT-ONLY GET /does-not-exist  (SPA route, expected 200)"
+SPURIOUS_HTTP="$(curl --silent --show-error --output /tmp/pixelpaladin-smoke-spurious.html --write-out '%{http_code}' "${BASE_URL}/does-not-exist")"
+echo "    GET /does-not-exist  -> HTTP ${SPURIOUS_HTTP} (size=$(wc -c </tmp/pixelpaladin-smoke-spurious.html | tr -d ' ') bytes)"
+rm -f /tmp/pixelpaladin-smoke-spurious.html
+
+echo
+echo "==> smoke: [15] REPORT-ONLY scan frontend logs for 5xx during the run"
+echo
+FRONTEND_LOGS="$("${DC[@]}" logs --no-color frontend 2>&1 || true)"
+FIVE_XX_COUNT="$(printf '%s\n' "${FRONTEND_LOGS}" | grep -cE ' 5[0-9]{2} ' || true)"
+echo "    5xx occurrences in frontend logs: ${FIVE_XX_COUNT}"
+if (( FIVE_XX_COUNT > 0 )); then
+  echo "    --- matching lines ---"
+  printf '%s\n' "${FRONTEND_LOGS}" | grep -E ' 5[0-9]{2} ' | head -10
+  echo "    --- end ---"
+fi
+
+echo
+echo "==> smoke: PASS (v2 flow)"
+# trap will run cleanup now.
