@@ -32,7 +32,13 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
+
+      # Tests load backend modules (e.g. zod in backend/validation) — install
+      # the same production deps the backend image ships with.
+      - name: Install backend dependencies
+        run: npm ci --omit=dev
+        working-directory: backend
 
       - name: Run shared module smoke (if present)
         run: |
