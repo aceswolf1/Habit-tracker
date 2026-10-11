@@ -150,32 +150,37 @@ check('internal(res, err) → 500 INTERNAL with generic message; logs to stderr'
   }
 });
 
-check('cycleRoutes.js source uses ok/created/fail/internal only (no res.json bare)', () => {
+check('cycleRoutes.js: wiring-only file (< 40 lines) that does not call envelope helpers directly', () => {
+  // W3 contract: routes are wiring only — controller mediates envelope helpers.
   const fs = require('fs');
+  const path = require('path');
   const src = fs.readFileSync(
-    require('path').join(__dirname, '../routes/cycleRoutes.js'),
+    path.join(__dirname, '../routes/cycleRoutes.js'),
     'utf8'
   );
-  // The only `res.json(` left should be inside respond.js helpers; cycleRoutes
-  // should only call helpers. Allow test script comments + the ok helper itself.
-  assert.ok(
-    !/res\.json\(\{[^}]*month:/.test(src),
-    'cycleRoutes.js must not contain a `{ month:` literal response (use `cycle`)'
-  );
-  assert.ok(
-    /require\('\.\.\/utils\/respond'\)/.test(src),
-    'cycleRoutes.js must require respond.js'
-  );
-  assert.ok(
-    /require\('\.\.\/validation\/cycleSchemas'\)/.test(src),
-    'cycleRoutes.js must require validation/cycleSchemas.js'
-  );
+  // Hard cap from layer-contract-w3.md.
+  assert.ok(src.split('\n').length < 40,
+    `routes/cycleRoutes.js must be < 40 lines (got ${src.split('\n').length})`);
+  // The routes file MUST NOT call envelope helpers directly — that's the
+  // controller's job (and respond.js exposes them).
+  assert.ok(!/require\('\.\.\/utils\/respond'\)/.test(src),
+    'cycleRoutes.js must NOT require respond.js (controller mediates)');
+  // Routes file must wire the controller, not inline handlers.
+  assert.ok(/require\('\.\.\/controllers\/cycleController'\)/.test(src),
+    'cycleRoutes.js must require the controller factory');
+  assert.ok(/createCycleController\(/.test(src),
+    'cycleRoutes.js must instantiate the controller');
+  // The old `month:` response key was renamed to `cycle` in W2. The new
+  // contract keeps this invariant; assert no regression.
+  assert.ok(!/res\.json\(\{[^}]*month:/.test(src),
+    'cycleRoutes.js must not contain a `{ month:` literal response');
 });
 
-check('server.js source mounts /api/cycles and has envelope 404/500 handlers', () => {
+check('server.js mounts /api/cycles and keeps the envelope 404/500 + /readyz contract', () => {
   const fs = require('fs');
+  const path = require('path');
   const src = fs.readFileSync(
-    require('path').join(__dirname, '../server.js'),
+    path.join(__dirname, '../server.js'),
     'utf8'
   );
   assert.ok(
@@ -194,8 +199,15 @@ check('server.js source mounts /api/cycles and has envelope 404/500 handlers', (
     /internal\(/.test(src),
     'server.js must use envelope internal() for 500'
   );
-  // /readyz is excluded from envelope per contract
+  // /readyz is excluded from envelope per contract.
   assert.ok(/\/readyz/.test(src), 'server.js must keep /readyz handler');
+  // W3 layer invariant: server.js no longer imports models directly.
+  // The only allowed path is via repositories/index for syncIndexes boot.
+  assert.ok(
+    !/require\('\.\/models\/Cycle'\)/.test(src) &&
+      !/require\('\.\/models\/UserProfile'\)/.test(src),
+    'server.js must NOT import models directly (use repositories/index)'
+  );
 });
 
 console.log(`\n${passed} checks passed`);

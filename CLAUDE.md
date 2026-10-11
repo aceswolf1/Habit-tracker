@@ -78,24 +78,112 @@ The full contract is at
 returns 0–100 (required only; empty → 0). Tier / point tables are in
 `shared/scoring.js`.
 
+## Backend layering (W3)
+
+The backend is split into five layers with one-way dependencies:
+`routes → controllers → services → repositories → models`.
+
+| Layer              | Files                                                   | Responsibility                                                                                                         |
+|--------------------|---------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| `routes/`          | `cycleRoutes.js`                                        | Wiring only. Each line is `router.<verb>(path, controller.fn)`. < 40 lines; no loops, no model imports.                 |
+| `controllers/`     | `cycleController.js`                                    | HTTP boundary. Parse via zod → call service → wrap with `respond.js` envelope. Maps `DomainError` → 404/409/400.        |
+| `services/`        | `scoreService.js`, `taskMutationService.js`, `cycleLifecycleService.js`, `errors.js` | Business rules. No `req`/`res`, no mongoose. Repositories injected. Pure helpers (`applyMove`, `scoreCompletionFlips`) exported for direct testing. |
+| `repositories/`    | `cycleRepository.js`, `userProfileRepository.js`, `index.js` | The only code that touches mongoose models. Narrow async interface (`findByUuid`, `save`, `listSummaries`, `applyLifetimeDelta`, …). |
+| `models/`          | `Cycle.js`, `UserProfile.js`                            | Schemas + indexes. Unchanged.                                                                                            |
+
+`backend/services/errors.js` defines `DomainError { code, message, details }`
+with helpers `notFound(msg)` and `cycleFinished(msg)`. Controllers map these
+to HTTP status codes; any other thrown error becomes 500 `INTERNAL`.
+
+Where the rules live:
+- **Tier thresholds / point tables** — `shared/scoring.js` (single source).
+- **Progress math (week + optional bonus + cap)** — `shared/progress.js`.
+- **Scoring orchestration** (apply flips → recalc → score → lifetime delta
+  → save; UB-06 order; UB-10 floor; CYCLE_FINISHED guard) —
+  `taskMutationService.patchCycle`.
+- **Statistics on finish** — `utils/statisticsCalculator.calculateAllStatistics`,
+  invoked from `cycleLifecycleService.finish`.
+- **Profile uuid** — the single constant `PROFILE_UUID = 'default-user'`
+  lives in `backend/config.js`. Services import it; repositories accept it
+  as a parameter (so tests can substitute).
+
+Testing services with fakes: `backend/scripts/fakes/` ships an in-memory
+`createFakeCycleRepository()` and `createFakeUserProfileRepository()` that
+match the repository contract exactly (plain objects, async-returning,
+`listSummaries` strips `weeks`, `applyLifetimeDelta` floors at 0). The
+service tests (`test-services-score.js`, `-mutation.js`, `-lifecycle.js`)
+wire the fakes into the service factories and assert behavior end-to-end
+without mongoose. See `backend/README.md` for the full test recipe.
+
+Layer-boundary invariants are enforced by `backend/scripts/test-*.js`
+(static greps + service-level integration via fakes):
+- `routes/cycleRoutes.js` is < 40 lines and never imports models or
+  `respond.js`.
+- `controllers/` never imports models or shared/.
+- `server.js` never imports models directly; the only allowed path is
+  `require('./repositories')` for `syncIndexes` boot housekeeping.
+
 ## Tests + CI
 
 Tests are standalone `node` runners — no framework dependency:
 
 ```bash
-node backend/scripts/test-envelope.js
-node backend/scripts/test-validation.js
-node backend/scripts/test-pagination.js
-node backend/scripts/test-move-tasks.js
-node backend/scripts/test-score-order.js
-node shared/test-shared.js
+node backend/scripts/test-envelope.js     # respond.js envelope helpers
+node backend/scripts/test-validation.js   # zod schemas (strict, defaults)
+node backend/scripts/test-pagination.js   # GET / pagination + projection + layer checks
+node backend/scripts/test-move-tasks.js   # applyMove relocation + progress + layer checks
+node backend/scripts/test-score-order.js  # UB-06 tier crossing + UB-10 lifetime + layer checks
+node backend/scripts/test-services-score.js     # scoreService (pure)
+node backend/scripts/test-services-mutation.js  # taskMutationService via fakes (incl. FIX-01)
+node backend/scripts/test-services-lifecycle.js # cycleLifecycleService via fakes
+node shared/test-shared.js                # shared/ progress + scoring helpers
 # shorthand (matches CI):
 for f in backend/scripts/test-*.js shared/test*.js; do node "$f"; done
 ```
 
 `.github/workflows/publish.yml` runs the same glob on every release tag in its
-`test` job; `build-and-push` is `needs: test`. Adding any future
-`backend/scripts/test-foo.js` or `shared/test-bar.js` is picked up automatically.
+`test` job. The `smoke` job (`needs: test`) then runs `bash scripts/smoke/
+api-smoke.sh` — it builds mongo + backend + frontend under the dedicated
+`pixelpaladin-smoke` project on port 3099, exercises the v2 envelope
+end-to-end (including the FIX-01 gifUrl clear), and tears everything down on
+exit. `build-and-push` is `needs: [test, smoke]`. Adding any future
+`backend/scripts/test-foo.js` or `shared/test-bar.js` is picked up
+automatically by the glob.
+
+## Service-layer testing with fakes
+
+`backend/scripts/fakes/` ships:
+
+- `cycleRepo.js` — `createFakeCycleRepository()` matching the
+  `cycleRepository` contract signatures (`findByUuid`, `findCurrentUnfinished`,
+  `listSummaries`, `create`, `save`). Plain objects, async-returning,
+  `listSummaries` strips `weeks`, `save` returns the object.
+- `profileRepo.js` — `createFakeUserProfileRepository({ defaultUuid })`.
+  `applyLifetimeDelta` floors at 0 and stamps `updatedAt`.
+- `fixtures.js` — `emptyCycle` (delegates to `shared/progress.createEmptyMonth`),
+  `addTask`, `cycleWithRequiredTasks`, `dayUuid`, `weekUuid`, `resetAll`.
+
+Service tests wire fakes into the factory and assert end-to-end:
+
+```js
+const { createFakeCycleRepository } = require('./fakes/cycleRepo');
+const { createFakeUserProfileRepository } = require('./fakes/profileRepo');
+const fixtures = require('./fakes/fixtures');
+const { createTaskMutationService } = require('../services/taskMutationService');
+const scoreService = require('../services/scoreService');
+
+const cycleRepo = createFakeCycleRepository();
+const profileRepo = createFakeUserProfileRepository();
+const svc = createTaskMutationService({ cycleRepo, profileRepo, scoreService });
+
+const cycle = fixtures.cycleWithRequiredTasks(4);
+const saved = await cycleRepo.create(cycle);
+const out = await svc.patchCycle(saved.uuid, {
+  type: 'updateTasks',
+  updates: [{ uuid: saved.weeks[0].days[0].tasks[0].uuid, completed: true }],
+});
+assert.strictEqual(out.pointsEarned, 15); // 1/4 → 25% Silver
+```
 
 ## Docker / NAS
 

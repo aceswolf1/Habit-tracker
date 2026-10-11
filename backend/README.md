@@ -3,18 +3,96 @@
 Express + Mongoose API. Mounted at `/api/cycles` inside `server.js`. Owns the
 v2 envelope and zod-validated PATCH bodies.
 
-## Layout
+## Layering (W3)
+
+The backend is split into five layers with one-way dependencies:
+`routes → controllers → services → repositories → models`.
 
 ```
 backend/
-├── server.js                # Express app, Mongo connect, mount /api/cycles
-├── models/                  # Cycle.js, UserProfile.js (Mongoose schemas)
-├── routes/cycleRoutes.js    # All /api/cycles/* handlers
-├── validation/cycleSchemas.js  # zod v4 schemas; strict (extra keys → 400)
-├── utils/                   # respond.js (envelope), scoreCalculator, statistics
-└── scripts/test-*.js        # node-harness tests (no test framework dep)
-shared/                      # progress.js, scoring.js — single source of truth
+├── server.js                      # Express app, Mongo connect, mount /api/cycles
+├── config.js                      # PROFILE_UUID constant
+├── models/                        # Cycle.js, UserProfile.js (Mongoose schemas)
+├── repositories/                  # The ONLY layer that touches mongoose
+│   ├── cycleRepository.js         #   findByUuid / findCurrentUnfinished /
+│   │                              #   listSummaries / create / save
+│   ├── userProfileRepository.js   #   getOrCreate / applyLifetimeDelta (floor 0)
+│   └── index.js                   #   default instances wired to real models
+├── services/                      # Business rules; no req/res; no mongoose
+│   ├── errors.js                  #   DomainError(NOT_FOUND|CYCLE_FINISHED|…)
+│   ├── scoreService.js            #   pure: tierFor, scoreCompletionFlips
+│   ├── taskMutationService.js     #   patchCycle + pure applyAdditions/Updates/Deletes/Move
+│   ├── cycleLifecycleService.js   #   getOrCreateCurrent / list / finish / getProfile
+│   └── index.js                   #   default wired instances
+├── controllers/cycleController.js # Parse zod → call service → respond.js envelope;
+│                                  # DomainError → 404/409/400 mapping
+├── routes/cycleRoutes.js          # Wiring only (router.<verb>(path, c.fn)); < 40 lines
+├── validation/cycleSchemas.js     # zod v4 schemas; strict (extra keys → 400)
+├── utils/                         # respond.js (envelope), statistics
+└── scripts/                       # node-harness tests + fakes/
+    ├── fakes/                     #   in-memory repos matching the contract
+    └── test-*.js                  #   unit + service tests (no mongoose)
+shared/                            # progress.js, scoring.js — single source of truth
 ```
+
+### Where business rules live
+
+| Concern                                         | File                                       |
+|-------------------------------------------------|--------------------------------------------|
+| Tier thresholds / point tables / legendary ×3   | `shared/scoring.js`                        |
+| Week + month progress + optional bonus + cap    | `shared/progress.js`                       |
+| Scoring orchestration (UB-06 order, UB-10 floor, CYCLE_FINISHED guard) | `services/taskMutationService.js` |
+| Pure mutation helpers (`applyMove`, `applyUpdates`, …) | `services/taskMutationService.js` |
+| Statistics on finish                            | `utils/statisticsCalculator.calculateAllStatistics` invoked from `services/cycleLifecycleService.finish` |
+| Profile uuid (single constant)                  | `config.js` → `PROFILE_UUID`               |
+
+### Testing services with fakes
+
+`backend/scripts/fakes/` provides in-memory repos that match the repository
+contract exactly:
+
+- `fakes/cycleRepo.js` → `createFakeCycleRepository()` — plain objects,
+  async-returning, `listSummaries` strips `weeks`, `save` returns the object.
+- `fakes/profileRepo.js` → `createFakeUserProfileRepository({ defaultUuid })` —
+  `applyLifetimeDelta` floors at 0 and stamps `updatedAt`.
+- `fakes/fixtures.js` — `emptyCycle`, `addTask`, `cycleWithRequiredTasks`,
+  `dayUuid`, `weekUuid`, `resetAll`.
+
+```js
+const { createFakeCycleRepository } = require('./fakes/cycleRepo');
+const { createFakeUserProfileRepository } = require('./fakes/profileRepo');
+const fixtures = require('./fakes/fixtures');
+const { createTaskMutationService } = require('../services/taskMutationService');
+const scoreService = require('../services/scoreService');
+
+const cycleRepo = createFakeCycleRepository();
+const profileRepo = createFakeUserProfileRepository();
+const svc = createTaskMutationService({ cycleRepo, profileRepo, scoreService });
+
+const cycle = fixtures.cycleWithRequiredTasks(4);
+const saved = await cycleRepo.create(cycle);
+const out = await svc.patchCycle(saved.uuid, {
+  type: 'updateTasks',
+  updates: [{ uuid: saved.weeks[0].days[0].tasks[0].uuid, completed: true }],
+});
+// out.pointsEarned === 15  (1/4 → 25% Silver required)
+// out.currentTier === 'Silver'
+// profileRepo._raw('default-user').lifetimeScore === 15
+```
+
+The pure helpers (`applyMove`, `applyUpdates`, …) are also exported from
+`taskMutationService.js` so tests can drive them directly without going
+through `patchCycle`.
+
+### Layer-boundary invariants
+
+These are enforced by `backend/scripts/test-*.js`:
+
+- `routes/cycleRoutes.js` is < 40 lines, never imports models or `respond.js`.
+- `controllers/` never imports models or shared/; uses `respond.js` for the
+  envelope and maps `DomainError` to HTTP status codes.
+- `server.js` never imports models directly; the only allowed path is
+  `require('./repositories')` for `syncIndexes` boot housekeeping.
 
 ## Run
 
@@ -76,18 +154,27 @@ The authoritative contract lives at
 Each script is a standalone `node` runner. No test framework dep.
 
 ```bash
-node backend/scripts/test-envelope.js     # response envelope helpers
-node backend/scripts/test-validation.js   # zod schemas (strict, defaults)
-node backend/scripts/test-pagination.js   # GET / pagination + projection
-node backend/scripts/test-move-tasks.js   # moveTasks relocation + progress
-node backend/scripts/test-score-order.js   # lifetime scoring math
-node backend/scripts/test-shared.js       # shared/ progress + scoring helpers
-# shorthand:
+node backend/scripts/test-envelope.js          # response envelope helpers + layer checks
+node backend/scripts/test-validation.js        # zod schemas (strict, defaults)
+node backend/scripts/test-pagination.js        # pagination + projection + layer checks
+node backend/scripts/test-move-tasks.js        # applyMove relocation + progress + layer checks
+node backend/scripts/test-score-order.js       # UB-06 tier crossing + UB-10 lifetime + layer checks
+node backend/scripts/test-services-score.js    # scoreService (pure)
+node backend/scripts/test-services-mutation.js # taskMutationService via fakes (incl. FIX-01)
+node backend/scripts/test-services-lifecycle.js# cycleLifecycleService via fakes
+node shared/test-shared.js                     # shared/ progress + scoring helpers
+# shorthand (matches CI):
 for f in backend/scripts/test-*.js shared/test*.js; do node "$f"; done
 ```
 
 The same loop runs in CI (`.github/workflows/publish.yml` `test` job) on every
-release tag. Local runs need no Mongo.
+release tag. A follow-up `smoke` job (`needs: test`) then runs
+`bash scripts/smoke/api-smoke.sh` — it builds mongo + backend + frontend
+under the dedicated `pixelpaladin-smoke` project on port 3099, exercises the
+v2 envelope end-to-end (including the FIX-01 gifUrl clear), and tears
+everything down on exit. `build-and-push` is `needs: [test, smoke]`.
+
+Local runs need no Mongo.
 
 ## Docker
 

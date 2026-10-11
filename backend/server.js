@@ -25,9 +25,10 @@ mongoose.connect(MONGODB_URI)
   .then(async () => {
     if (DEBUG) console.log('Connected to MongoDB');
     // UB-15: sync declared indexes (unique uuid, finished/createdAt). Log errors; do not crash boot.
+    // Models are imported via repositories/index — the only place outside
+    // repositories/ that touches models (syncIndexes boot housekeeping only).
     try {
-      const Cycle = require('./models/Cycle');
-      const UserProfile = require('./models/UserProfile');
+      const { Cycle, UserProfile } = require('./repositories');
       await Promise.all([Cycle.syncIndexes(), UserProfile.syncIndexes()]);
       if (DEBUG) console.log('Mongo indexes synced (Cycle, UserProfile)');
     } catch (err) {

@@ -332,16 +332,16 @@ export const useMonthStore = defineStore("month", {
 
     updateTask(
       taskUuid: string,
-      payload: Partial<
-        Pick<
-          Task,
-          | "description"
-          | "optional"
-          | "legendary"
-          | "icon"
-          | "gifUrl"
-        >
-      >
+      // FIX-01: `icon` / `gifUrl` accept `null` to clear the field
+      // server-side; `undefined` keeps the existing value. Other
+      // fields stay string-or-undefined as before.
+      payload: {
+        description?: string;
+        optional?: boolean;
+        legendary?: boolean;
+        icon?: string | null;
+        gifUrl?: string | null;
+      }
     ) {
       if (this.currentMonth?.finished) return;
       const task = this.getTaskByUuid(taskUuid) as Task | null;
@@ -349,8 +349,9 @@ export const useMonthStore = defineStore("month", {
       if (payload.description !== undefined) task.description = payload.description;
       if (payload.optional !== undefined) task.optional = payload.optional;
       if (payload.legendary !== undefined) task.legendary = payload.legendary;
-      if (payload.icon !== undefined) task.icon = payload.icon;
-      if (payload.gifUrl !== undefined) task.gifUrl = payload.gifUrl;
+      // `!== undefined` covers null + string (set/clear); strict undefined = no-op.
+      if (payload.icon !== undefined) task.icon = payload.icon as Task["icon"];
+      if (payload.gifUrl !== undefined) task.gifUrl = payload.gifUrl as Task["gifUrl"];
       this.refreshProgressLocal();
 
       this.enqueueCycleMutation(this.currentMonth!.uuid, "habit update", {

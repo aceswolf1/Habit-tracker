@@ -24,6 +24,8 @@
 #       PATCH updateTasks(complete) -> pointsEarned>0
 #       PATCH moveTasks          -> envelope, success
 #       PATCH updateTasks(uncomplete) -> pointsEarned<0
+#       FIX-01: PATCH updateTasks gifUrl=<URL>, then gifUrl=null
+#                                    -> field is cleared (W3 contract add-on)
 #       invalid PATCH (strict extra key) -> 400 VALIDATION_ERROR
 #       POST /:id/finish         -> envelope, {cycle, statistics, alreadyFinished}
 #       PATCH again on finished cycle -> 409 CYCLE_FINISHED
@@ -260,40 +262,67 @@ if ! jq -e '.data.pointsEarned < 0' "${RESP_BODY}" >/dev/null; then
 fi
 echo "    pointsEarned=$(jq -r '.data.pointsEarned' "${RESP_BODY}") (<0) OK"
 
-echo "==> smoke: [9] invalid PATCH (strict extra key) -> 400 VALIDATION_ERROR"
+# ---- FIX-01 — clearing gifUrl via PATCH (W3 contract add-on) --------------
+echo
+echo "==> smoke: [9] FIX-01 PATCH updateTasks(gifUrl=<URL>) then gifUrl=null clears the field"
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-1","gifUrl":"https://example.com/smoke.gif"}]}'
+assert_envelope_ok "fix01-set"
+# Now clear with null
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-1","gifUrl":null}]}'
+assert_envelope_ok "fix01-clear"
+# Read the cycle back and confirm the field is cleared. The contract says
+# the field can be null OR absent; either is acceptable proof of clear.
+req GET "/api/cycles/${NEW_UUID}"
+assert_envelope_ok "fix01-get"
+# Use a jq helper that captures both `gifUrl == null` and `has("gifUrl")|not`.
+# We accept either as proof the field is cleared (no leftover URL).
+GIFURL_RAW="$(jq -r '
+  def find:
+    [.data.weeks[].days[].tasks[] | select(.uuid=="t-smoke-1")][0].gifUrl
+    // "<<missing>>";
+  find
+' "${RESP_BODY}")"
+echo "    gifUrl after clear: ${GIFURL_RAW}"
+if [[ "${GIFURL_RAW}" != "null" && "${GIFURL_RAW}" != "<<missing>>" ]]; then
+  echo "FATAL: FIX-01 — gifUrl was not cleared (got '${GIFURL_RAW}')"
+  cat "${RESP_BODY}"; exit 24
+fi
+echo "    FIX-01 clear OK (gifUrl cleared via null)"
+
+echo "==> smoke: [10] invalid PATCH (strict extra key) -> 400 VALIDATION_ERROR"
 req PATCH "/api/cycles/${NEW_UUID}" "$(jq -n \
   --arg w "$WEEK_UUID" --arg d "$DAY1_UUID" \
   '{type:"addTasks", additions:[{weekUuid:$w, dayUuid:$d, task:{description:"x", optional:false}}], evilExtraKey:true}')"
 if [[ "${HTTP_CODE}" != "400" ]]; then
-  echo "FATAL: invalid PATCH expected 400, got ${HTTP_CODE}"; cat "${RESP_BODY}"; exit 18
+  echo "FATAL: invalid PATCH expected 400, got ${HTTP_CODE}"; cat "${RESP_BODY}"; exit 25
 fi
 assert_envelope_err VALIDATION_ERROR "invalid-patch"
 
-echo "==> smoke: [10] POST /api/cycles/${NEW_UUID}/finish"
+echo "==> smoke: [11] POST /api/cycles/${NEW_UUID}/finish"
 req POST "/api/cycles/${NEW_UUID}/finish"
 assert_envelope_ok "finish"
 if ! jq -e '.data.alreadyFinished == false and .data.cycle.finished == true' "${RESP_BODY}" >/dev/null; then
-  echo "FATAL: finish envelope wrong"; cat "${RESP_BODY}"; exit 19
+  echo "FATAL: finish envelope wrong"; cat "${RESP_BODY}"; exit 26
 fi
 echo "    finished=true, alreadyFinished=false OK"
 
-echo "==> smoke: [11] PATCH on finished cycle -> 409 CYCLE_FINISHED"
+echo "==> smoke: [12] PATCH on finished cycle -> 409 CYCLE_FINISHED"
 req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-1","completed":true}]}'
 if [[ "${HTTP_CODE}" != "409" ]]; then
-  echo "FATAL: PATCH-on-finished expected 409, got ${HTTP_CODE}"; cat "${RESP_BODY}"; exit 20
+  echo "FATAL: PATCH-on-finished expected 409, got ${HTTP_CODE}"; cat "${RESP_BODY}"; exit 27
 fi
 assert_envelope_err CYCLE_FINISHED "finished-patch"
 
-echo "==> smoke: [12] GET /api/tasks  (proxy allowlist removed it -> 404)"
+echo "==> smoke: [13] GET /api/tasks  (proxy allowlist removed it -> 404)"
 req GET /api/tasks
 if [[ "${HTTP_CODE}" != "404" ]]; then
-  echo "FATAL: /api/tasks should be 404, got ${HTTP_CODE}"; cat "${RESP_BODY}"; exit 21
+  echo "FATAL: /api/tasks should be 404, got ${HTTP_CODE}"; cat "${RESP_BODY}"; exit 28
 fi
 echo "    /api/tasks = 404 (proxy no longer relays) OK"
 
 # ---- SSR shell + self-hosted fonts -----------------------------------------
 echo
-echo "==> smoke: [13] SSR shell on /  (must mention PixelPaladin + no googleapis)"
+echo "==> smoke: [14] SSR shell on /  (must mention PixelPaladin + no googleapis)"
 INDEX_HTML="$(mktemp -t pixelpaladin-smoke-index.XXXXXX.html)"
 ROOT_HTTP="$(curl --silent --show-error --output "${INDEX_HTML}" --write-out '%{http_code}' "${BASE_URL}/")"
 echo "    GET /  -> HTTP ${ROOT_HTTP}"
@@ -316,13 +345,13 @@ rm -f "${INDEX_HTML}"
 
 # ---- Report-only observability (orchestrator request — don't fail the run) --
 echo
-echo "==> smoke: [14] REPORT-ONLY GET /does-not-exist  (SPA route, expected 200)"
+echo "==> smoke: [15] REPORT-ONLY GET /does-not-exist  (SPA route, expected 200)"
 SPURIOUS_HTTP="$(curl --silent --show-error --output /tmp/pixelpaladin-smoke-spurious.html --write-out '%{http_code}' "${BASE_URL}/does-not-exist")"
 echo "    GET /does-not-exist  -> HTTP ${SPURIOUS_HTTP} (size=$(wc -c </tmp/pixelpaladin-smoke-spurious.html | tr -d ' ') bytes)"
 rm -f /tmp/pixelpaladin-smoke-spurious.html
 
 echo
-echo "==> smoke: [15] REPORT-ONLY scan frontend logs for 5xx during the run"
+echo "==> smoke: [16] REPORT-ONLY scan frontend logs for 5xx during the run"
 echo
 FRONTEND_LOGS="$("${DC[@]}" logs --no-color frontend 2>&1 || true)"
 FIVE_XX_COUNT="$(printf '%s\n' "${FRONTEND_LOGS}" | grep -cE ' 5[0-9]{2} ' || true)"

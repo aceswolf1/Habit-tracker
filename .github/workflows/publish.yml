@@ -80,8 +80,24 @@ jobs:
             echo 'No node test scripts found under backend/scripts/ or shared/ — OK'
           fi
 
-  build-and-push:
+  # W3-qa — gate image publish on the full docker-compose smoke harness.
+  # The script builds mongo + backend + frontend under the dedicated
+  # `pixelpaladin-smoke` project, exercises the v2 envelope end-to-end
+  # (including the FIX-01 gifUrl clear), and tears everything down on exit.
+  # It writes a temp `.env` itself so it works on a runner with no
+  # `KLIPY_API_KEY` and no checkout `.env`.
+  smoke:
     needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run api-smoke.sh (mongo + backend + frontend under pixelpaladin-smoke)
+        run: bash scripts/smoke/api-smoke.sh
+
+  build-and-push:
+    needs: [test, smoke]
     runs-on: ubuntu-latest
     permissions:
       contents: read

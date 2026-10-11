@@ -644,12 +644,17 @@ function submit() {
       });
       emit("created");
     } else if (editingTask.value) {
+      // FIX-01: in edit mode, an empty visual field means "clear it
+      // server-side" → send `null`. `undefined` would mean "leave it",
+      // which is wrong when the user has just toggled visualType.
+      const iconPayload = form.icon ? form.icon : null;
+      const gifUrlPayload = form.gifUrl ? form.gifUrl : null;
       store.updateTask((editingTask.value as any).uuid, {
         description: form.description,
         optional: form.optional,
         legendary: form.legendary,
-        icon: form.icon || undefined,
-        gifUrl: form.gifUrl || undefined,
+        icon: iconPayload,
+        gifUrl: gifUrlPayload,
       });
       emit("updated");
     }

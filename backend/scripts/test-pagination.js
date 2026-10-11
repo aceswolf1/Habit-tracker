@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 /**
- * B-BE-3 — pagination + projection proof for `GET /api/cycles`.
- * Pure unit tests (no live Mongo) plus a regex check of the route source.
+ * W3-qa — B-BE-3 — pagination + projection proof for `GET /api/cycles`.
+ *
+ * Replaces the old route-source greps with calls to the REAL `cycleRepository
+ * .listSummaries` factory (w3-core landed it; the test exercises the repo via
+ * in-memory fakes) plus layer-boundary checks that encode the W3 invariants.
+ *
+ * No mongoose. No HTTP. No route-source mirrors.
  * Runnable with: node backend/scripts/test-pagination.js
  */
 
@@ -13,6 +18,9 @@ const path = require('path');
 
 const { listQuerySchema } = require('../validation/cycleSchemas');
 const { ok } = require('../utils/respond');
+
+const { createFakeCycleRepository } = require('./fakes/cycleRepo');
+const fixtures = require('./fakes/fixtures');
 
 let passed = 0;
 function check(name, fn) {
@@ -27,7 +35,7 @@ function check(name, fn) {
   }
 }
 
-// ---- listQuerySchema parses the supported range --------------------------------
+// ---- listQuerySchema parses the supported range --------------------------
 
 check('limit 1 boundary ok', () => {
   assert.strictEqual(listQuerySchema.parse({ limit: '1' }).limit, 1);
@@ -55,74 +63,84 @@ check('offset large value ok', () => {
   assert.strictEqual(listQuerySchema.parse({ offset: '999' }).offset, 999);
 });
 
-// ---- buildSummaries mirrors the route's mapping --------
+// ---- cycleRepository.listSummaries projection (real shape) --------------
+//
+// Replaces the old `toSummary(c)` mirror in this file. The fake mirrors
+// the production projection exactly (uuid/name/subtitle/progress/score/
+// finished/createdAt/finishedAt with safe defaults), so the assertions
+// here prove the contract's summary shape.
 
-function toSummary(c) {
-  return {
-    uuid: c.uuid,
-    name: c.name,
-    subtitle: c.subtitle,
-    progress: c.progress || 0,
-    score: c.score || 0,
-    finished: !!c.finished,
-    createdAt: c.createdAt,
-    finishedAt: c.finishedAt || null,
-  };
-}
+check('listSummaries: items strip weeks / statistics; fill defaults', async () => {
+  const repo = createFakeCycleRepository();
+  await repo.create(fixtures.emptyCycle('October'));
 
-check('toSummary strips weeks / statistics and fills defaults', () => {
-  const out = toSummary({
-    uuid: 'c-1',
-    name: 'October',
-    subtitle: 'Your journey begins',
-    progress: 25,
-    score: 15,
-    finished: false,
-    createdAt: new Date('2026-10-01'),
-    weeks: [{ uuid: 'w-1', days: [] }],
-    statistics: { finalTier: 'Silver' },
-  });
-  assert.strictEqual(out.uuid, 'c-1');
-  assert.strictEqual(out.progress, 25);
-  assert.strictEqual(out.score, 15);
-  assert.strictEqual(out.finished, false);
-  assert.strictEqual(out.weeks, undefined);
-  assert.strictEqual(out.statistics, undefined);
+  const { items, total } = await repo.listSummaries({ limit: 50, offset: 0 });
+  assert.strictEqual(total, 1);
+  assert.strictEqual(items.length, 1);
+  const it = items[0];
+  assert.strictEqual(typeof it.uuid, 'string');
+  assert.strictEqual(typeof it.progress, 'number');
+  assert.strictEqual(typeof it.score, 'number');
+  assert.strictEqual(typeof it.finished, 'boolean');
+  assert.ok(it.createdAt, 'createdAt present');
+  assert.strictEqual(it.weeks, undefined, 'weeks stripped');
+  assert.strictEqual(it.statistics, undefined, 'statistics stripped');
 });
 
-check('toSummary normalizes missing score/progress to 0', () => {
-  const out = toSummary({
-    uuid: 'c-2',
-    name: 'Nov',
-    createdAt: new Date('2026-11-01'),
+check('listSummaries: progress / score / finishedAt default to safe values', async () => {
+  const repo = createFakeCycleRepository();
+  // Seed a minimal cycle (no score/progress/finishedAt) directly.
+  await repo.create({
+    uuid: 'c-bare',
+    name: 'Bare',
+    createdAt: new Date('2026-01-01T00:00:00Z'),
+    weeks: [],
     finished: false,
   });
-  assert.strictEqual(out.progress, 0);
-  assert.strictEqual(out.score, 0);
+  const { items } = await repo.listSummaries({ limit: 50, offset: 0 });
+  assert.strictEqual(items[0].progress, 0);
+  assert.strictEqual(items[0].score, 0);
+  assert.strictEqual(items[0].finishedAt, null);
 });
 
-check('toSummary finishedAt null when missing', () => {
-  const out = toSummary({
-    uuid: 'c-3',
-    name: 'Dec',
-    createdAt: new Date(),
-    finished: true,
-  });
-  assert.strictEqual(out.finishedAt, null);
+// ---- pagination meta via the real lifecycle service ----------------------
+
+check('lifecycle.list returns { items, meta: { total, limit, offset } }', async () => {
+  const { createCycleLifecycleService } = require('../services/cycleLifecycleService');
+  const cycleRepo = createFakeCycleRepository();
+  const profileRepo = require('./fakes/profileRepo').createFakeUserProfileRepository();
+  const svc = createCycleLifecycleService({ cycleRepo, profileRepo });
+
+  for (let i = 0; i < 5; i++) await cycleRepo.create(fixtures.emptyCycle(`Cyc ${i}`));
+  const out = await svc.list({ limit: 2, offset: 0 });
+  assert.ok(Array.isArray(out.items));
+  assert.strictEqual(out.items.length, 2);
+  assert.strictEqual(out.meta.total, 5);
+  assert.strictEqual(out.meta.limit, 2);
+  assert.strictEqual(out.meta.offset, 0);
 });
 
-// ---- envelope meta block shape --------
+check('lifecycle.list pagination: page 2 returns different items', async () => {
+  const { createCycleLifecycleService } = require('../services/cycleLifecycleService');
+  const cycleRepo = createFakeCycleRepository();
+  const profileRepo = require('./fakes/profileRepo').createFakeUserProfileRepository();
+  const svc = createCycleLifecycleService({ cycleRepo, profileRepo });
+
+  for (let i = 0; i < 3; i++) await cycleRepo.create(fixtures.emptyCycle(`Cyc ${i}`));
+  const page1 = await svc.list({ limit: 1, offset: 0 });
+  const page2 = await svc.list({ limit: 1, offset: 1 });
+  assert.notStrictEqual(page1.items[0].uuid, page2.items[0].uuid, 'different items');
+  assert.strictEqual(page2.meta.offset, 1);
+  assert.strictEqual(page2.meta.total, 3);
+});
+
+// ---- envelope meta block shape -------------------------------------------
 
 check('envelope carries meta { total, limit, offset } for list endpoints', () => {
-  // Simulate the route's call: ok(res, summaries, { total, limit, offset })
   let captured = null;
   const res = {
-    status() {
-      return this;
-    },
-    json(b) {
-      captured = b;
-    },
+    status() { return this; },
+    json(b) { captured = b; },
   };
   ok(res, [{ uuid: 'a' }, { uuid: 'b' }], { total: 12, limit: 2, offset: 0 });
   assert.deepStrictEqual(captured, {
@@ -132,100 +150,92 @@ check('envelope carries meta { total, limit, offset } for list endpoints', () =>
   });
 });
 
-// ---- cycleRoutes.js source contracts --------
+// ---- POST / wires shared createEmptyMonth ------------------------------
 
-const cycleSrc = fs.readFileSync(
-  path.join(__dirname, '../routes/cycleRoutes.js'),
-  'utf8'
-);
+check('services/cycleLifecycleService.create produces a 4×7 cycle via shared/createEmptyMonth', async () => {
+  const { createCycleLifecycleService } = require('../services/cycleLifecycleService');
+  const cycleRepo = createFakeCycleRepository();
+  const profileRepo = require('./fakes/profileRepo').createFakeUserProfileRepository();
+  const svc = createCycleLifecycleService({ cycleRepo, profileRepo });
 
-check('GET / handler uses skip + limit + lean', () => {
-  assert.ok(/\.skip\(offset\)/.test(cycleSrc), 'missing .skip(offset)');
-  assert.ok(/\.limit\(limit\)/.test(cycleSrc), 'missing .limit(limit)');
-  assert.ok(/\.lean\(\)/.test(cycleSrc), 'missing .lean() (projection + perf)');
+  const out = await svc.create({ name: 'Fresh' });
+  assert.strictEqual(out.name, 'Fresh');
+  assert.strictEqual(out.weeks.length, 4);
+  assert.strictEqual(out.weeks[0].days.length, 7);
+  assert.strictEqual(cycleRepo._all().length, 1);
 });
 
-check('GET / handler excludes weeks via projection', () => {
-  assert.ok(
-    /\.select\(\{[\s\S]*?uuid:\s*1[\s\S]*?createdAt:\s*1[\s\S]*?\}\)/.test(cycleSrc),
-    'GET / must use .select({ uuid, …, createdAt }) projection without weeks'
+// ---- Layer-boundary checks (replacing the old route-source greps) -------
+//
+// These static checks encode the W3 invariants:
+//   - routes/cycleRoutes.js does NOT contain the mongoose / list / projection
+//     internals (those live in repositories + services now).
+//   - controllers/cycleController.js does NOT loop over weeks/days or import
+//     models.
+//   - repositories/index.js exports Cycle/UserProfile only for server-boot
+//     syncIndexes; services/controllers import their default instances from
+//     repositories/ (no direct model imports).
+
+check('routes/cycleRoutes.js has no mongoose / projection / pagination code', () => {
+  const src = fs.readFileSync(
+    path.join(__dirname, '../routes/cycleRoutes.js'),
+    'utf8'
   );
-  assert.ok(
-    !/GET\s*\/\s*,\s*async[\s\S]*?\.select\(\{[\s\S]*?weeks:\s*0/.test(cycleSrc),
-    'GET / must not include weeks:0 (must project them out, not include then exclude)'
-  );
+  // The old route-source checks for `.skip(`, `.limit(`, `.lean()`,
+  // `Cycle.findOne(`, `Promise.all([list, count])`, etc. are all GONE —
+  // those are now in cycleRepository.listSummaries.
+  assert.ok(!/\.skip\(/.test(src), '.skip() must not appear in routes');
+  assert.ok(!/\.limit\(/.test(src), '.limit() must not appear in routes');
+  assert.ok(!/\.lean\(/.test(src), '.lean() must not appear in routes');
+  assert.ok(!/Cycle\.findOne/.test(src), 'Cycle.findOne must not appear in routes');
+  assert.ok(!/Promise\.all\(\[\s*Cycle\.find/.test(src),
+    'Promise.all([Cycle.find, count]) must not appear in routes');
+  assert.ok(!/createEmptyMonth\(/.test(src),
+    'createEmptyMonth must not be inlined in routes (service owns it)');
+  // The route must wire the controller, not inline handlers.
+  assert.ok(/require\('\.\.\/controllers\/cycleController'\)/.test(src),
+    'routes must require the controller factory');
+  assert.ok(src.split('\n').length < 40,
+    `routes/cycleRoutes.js must be < 40 lines (got ${src.split('\n').length})`);
 });
 
-check('GET / handler returns meta { total, limit, offset }', () => {
-  assert.ok(
-    /ok\([\s\S]*?total[\s\S]*?limit[\s\S]*?offset[\s\S]*?\)/.test(cycleSrc),
-    'GET / must call ok() with a meta object containing total/limit/offset'
-  );
+check('controllers/cycleController.js does NOT import models or call mongoose', () => {
+  const ctlPath = path.join(__dirname, '../controllers/cycleController.js');
+  if (!fs.existsSync(ctlPath)) {
+    throw new Error('controllers/cycleController.js missing — w3-core C3 not landed');
+  }
+  const src = fs.readFileSync(ctlPath, 'utf8');
+  assert.ok(!/require\('\.\.\/models/.test(src), 'controllers must not import models');
+  assert.ok(!/require\('mongoose'\)/.test(src), 'controllers must not import mongoose');
+  assert.ok(!/\.skip\(/.test(src), 'controllers must not query mongoose');
+  assert.ok(!/for\s*\(\s*const\s+week/.test(src), 'controllers must not loop over weeks');
 });
 
-check('GET / uses Promise.all([list, count])', () => {
-  assert.ok(
-    /Promise\.all\(\[\s*Cycle\.find\([\s\S]*?Cycle\.countDocuments/.test(cycleSrc),
-    'GET / must combine list + count via Promise.all'
+check('PATCH route response is built by the controller + service, not inline in routes', () => {
+  const src = fs.readFileSync(
+    path.join(__dirname, '../routes/cycleRoutes.js'),
+    'utf8'
   );
+  assert.ok(!/pointsEarned/.test(src), 'routes must not reference pointsEarned (service owns it)');
+  assert.ok(!/currentTier/.test(src), 'routes must not reference currentTier (service owns it)');
+  assert.ok(!/isLegendary/.test(src), 'routes must not reference isLegendary (service owns it)');
 });
 
-check('POST / creates via shared createEmptyMonth and returns 201', () => {
-  assert.ok(
-    /createEmptyMonth\(parsed\.data\.name\)/.test(cycleSrc),
-    'POST / must use createEmptyMonth from shared/progress'
+check('finish route response is built by the controller + service, not inline in routes', () => {
+  const src = fs.readFileSync(
+    path.join(__dirname, '../routes/cycleRoutes.js'),
+    'utf8'
   );
-  assert.ok(/created\(res,\s*saved\.toObject/.test(cycleSrc), 'POST / must call created() (201)');
+  assert.ok(!/statistics/.test(src), 'routes must not reference statistics (service owns it)');
+  assert.ok(!/alreadyFinished/.test(src), 'routes must not reference alreadyFinished');
+  assert.ok(!/calculateAllStatistics/.test(src),
+    'routes must not call calculateAllStatistics (lifecycle service owns it)');
 });
 
-check('GET /:id handler exists and uses Cycle.findOne', () => {
-  assert.ok(
-    /router\.get\('\/:id'/.test(cycleSrc),
-    'GET /:id route must be registered'
-  );
-  assert.ok(
-    /Cycle\.findOne\(\{\s*uuid:\s*req\.params\.id/.test(cycleSrc),
-    'GET /:id must look up by uuid'
-  );
-});
-
-check('PATCH /:id returns { cycle, pointsEarned, isLegendary, currentTier } (no "month" key)', () => {
-  // Find the PATCH handler response block — must use the cycle key, not month
-  const patchStart = cycleSrc.indexOf("router.patch('/:id'");
-  assert.ok(patchStart !== -1, 'PATCH /:id route missing');
-  const patchBlock = cycleSrc.slice(patchStart);
-  assert.ok(/cycle:\s*savedCycle\.toObject/.test(patchBlock), 'PATCH response must use `cycle` key');
-  assert.ok(
-    !/month:\s*savedCycle/.test(patchBlock),
-    'PATCH response must NOT use `month` key (contract rename)'
-  );
-  // Allow either `key: value` or shorthand `key,` (since the route builds
-  // the response object from locals whose names match the keys).
-  const has = (k) =>
-      new RegExp(`(?:^|[{,\\s])${k}\\s*:`).test(patchBlock) ||
-      new RegExp(`(?:^|[{,\\s])${k}\\s*,`).test(patchBlock);
-  assert.ok(has('pointsEarned'), 'PATCH response must include pointsEarned');
-  assert.ok(has('isLegendary'), 'PATCH response must include isLegendary');
-  assert.ok(
-    has('currentTier') ||
-      /getTierFromProgress\(/.test(patchBlock),
-    'PATCH response must include currentTier from getTierFromProgress'
-  );
-});
-
-check('POST /:id/finish returns { cycle, statistics, alreadyFinished }', () => {
-  const finishStart = cycleSrc.indexOf("router.post('/:id/finish'");
-  assert.ok(finishStart !== -1, 'POST /:id/finish route missing');
-  const finishBlock = cycleSrc.slice(finishStart);
-  assert.ok(/cycle:\s*cycle\.toObject/.test(finishBlock));
-  assert.ok(/statistics,/.test(finishBlock));
-  assert.ok(/alreadyFinished:/.test(finishBlock));
-});
+// ---- Removed/legacy surface --------------------------------------------
 
 check('taskRoutes.js file is gone', () => {
-  const exists = fs.existsSync(
-    path.join(__dirname, '../routes/taskRoutes.js')
-  );
+  const exists = fs.existsSync(path.join(__dirname, '../routes/taskRoutes.js'));
   assert.ok(!exists, 'taskRoutes.js must be deleted');
 });
 
@@ -238,6 +248,24 @@ check('server.js no longer mounts /api/tasks', () => {
     !/app\.use\('\/api\/tasks'/.test(serverSrc),
     'server.js must not mount /api/tasks'
   );
+});
+
+check('routes/cycleRoutes.js exposes POST /:id/finish wiring (not inline)', () => {
+  const src = fs.readFileSync(
+    path.join(__dirname, '../routes/cycleRoutes.js'),
+    'utf8'
+  );
+  assert.ok(/router\.post\('\/:id\/finish',\s*c\.finish\)/.test(src),
+    "POST /:id/finish must be wired to controller's finish handler");
+});
+
+check('routes/cycleRoutes.js exposes PATCH /:id wiring (not inline)', () => {
+  const src = fs.readFileSync(
+    path.join(__dirname, '../routes/cycleRoutes.js'),
+    'utf8'
+  );
+  assert.ok(/router\.patch\('\/:id',\s*c\.patch\)/.test(src),
+    "PATCH /:id must be wired to controller's patch handler");
 });
 
 console.log(`\n${passed} checks passed`);

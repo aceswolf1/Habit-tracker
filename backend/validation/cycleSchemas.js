@@ -36,8 +36,10 @@ const taskUpdateSchema = z
     optional: z.boolean().optional(),
     completed: z.boolean().optional(),
     legendary: z.boolean().optional(),
-    icon: z.string().min(1).max(32).optional(),
-    gifUrl: z.string().url().max(2048).optional(),
+    // FIX-01: `null` is allowed and means "clear the field" server-side.
+    // Empty string remains invalid; `undefined` keeps the existing value.
+    icon: z.string().min(1).max(32).nullable().optional(),
+    gifUrl: z.string().url().max(2048).nullable().optional(),
     order: z.number().int().nonnegative().optional(),
   })
   .strict();
