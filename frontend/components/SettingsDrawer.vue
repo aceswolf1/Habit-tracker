@@ -1,5 +1,14 @@
 <template>
-  <div>
+  <!--
+    Clip layer: fixed, full-viewport, overflow hidden. The drawer slides
+    in and out INSIDE this box, so its off-canvas translateX(110%) can never
+    widen the page (a `filter`/`transform` on an ancestor such as `body`
+    turns `position: fixed` into ancestor-relative positioning, which made
+    the closed drawer add horizontal scroll on phones/tablets).
+    pointer-events: none so the layer never blocks clicks; the overlay and
+    the drawer opt back in.
+  -->
+  <div class="drawer-root" :class="{ open: store.drawerOpen }">
     <!--
       Overlay: click-to-dismiss scrim behind the drawer. Only mounts when
       the drawer is open so it can't trap clicks while closed.
@@ -82,11 +91,19 @@ function onSetUiFont(choice: string) {
 </script>
 
 <style scoped>
-.drawer-overlay {
+.drawer-root {
   position: fixed;
   inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 60;
+}
+
+.drawer-overlay {
+  position: absolute;
+  inset: 0;
   background: rgba(0, 0, 0, 0.45);
-  z-index: 50;
+  pointer-events: auto;
 }
 
 /*
@@ -97,17 +114,18 @@ function onSetUiFont(choice: string) {
       tabbable / painted (visibility: hidden + inert set inline).
 */
 .settings-drawer {
-  position: fixed;
+  position: absolute;
   top: 0;
   right: 0;
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   max-width: 320px;
+  overflow-y: auto;
+  pointer-events: auto;
   background: var(--pp-bg-deep);
   border-left: 3px solid var(--pp-black);
   transform: translateX(110%);
   transition: transform 300ms ease;
-  z-index: 60;
   color: var(--pp-text);
   padding: 1rem;
   box-shadow: -8px 0 24px rgba(0,0,0,0.6);
@@ -139,7 +157,7 @@ function onSetUiFont(choice: string) {
   */
   .settings-drawer {
     max-width: none;
-    width: 100vw;
+    width: 100%;
   }
 }
 </style>
