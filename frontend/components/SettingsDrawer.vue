@@ -1,17 +1,31 @@
 <template>
   <div>
-    <!-- Overlay -->
+    <!--
+      Overlay: click-to-dismiss scrim behind the drawer. Only mounts when
+      the drawer is open so it can't trap clicks while closed.
+    -->
     <div
       v-if="store.drawerOpen"
       class="drawer-overlay"
       @click="close"
     ></div>
 
-    <!-- Drawer -->
-    <aside :class="['settings-drawer', { open: store.drawerOpen }]">
+    <!--
+      Drawer:
+        - closed: visibility: hidden + inert + aria-hidden so it can't be
+          tabbed into and headless screenshots don't include it.
+        - open (>= lg): right-side sheet, 320 px wide.
+        - open (<  sm): full-width bottom sheet pinned to the viewport.
+    -->
+    <aside
+      :class="['settings-drawer', { open: store.drawerOpen }]"
+      :aria-hidden="!store.drawerOpen"
+      :inert="!store.drawerOpen ? true : undefined"
+      :style="store.drawerOpen ? null : { visibility: 'hidden' }"
+    >
       <div class="drawer-header">
         <div class="drawer-title">Settings</div>
-        <button class="close-btn" @click="close">✖</button>
+        <button class="close-btn pp-tap" @click="close">✖</button>
       </div>
 
       <div class="drawer-content">
@@ -75,18 +89,26 @@ function onSetUiFont(choice: string) {
   z-index: 50;
 }
 
+/*
+  Drawer chrome:
+    - >= lg: 320 px right-anchored sheet, slides in from translateX(110%).
+    - <  sm: full-width sheet anchored to the right edge; identical
+      off-canvas hide via translateX(110%) so the closed state is never
+      tabbable / painted (visibility: hidden + inert set inline).
+*/
 .settings-drawer {
   position: fixed;
   top: 0;
   right: 0;
   height: 100vh;
-  width: 320px;
-  background: #0b1220;
-  border-left: 3px solid black;
+  width: 100vw;
+  max-width: 320px;
+  background: var(--pp-bg-deep);
+  border-left: 3px solid var(--pp-black);
   transform: translateX(110%);
   transition: transform 300ms ease;
   z-index: 60;
-  color: white;
+  color: var(--pp-text);
   padding: 1rem;
   box-shadow: -8px 0 24px rgba(0,0,0,0.6);
 }
@@ -103,9 +125,21 @@ function onSetUiFont(choice: string) {
 }
 
 .drawer-title { font-family: 'Press Start 2P', cursive; }
-.close-btn { background: transparent; border: none; color:white; font-size: 1rem; cursor: pointer }
+.close-btn { background: transparent; border: none; color: var(--pp-text); font-size: 1rem; cursor: pointer }
 
 .drawer-content { margin-top: 8px }
 .setting-row { display:flex; justify-content:space-between; align-items:center; padding: 0.5rem 0 }
 .setting-label { font-size: 0.8rem }
+
+@media (max-width: 639px) {
+  /*
+    Phone: full-width sheet. On phones (< 640 px) we lift the 320 px
+    max-width cap so the drawer fills the viewport — matches the contract:
+    "on phones it opens as a full-width sheet".
+  */
+  .settings-drawer {
+    max-width: none;
+    width: 100vw;
+  }
+}
 </style>

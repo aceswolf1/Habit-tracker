@@ -343,12 +343,18 @@ fi
 echo "    app shell OK; no Google Fonts CDN"
 rm -f "${INDEX_HTML}"
 
-# ---- Report-only observability (orchestrator request — don't fail the run) --
+# ---- 404 page (hard) + report-only observability --
 echo
-echo "==> smoke: [15] REPORT-ONLY GET /does-not-exist  (SPA route, expected 200)"
-SPURIOUS_HTTP="$(curl --silent --show-error --output /tmp/pixelpaladin-smoke-spurious.html --write-out '%{http_code}' "${BASE_URL}/does-not-exist")"
-echo "    GET /does-not-exist  -> HTTP ${SPURIOUS_HTTP} (size=$(wc -c </tmp/pixelpaladin-smoke-spurious.html | tr -d ' ') bytes)"
-rm -f /tmp/pixelpaladin-smoke-spurious.html
+echo "==> smoke: [15] GET /does-not-exist as a browser -> 404 page (W4b error.vue)"
+NOTFOUND_HTTP="$(curl --silent --show-error -H 'Accept: text/html' --output /tmp/pixelpaladin-smoke-404.html --write-out '%{http_code}' "${BASE_URL}/does-not-exist")"
+echo "    GET /does-not-exist  -> HTTP ${NOTFOUND_HTTP}"
+if [[ "${NOTFOUND_HTTP}" != "404" ]] || ! grep -q 'BACK TO QUESTS' /tmp/pixelpaladin-smoke-404.html; then
+  echo "FATAL: expected HTTP 404 with the pixel 404 page (BACK TO QUESTS)"
+  rm -f /tmp/pixelpaladin-smoke-404.html
+  exit 15
+fi
+echo "    404 page OK"
+rm -f /tmp/pixelpaladin-smoke-404.html
 
 echo
 echo "==> smoke: [16] REPORT-ONLY scan frontend logs for 5xx during the run"

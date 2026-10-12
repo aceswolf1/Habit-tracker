@@ -101,7 +101,7 @@ onMounted(() => {
   padding: 1rem;
   margin-bottom: 2rem;
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(220, 38, 38, 0.3) 100%);
-  border: 3px solid #ef4444;
+  border: 3px solid var(--pp-danger);
   box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.8);
   animation: locked-pulse 2s ease-in-out infinite;
 }
@@ -122,7 +122,7 @@ onMounted(() => {
 .lock-text {
   font-family: 'Press Start 2P', cursive;
   font-size: 1rem;
-  color: #ef4444;
+  color: var(--pp-danger);
   text-shadow: 2px 2px 0 #000;
 }
 

@@ -109,16 +109,55 @@ Requires a reachable MongoDB (`MONGODB_URI`, default
 
 ## Env vars
 
-| Var           | Default                              | Notes                                            |
-|---------------|--------------------------------------|--------------------------------------------------|
-| `PORT`        | `4000`                               | HTTP listen port                                 |
-| `MONGODB_URI` | `mongodb://localhost:27017/pixelpaladin` | Atlas URI or bundled mongo                 |
-| `DEBUG`       | unset                                | `1` / `true` enables `console.info` on boot + index sync |
-| `CORS_ORIGIN` | unset                                | Comma-separated origins. **Unset = no CORS** (same-origin only) |
+| Var                 | Default                              | Notes                                            |
+|---------------------|--------------------------------------|--------------------------------------------------|
+| `PORT`              | `4000`                               | HTTP listen port                                 |
+| `MONGODB_URI`       | `mongodb://localhost:27017/pixelpaladin` | Atlas URI or bundled mongo                 |
+| `USER_PROFILE_UUID` | `default-user`                       | UB-58 — override to isolate profiles when running more than one backend against the same Mongo (e.g. multi-tenant NAS). See [`config.js`](./config.js) and the compose pass-through in `docker-compose.yml` / `docker-compose.registry.yml`. |
+| `DEBUG`             | unset                                | `1` / `true` enables `console.info` on boot + index sync; `logger.debug` emits its own JSON line in this mode |
+| `CORS_ORIGIN`       | unset                                | Comma-separated origins. **Unset = no CORS** (same-origin only) |
 
 > `CORS_ORIGIN` is intentionally off by default — in the bundled Docker stack
 > the Nuxt proxy makes the backend same-origin to the browser. Only set it if
 > you bypass the proxy (e.g. a separate SPA host).
+
+## Logs and request IDs (UB-59)
+
+Every request emits **one JSON line on stdout** via `backend/utils/logger.js`:
+
+```json
+{"ts":"2026-10-11T22:15:26.382Z","level":"info","msg":"request","reqId":"my-trace-1234","method":"GET","path":"/api/cycles/profile","status":200,"ms":5.26}
+```
+
+- `reqId` is read from the caller's `X-Request-Id` header (when it matches
+  `[A-Za-z0-9_-]{8,128}`) or generated via `crypto.randomUUID()`.
+- The same id is echoed back on the response header `X-Request-Id`.
+- The 500 handler and `utils/respond.js#internal` log a JSON error line with
+  `reqId` attached (`{msg:"api/internal", reqId, err}`).
+
+The logger exposes `info`, `debug` (gated by `DEBUG=1`), `warn`, `error`. No
+new deps. Tested by `backend/scripts/test-logger.js` (8 checks).
+
+## Graceful shutdown (UB-59)
+
+`SIGTERM` (Docker stop / k8s / Watchtower) and `SIGINT` (Ctrl-C) both
+trigger the same path: stop accepting new connections, then close mongoose,
+then `process.exit(0)`. Inner timers bound the wait so a hung backend still
+exits inside the contract's 10 s window:
+
+- `server.close()` is bounded by a 10 s hard timer; exit 1 if it never fires.
+- `mongoose.connection.close()` is bounded by a 2 s inner timer; on timeout
+  the process logs `server.mongo.close.skipped` and exits 0 anyway.
+
+Prove it (bogus Mongo URI):
+
+```bash
+PORT=4101 MONGODB_URI="mongodb://localhost:9999/nope" node backend/server.js &
+PID=$!
+sleep 2
+START=$(date +%s); kill -TERM $PID; wait $PID; echo "exit=$?  elapsed=$(($(date +%s)-START))s"
+# expected: exit=0  elapsed=2s
+```
 
 ## API
 
@@ -162,6 +201,7 @@ node backend/scripts/test-score-order.js       # UB-06 tier crossing + UB-10 lif
 node backend/scripts/test-services-score.js    # scoreService (pure)
 node backend/scripts/test-services-mutation.js # taskMutationService via fakes (incl. FIX-01)
 node backend/scripts/test-services-lifecycle.js# cycleLifecycleService via fakes
+node backend/scripts/test-logger.js            # UB-59 JSON logger + request-id echo (in-process express)
 node shared/test-shared.js                     # shared/ progress + scoring helpers
 # shorthand (matches CI):
 for f in backend/scripts/test-*.js shared/test*.js; do node "$f"; done

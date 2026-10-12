@@ -7,9 +7,21 @@
  *
  * Use `ok(res, data)` for 200s, `created(res, data)` for 201s, and
  * `fail(res, status, code, message, details?)` for everything else.
- * 500s should log the underlying error via `console.error` and use
- * `internal(res, err)` so the client only sees a generic message.
+ * 500s should log the underlying error and use `internal(res, err)` so
+ * the client only sees a generic message.
+ *
+ * UB-59: when the JSON logger is present (utils/logger.js), `internal()`
+ * records the error as a JSON line with `reqId` when available. We require
+ * the logger lazily so this module remains usable from non-HTTP callers
+ * (e.g. test-envelope.js) without dragging the whole logger stack in.
  */
+
+let _log = null;
+function _getLog() {
+  if (_log) return _log;
+  try { _log = require('./logger'); } catch { _log = null; }
+  return _log;
+}
 
 function ok(res, data, meta, status = 200) {
   const body = { success: true, data };
@@ -29,9 +41,23 @@ function fail(res, status, code, message, details) {
 
 /**
  * 500 INTERNAL — log the real error server-side, return a generic message.
+ *
+ * Always calls `console.error` so test-envelope.js (which stubs
+ * console.error to verify the underlying error surfaces) keeps passing.
+ * When the JSON logger is present it ALSO emits a structured line with
+ * reqId so log shippers can correlate the failure with the request.
  */
 function internal(res, err, fallbackMessage = 'Internal server error') {
-  console.error('[api/internal]', err && err.stack ? err.stack : err);
+  const stack = err && err.stack ? err.stack : err;
+  console.error('[api/internal]', stack);
+  const log = _getLog();
+  if (log) {
+    log.error({
+      msg: 'api/internal',
+      reqId: (res && res.req && res.req.reqId) || undefined,
+      err: String(stack),
+    });
+  }
   return fail(res, 500, 'INTERNAL', fallbackMessage);
 }
 

@@ -33,6 +33,10 @@ services:
       PORT: 4000
       # Defaults to the bundled mongo service. Override to point at MongoDB Atlas.
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/pixelpaladin}
+      # UB-58: per-deployment user-profile uuid. Override in .env for
+      # multi-tenant / multi-family setups; defaults keep the original
+      # single-user behaviour.
+      USER_PROFILE_UUID: ${USER_PROFILE_UUID:-default-user}
     # UB-33: Express API is small + single-user; 256m leaves headroom for V8 bursts.
     mem_limit: 256m
     depends_on:

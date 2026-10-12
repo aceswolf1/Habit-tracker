@@ -57,6 +57,7 @@ docker compose up -d --build      # rebuild after code changes
 | `APP_PORT` | `3001` | Host port the UI is served on |
 | `MONGO_DB` | `pixelpaladin` | Database name for the bundled Mongo |
 | `MONGODB_URI` | `mongodb://mongo:27017/pixelpaladin` | Set to a MongoDB Atlas URI to use an external DB instead of the bundled container |
+| `USER_PROFILE_UUID` | `default-user` | UB-58 — set per-instance when running more than one backend against the same Mongo (multi-tenant NAS / family member). Passed into the backend container as `process.env.USER_PROFILE_UUID`; `backend/config.js` reads it as the lifetime-score profile key. |
 | `IMAGE_PREFIX` | `ghcr.io/your-name` | Registry namespace for prebuilt images (see below) |
 | `IMAGE_TAG` | `latest` | Tag for prebuilt images |
 | `KLIPY_API_KEY` | _(empty)_ | Injected into the **frontend** container for Nitro `/api/klipy/*`. Required for GIF search; leave empty only if you do not use GIFs |
@@ -214,3 +215,20 @@ Create the dataset/directory first and make sure it's writable by the container.
 - UI loads but tasks don't save → check `docker compose logs backend` and confirm
   `BACKEND_URL=http://backend:4000` is set on the frontend service.
 - Changed the source → `docker compose up -d --build` to rebuild.
+
+### Isolated preview stack (developer tool)
+
+For iterating on frontend changes without disturbing the live stack (or the
+smoke stack used in CI), use the preview harness. It binds its own ports
+(`4100` backend, `3200` frontend, `27118` mongo) and its own compose project
+(`pixelpaladin-preview`) — never touches the live / smoke ports
+(`3001`, `3099`, `4000`, `27017`).
+
+```bash
+bash scripts/preview/start.sh                     # idempotent; leaves stack running
+bash scripts/preview/screenshot.sh <out-dir>     # headless Chrome full-page PNGs at 375/768/1024/1440
+bash scripts/preview/stop.sh                      # teardown
+```
+
+See `CLAUDE.md` → "W4 ops (W4a) → Preview harness" for the full table
+including `nuxt-internal-loader.mjs` and the `frontend/.nuxt` warning.

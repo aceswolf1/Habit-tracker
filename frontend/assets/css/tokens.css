@@ -1,0 +1,80 @@
+/*
+ * PixelPaladin theme tokens (UB-57, W4b).
+ *
+ * Single source of truth for the colors actually used across the FE shell,
+ * backgrounds, panel chrome, tier ladder, and action buttons. Values are
+ * lifted verbatim from the hex literals used in `components/app/*`,
+ * `components/stats/*`, `app.vue`, `StatCard.vue`, `MonthSelector.vue`,
+ * `ToastNotification.vue`, `SettingsDrawer.vue`, `MonthStatistics.vue`,
+ * `ReadOnlyMonthView.vue`, `BackgroundParticles.vue`, `FloatingPoints.vue`
+ * and `ParticleBurst.vue` — so swapping a literal for `var(--pp-*)` keeps
+ * the rendered pixels identical.
+ *
+ * Convention: `--pp-<role>` where role is the FEEL of the color, not its
+ * raw hex. Two parallel sets exist intentionally:
+ *   - `--pp-<role>`        — base/foreground color, used directly in CSS
+ *   - `--pp-<role>-rgb`    — comma-separated r,g,b triplet, used for
+ *                             `rgb(var(--pp-<role>-rgb) / <alpha>)` so a
+ *                             single token yields a full glow / alpha
+ *                             ramp without a separate token per shade.
+ *
+ * Tailwind picks these up via `tailwind.config.js` `extend.colors.pixel`
+ * (e.g. `bg-pixel-gold`, `text-pixel-danger`).
+ */
+
+:root {
+  /* Backgrounds — outer void → deepest wash */
+  --pp-bg-deepest: #05080e;
+  --pp-bg-deep:    #070b14;
+  --pp-bg-mid:     #0a101b;
+  --pp-bg-up:      #0d1625;
+  --pp-bg-panel:   #1f2937;       /* Tailwind `bg-pixel-dark` panel chrome */
+  --pp-bg-card:    #1a202c;       /* card / habit card surface */
+
+  /* Foreground / text */
+  --pp-text:        #ffffff;
+  --pp-text-muted:  #9ca3af;
+
+  /* Tier ladder */
+  --pp-bronze:    #cd7f32;
+  --pp-silver:    #c0c0c0;
+  --pp-gold:      #ffd700;        /* base tier / XP / bonus */
+  --pp-gold-acc:  #fbbf24;        /* tier label / accent stroke / border */
+  --pp-gold-dk:   #f59e0b;        /* progress bar fill, button bg */
+  --pp-gold-bd:   #b8860b;        /* gold border accent */
+  --pp-gold-dk2:  #6d5206;        /* gradient dark stop */
+  --pp-gold-pale: #fff7c2;        /* gradient light stop */
+  --pp-gold-mid:  #ffec8f;        /* glow mid (alpha applied at use-site) */
+  --pp-gold-eb:   #ffeb8a;        /* glow eb (alpha applied at use-site) */
+  --pp-champion:  #a78bfa;        /* Champion tier, achievement border */
+  --pp-purple:    #8b5cf6;        /* mid purple (Consistency card, etc.) */
+
+  /* Brand / actions */
+  --pp-blue:        #1d4ed8;      /* primary button bg, progress bar border */
+  --pp-blue-mid:    #3b82f6;      /* gradient / icon */
+  --pp-blue-light:  #60a5fa;      /* particle burst */
+  --pp-cancel:      #dc2626;      /* finish-month button */
+  --pp-danger:      #ef4444;      /* LOCKED label, worst tier, danger border */
+  --pp-danger-lt:   #ff6b6b;      /* burst + total XP label */
+  --pp-success:     #4ade80;      /* Completion card */
+  --pp-emerald:     #10b981;      /* Overall Rate */
+  --pp-orange:      #f97316;      /* Streak accent */
+  --pp-orange-lt:   #fb923c;      /* Best Streak card */
+
+  /* Neutral chrome */
+  --pp-gray:        #374151;      /* disabled button bg, progress bar track */
+  --pp-gray-mid:    #4b5563;
+  --pp-gray-dk:     #18181b;
+
+  /* Black / outline */
+  --pp-black:       #000000;
+
+  /* RGB triplets — for `rgb(var(--pp-*-rgb) / <alpha>)` glow ramps */
+  --pp-gold-rgb:      255 215 0;
+  --pp-gold-mid-rgb:  255 236 143;
+  --pp-gold-eb-rgb:   255 235 138;
+  --pp-blue-rgb:      29 78 216;
+  --pp-danger-rgb:    239 68 68;
+  --pp-champion-rgb:  167 139 250;
+  --pp-bg-rgb:        10 16 27;
+}

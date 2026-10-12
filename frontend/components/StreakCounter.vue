@@ -1,7 +1,7 @@
 <template>
   <div
     style="
-      background-color: #374151;
+      background-color: var(--pp-gray);
       border: 2px solid black;
       padding: 1rem;
       text-align: center;
@@ -34,7 +34,7 @@
     </div>
     <div
       style="
-        color: #9ca3af;
+        color: var(--pp-text-muted);
         font-family: 'Press Start 2P', cursive;
         font-size: 0.75rem;
       "

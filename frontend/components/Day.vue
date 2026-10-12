@@ -30,7 +30,7 @@
       <div
         style="
           height: 0.5rem;
-          background-color: #374151;
+          background-color: var(--pp-gray);
           position: relative;
           border: 2px solid black;
           overflow: hidden;
@@ -81,6 +81,7 @@
       <!-- Add Task Button -->
       <div v-if="!readonly" style="display: flex; justify-content: center; margin-top: auto; padding-top: 0.75rem;">
         <button
+          class="add-task-btn hover:scale-110 hover:bg-blue-500 active:scale-95"
           style="
             width: 1.5rem;
             height: 1.5rem;
@@ -93,7 +94,6 @@
             color: white;
             transition: all 0.2s;
           "
-          class="hover:scale-110 hover:bg-blue-500 active:scale-95"
           @click="emit('add-task', dayUuid)"
         >
           +
@@ -116,7 +116,7 @@ import { calculateDayProgress } from "../utils/sharedProgress";
 const props = defineProps({
   name: { type: String, required: true },
   tasks: { type: Array, default: () => [] },
-  headerColor: { type: String, default: "#4b5563" },
+  headerColor: { type: String, default: "var(--pp-gray-mid)" },
   headerTextColor: { type: String, default: "white" },
   dayUuid: { type: String, required: true },
   readonly: { type: Boolean, default: false },
@@ -148,14 +148,14 @@ const progressText = computed(
 );
 
 const containerStyles = computed(() => ({
-  backgroundColor: "#1f2937",
-  border: `2px solid ${progress.value >= 100 ? "#f59e0b" : "black"}`,
+  backgroundColor: "var(--pp-bg-panel)",
+  border: `2px solid ${progress.value >= 100 ? "var(--pp-gold-dk)" : "black"}`,
   position: "relative",
   overflow: "hidden",
 }));
 
 const headerStyles = computed(() => ({
-  backgroundColor: progress.value >= 100 ? "#f59e0b" : props.headerColor,
+  backgroundColor: progress.value >= 100 ? "var(--pp-gold-dk)" : props.headerColor,
   color: progress.value >= 100 ? "black" : props.headerTextColor,
   fontFamily: "'Press Start 2P', cursive",
   fontSize: "0.7rem",
@@ -166,9 +166,9 @@ const headerStyles = computed(() => ({
 }));
 
 const progressBarColor = computed(() => {
-  if (progress.value >= 100) return "#f59e0b";
-  if (progress.value >= 50) return "#fbbf24";
-  return "#ef4444";
+  if (progress.value >= 100) return "var(--pp-gold-dk)";
+  if (progress.value >= 50) return "var(--pp-gold-acc)";
+  return "var(--pp-danger)";
 });
 
 function toggleTaskComplete(index) {
@@ -203,13 +203,27 @@ function onDrop(e) {
   position: relative;
 }
 .drag-over {
-  outline: 2px dashed #fbbf24;
+  outline: 2px dashed var(--pp-gold-acc);
 }
 .drop-indicator {
   font-family: "Press Start 2P", cursive;
   font-size: 0.5rem;
-  color: #fbbf24;
+  color: var(--pp-gold-acc);
   text-align: center;
   margin: 0.25rem 0;
+}
+
+/*
+ * UB-56 / B-T1: below `lg` (viewport < 1024 px), the day column's "+"
+ * add-task button becomes a touch target — bump to ≥ 40×40 px.
+ * Desktop drag-and-drop is unchanged. `!important` overrides the inline
+ * style the button carries for the default 24×24 desktop size.
+ */
+@media (max-width: 1023.98px) {
+  .day-container .add-task-btn {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 1.1rem !important;
+  }
 }
 </style>

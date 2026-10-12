@@ -66,7 +66,7 @@ const borderColor = computed(() => {
 }
 
 .rank-best {
-  border-color: #ffd700;
+  border-color: var(--pp-gold);
   box-shadow:
     4px 4px 0 rgba(0, 0, 0, 0.8),
     0 0 20px rgba(255, 215, 0, 0.3);
@@ -74,7 +74,7 @@ const borderColor = computed(() => {
 }
 
 .rank-worst {
-  border-color: #ef4444;
+  border-color: var(--pp-danger);
   box-shadow:
     4px 4px 0 rgba(0, 0, 0, 0.8),
     0 0 15px rgba(239, 68, 68, 0.2);
@@ -109,7 +109,7 @@ const borderColor = computed(() => {
 .stat-title {
   font-family: 'Press Start 2P', cursive;
   font-size: 0.65rem;
-  color: #fbbf24;
+  color: var(--pp-gold-acc);
   text-transform: uppercase;
   text-shadow: 2px 2px 0 #000;
 }
@@ -124,7 +124,7 @@ const borderColor = computed(() => {
 .stat-subtitle {
   font-family: 'Press Start 2P', cursive;
   font-size: 0.5rem;
-  color: #9ca3af;
+  color: var(--pp-text-muted);
   text-shadow: 1px 1px 0 #000;
 }
 
@@ -137,7 +137,7 @@ const borderColor = computed(() => {
 .rank-badge {
   font-family: 'Press Start 2P', cursive;
   font-size: 0.5rem;
-  background-color: #ffd700;
+  background-color: var(--pp-gold);
   color: #000;
   padding: 0.25rem 0.5rem;
   border: 2px solid #000;
@@ -146,7 +146,7 @@ const borderColor = computed(() => {
 }
 
 .rank-worst .rank-badge {
-  background-color: #ef4444;
+  background-color: var(--pp-danger);
   color: white;
 }
 </style>

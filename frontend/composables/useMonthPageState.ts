@@ -1,0 +1,191 @@
+/**
+ * Page-level state for the editable month view: current week / day selection,
+ * store sync, refresh helper, and the action wrappers that edit tasks
+ * (toggle / move / delete). Extracted from `app.vue` so the shell stays a
+ * pure composer of components.
+ *
+ * W4b additions for the responsive shell (B-S2):
+ *   - `currentDayUuid` + `currentDay` — phone-only single-day focus.
+ *   - `setCurrentDay` — update the focused day within the current week.
+ *   - `nextWeek` / `prevWeek` — page navigation between weeks (used by the
+ *     phone prev/next buttons; no-op when there is only one week).
+ *   - `todayWeekdayName` — so `DayPicker` can pick the default day on
+ *     first mount (matches today's weekday if it lives in the current
+ *     week, otherwise the first day).
+ */
+import { ref, computed, watch } from "vue";
+import { storeToRefs } from "pinia";
+import { useMonthStore } from "../stores/monthStore";
+
+const WEEKDAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+export function useMonthPageState() {
+  const monthStore = useMonthStore();
+  const storeRefs: any = storeToRefs(monthStore as any);
+  const currentMonth = storeRefs.currentMonth;
+  const weeks = computed(() => currentMonth.value?.weeks || []);
+
+  const currentWeek = ref<any>(null);
+  const currentDayUuid = ref<string | null>(null);
+
+  const currentDay = computed(() => {
+    if (!currentWeek.value?.days) return null;
+    if (currentDayUuid.value) {
+      return (
+        currentWeek.value.days.find(
+          (d: any) => d.uuid === currentDayUuid.value
+        ) || null
+      );
+    }
+    return currentWeek.value.days[0] || null;
+  });
+
+  // The name of today's weekday in the locale's English form (matches the
+  // day-name strings the backend stores in `week.days[].name`). Computed
+  // once per mount; we only need it to seed the initial day picker.
+  const todayWeekdayName = computed(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(
+        new Date()
+      );
+    } catch {
+      return WEEKDAY_NAMES[new Date().getDay()];
+    }
+  });
+
+  function setCurrentWeek(weekOrUuid: any) {
+    const uuid = typeof weekOrUuid === "string" ? weekOrUuid : weekOrUuid.uuid;
+    const storeWeek = monthStore.getWeekByUuid(uuid);
+    if (storeWeek) {
+      currentWeek.value = storeWeek;
+      // Default the focused day to today's weekday when it lives in this
+      // week; otherwise the first day of the week.
+      const todayName = todayWeekdayName.value;
+      const match = storeWeek.days?.find((d: any) => d.name === todayName);
+      currentDayUuid.value = match
+        ? match.uuid
+        : storeWeek.days?.[0]?.uuid ?? null;
+    }
+  }
+
+  function setCurrentDay(dayUuid: string) {
+    if (!currentWeek.value?.days) return;
+    if (currentWeek.value.days.some((d: any) => d.uuid === dayUuid)) {
+      currentDayUuid.value = dayUuid;
+    }
+  }
+
+  function nextWeek() {
+    if (!currentWeek.value) return;
+    const idx = weeks.value.findIndex(
+      (w: any) => w.uuid === currentWeek.value.uuid
+    );
+    if (idx >= 0 && idx + 1 < weeks.value.length) {
+      setCurrentWeek(weeks.value[idx + 1]);
+    }
+  }
+
+  function prevWeek() {
+    if (!currentWeek.value) return;
+    const idx = weeks.value.findIndex(
+      (w: any) => w.uuid === currentWeek.value.uuid
+    );
+    if (idx > 0) {
+      setCurrentWeek(weeks.value[idx - 1]);
+    }
+  }
+
+  function refreshDataFromStore() {
+    if (import.meta.dev) console.log("Refreshing UI data from store...");
+    if (currentWeek.value) {
+      const updatedWeek = monthStore.getWeekByUuid(currentWeek.value.uuid);
+      if (updatedWeek) {
+        currentWeek.value = { ...updatedWeek };
+        // Re-resolve the focused day against the new week reference.
+        if (currentDayUuid.value) {
+          const stillThere = updatedWeek.days?.find(
+            (d: any) => d.uuid === currentDayUuid.value
+          );
+          if (!stillThere) {
+            currentDayUuid.value = updatedWeek.days?.[0]?.uuid ?? null;
+          }
+        }
+      }
+    }
+  }
+
+  // Keep `currentWeek` in lockstep with the active month: when the store's
+  // currentMonth changes (or its weeks array mutates in place), mirror the
+  // matching week into our local ref so the day grid re-renders.
+  watch(
+    () => currentMonth.value,
+    (newMonth) => {
+      if (!newMonth) return;
+      if (currentWeek.value) {
+        const updatedWeek = newMonth.weeks.find(
+          (w: any) => w.uuid === currentWeek.value.uuid
+        );
+        if (updatedWeek) {
+          currentWeek.value = { ...updatedWeek };
+        }
+      } else if (newMonth.weeks?.length) {
+        setCurrentWeek(newMonth.weeks[0]);
+      }
+    },
+    { deep: true }
+  );
+
+  function toggleTask(taskUuid: string) {
+    monthStore.toggleTaskCompletion(taskUuid);
+    refreshDataFromStore();
+  }
+
+  function moveTask(payload: { taskUuid: string; toDayUuid: string }) {
+    if (monthStore.currentMonth?.finished) return;
+    monthStore.moveTask(payload.taskUuid, payload.toDayUuid);
+    refreshDataFromStore();
+  }
+
+  function deleteSingleTask(taskUuid: string) {
+    if (monthStore.currentMonth?.finished) return;
+    monthStore.deleteTask(taskUuid, "single");
+    refreshDataFromStore();
+  }
+
+  const weekIndex = computed(() => {
+    if (!currentWeek.value) return -1;
+    return weeks.value.findIndex((w: any) => w.uuid === currentWeek.value.uuid);
+  });
+  const hasPrevWeek = computed(() => weekIndex.value > 0);
+  const hasNextWeek = computed(
+    () => weekIndex.value >= 0 && weekIndex.value < weeks.value.length - 1
+  );
+
+  return {
+    currentWeek,
+    currentDay,
+    currentDayUuid,
+    weeks,
+    currentMonth,
+    weekIndex,
+    hasPrevWeek,
+    hasNextWeek,
+    setCurrentWeek,
+    setCurrentDay,
+    nextWeek,
+    prevWeek,
+    refreshDataFromStore,
+    toggleTask,
+    moveTask,
+    deleteSingleTask,
+  };
+}

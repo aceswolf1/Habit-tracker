@@ -1,0 +1,32 @@
+# Preview-only mongo service for the W4 preview harness.
+#
+# Used by scripts/preview/start.sh / stop.sh ONLY. Lives under -p
+# `pixelpaladin-preview` so its volume + container names never collide with
+# the live stack (default compose) or the smoke stack (pixelpaladin-smoke).
+#
+# Host port 27118 (NOT 27017) so a stray `node backend/server.js` invocation
+# without MONGODB_URI set cannot accidentally point at preview's db.
+
+services:
+  mongo:
+    image: mongo:7
+    restart: "no"
+    environment:
+      # Match the lockbox the backend will pass on its connection string.
+      MONGO_INITDB_DATABASE: pixelpaladin-preview
+    ports:
+      - "27118:27017"
+    volumes:
+      - preview-mongo-data:/data/db
+    # Match the live cap so behaviour is comparable.
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  preview-mongo-data:
+    driver: local

@@ -5,6 +5,7 @@
 **/npm-debug.log*
 **/.git
 **/.nuxt
+**/.nuxt-preview
 **/.output
 **/dist
 **/.DS_Store

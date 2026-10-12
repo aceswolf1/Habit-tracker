@@ -50,6 +50,10 @@ named constant `PROXIED_API_PREFIXES = ["/api/cycles"]`. Anything else under
 `/api/*` is owned by Nitro (`server/api/klipy/**` and `server/api/health.get.ts`).
 Widening the allowlist is a security-relevant change — keep it tight.
 
+## Responsive layout
+
+Phone `< 640px`, tablet `640–1023px`, desktop `≥ 1024px`. Phones show one day at a time with a day picker; tablets show a scroll-snap strip of days; desktop keeps the 7-column grid. Tap targets are ≥ 40px below desktop, the task dialog is a full-screen sheet on phones and has a **Move to…** picker on every device. Colors come from `assets/css/tokens.css` (`--pp-*`), animations honor `prefers-reduced-motion`, and unknown URLs render `error.vue` with status 404. See `CLAUDE.md` → "Responsive layout, theme tokens, motion (W4b)" for the full table.
+
 ## Fonts
 
 Self-hosted via `@fontsource/press-start-2p` and `@fontsource/orbitron`

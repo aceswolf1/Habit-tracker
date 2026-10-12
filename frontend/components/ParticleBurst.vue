@@ -32,7 +32,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onBeforeUnmount } from 'vue';
+import { onAppEvent } from '../composables/useAppEvents';
 
 interface Particle {
   id: number;
@@ -120,9 +121,8 @@ function createParticleBurst(x: number, y: number, taskType: string, tier: strin
   }, duration);
 }
 
-const handleTaskCompleted = (event: Event) => {
-  const customEvent = event as CustomEvent;
-  const { taskUuid, taskType, tier, isLegendary } = customEvent.detail;
+const handleTaskCompleted = (detail: { taskUuid: string; taskType: 'optional' | 'required'; tier: string | null; isLegendary: boolean }) => {
+  const { taskUuid, taskType, tier, isLegendary } = detail;
 
   // Find the task element to position the burst
   const taskElement = document.querySelector(`[data-task-uuid="${taskUuid}"]`);
@@ -136,12 +136,11 @@ const handleTaskCompleted = (event: Event) => {
   }
 };
 
-onMounted(() => {
-  window.addEventListener('taskCompleted', handleTaskCompleted);
-});
+// Typed-bus subscription (UB-54). Returned fn unsubscribes in onBeforeUnmount.
+const unsubscribe = onAppEvent('taskCompleted', handleTaskCompleted);
 
-onUnmounted(() => {
-  window.removeEventListener('taskCompleted', handleTaskCompleted);
+onBeforeUnmount(() => {
+  unsubscribe();
 });
 </script>
 
@@ -188,6 +187,22 @@ onUnmounted(() => {
   100% {
     transform: translate(var(--particle-x), var(--particle-y)) scale(0.3);
     opacity: 0;
+  }
+}
+
+/*
+  UB-56 / W4b: respect `prefers-reduced-motion`. The particles still appear
+  but the explosion animation is disabled (the particles just sit there).
+*/
+@media (prefers-reduced-motion: reduce) {
+  .particle {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1;
+  }
+  .particle.legendary {
+    animation: none !important;
+    filter: none !important;
   }
 }
 

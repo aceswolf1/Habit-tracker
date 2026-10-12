@@ -1,0 +1,64 @@
+/* TaskModal.vue scoped styles (W4b split — co-located so the SFC stays
+ * small). All rules target elements rendered directly by
+ * TaskModal.vue's template (`.task-modal-sheet`, `.font-press`,
+ * `.bg-pixel-dark`, `.shadow-pixel`, the `modal-bounce-*` animation
+ * classes, and the responsive media query that turns the dialog into a
+ * full-screen sheet on phones).
+ *
+ * Pulled in via `<style scoped src>` so the rules inherit TaskModal.vue's
+ * scope data attribute automatically.
+ */
+
+.font-press {
+  font-family: "Press Start 2P", cursive;
+}
+.bg-pixel-dark {
+  background: var(--pp-bg-panel);
+}
+.shadow-pixel {
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.8);
+}
+
+/* Modal Bounce Animation */
+.modal-bounce-enter-active {
+  animation: bounce-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.modal-bounce-leave-active {
+  animation: bounce-in 0.3s reverse;
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/*
+ * B-T2: phones (< 640 px, below `sm`) — the modal becomes a full-screen
+ * sheet so the controls fit without horizontal scroll. Tablet (768) and
+ * desktop keep the centered max-w-lg dialog.
+ */
+@media (max-width: 639.98px) {
+  .task-modal-sheet {
+    width: 100% !important;
+    max-width: none !important;
+    height: 100vh;
+    border-width: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 1.25rem;
+  }
+}

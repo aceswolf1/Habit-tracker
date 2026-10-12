@@ -24,6 +24,10 @@ services:
     environment:
       PORT: 4000
       MONGODB_URI: mongodb://mongo:27017/pixelpaladin
+      # UB-58: per-deployment user-profile uuid. Default keeps the
+      # original single-user behaviour; set per-instance on a multi-tenant
+      # NAS where multiple backends share one Mongo.
+      USER_PROFILE_UUID: ${USER_PROFILE_UUID:-default-user}
     # UB-33: Express API is small + single-user; 256m leaves headroom for V8 bursts.
     mem_limit: 256m
     depends_on:

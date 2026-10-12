@@ -30,7 +30,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onBeforeUnmount } from 'vue';
+import { onAppEvent } from '../composables/useAppEvents';
 
 interface FloatingPoint {
   id: number;
@@ -45,9 +46,12 @@ interface FloatingPoint {
 const activePoints = ref<FloatingPoint[]>([]);
 let pointIdCounter = 0;
 
-const handlePointsEarned = (event: Event) => {
-  const customEvent = event as CustomEvent;
-  const { points, taskUuid, tier, isLegendary } = customEvent.detail;
+const handlePointsEarned = (detail: { points: number; taskUuid?: string; tier?: string | null; isLegendary: boolean }) => {
+  const { points, taskUuid, isLegendary } = detail;
+  // `tier` from the dispatch site can be null (e.g. before the API response
+  // arrives); the runtime treats null and undefined identically in the
+  // template's `point.tier?.toLowerCase()` expression.
+  const tier = detail.tier ?? undefined;
 
   // Try to find the task element to position the floating points
   const taskElement = document.querySelector(`[data-task-uuid="${taskUuid}"]`);
@@ -86,12 +90,11 @@ const handlePointsEarned = (event: Event) => {
   }, duration);
 };
 
-onMounted(() => {
-  window.addEventListener('pointsEarned', handlePointsEarned);
-});
+// Typed-bus subscription (UB-54). Returned fn unsubscribes in onBeforeUnmount.
+const unsubscribe = onAppEvent('pointsEarned', handlePointsEarned);
 
-onUnmounted(() => {
-  window.removeEventListener('pointsEarned', handlePointsEarned);
+onBeforeUnmount(() => {
+  unsubscribe();
 });
 </script>
 
@@ -211,6 +214,18 @@ onUnmounted(() => {
 
 .float-leave-active {
   animation: fadeOut 0.5s ease-out;
+}
+
+/*
+  UB-56 / W4b: respect `prefers-reduced-motion`. The popup still appears
+  (so users see the points earned) but does not float / fade.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .float-enter-active,
+  .float-enter-active.legendary,
+  .float-leave-active {
+    animation: none !important;
+  }
 }
 
 @keyframes floatUp {

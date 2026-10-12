@@ -115,6 +115,6 @@ defineExpose({ add });
   font-family: "Press Start 2P", cursive;
 }
 .bg-pixel-dark {
-  background-color: #1f2937;
+  background-color: var(--pp-bg-panel);
 }
 </style>

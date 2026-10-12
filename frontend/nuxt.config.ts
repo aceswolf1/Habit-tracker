@@ -17,8 +17,15 @@ const sharedDir = resolve(__dirname, '../shared')
 // emits, plus absolute/relative forms of the same path.
 const sharedInclude = [/shared[\\/]/, /#shared[\\/]/]
 
+// A-T5: env-configurable build dir. Lets the preview dev server use
+// `.nuxt-preview` (managed by w4-backend) so verification runs (`nuxt dev`,
+// `nuxt build`, `NUXT_BUILD_DIR=…`) don't trample the live preview's
+// build artifacts. Default stays `.nuxt` so existing flows are unchanged.
+const buildDir = process.env.NUXT_BUILD_DIR || '.nuxt'
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
+  buildDir, // A-T5
   devtools: { enabled: true },
   modules: [
     '@pinia/nuxt'
@@ -28,6 +35,9 @@ export default defineNuxtConfig({
     // app stylesheet so `.font-press` / `.font-cyber` family names resolve.
     '@fontsource/press-start-2p',
     '@fontsource/orbitron',
+    // UB-57: design tokens first so every later stylesheet can resolve
+    // `var(--pp-*)` even when the consuming component is scoped.
+    '~/assets/css/tokens.css',
     '~/assets/css/main.css',
   ],
   alias: {
@@ -66,8 +76,20 @@ export default defineNuxtConfig({
         defaultIsModuleExports: 'always',
       },
     },
+    // A-T4: Nuxt's dev-bundler hardcodes `#shared` as `external` (it lives
+    // in `node_modules/@nuxt/vite-builder/dist/chunks/dev-bundler.mjs`),
+    // which means Vite emits `#shared/...` as a literal subpath import in
+    // `.nuxt/dist/server/server.mjs`. Once Nitropack rewrites that emitted
+    // bundle for prod it's fine, but `nuxt dev` ships that literal straight
+    // to Node ESM and Node throws `ERR_PACKAGE_IMPORT_NOT_DEFINED` for
+    // `#shared`. Forcing `#shared` into `ssr.noExternal` makes Vite bundle
+    // it through the same commonjs transform as everything else, so the
+    // emitted dev bundle never carries a literal `#shared` specifier.
+    ssr: {
+      noExternal: [/^#shared\//],
+    },
   },
-  // B-FE-5: Nitro bundles the SSR side from the same `#shared/...` imports.
+  // B-FE-5 / A-T4: Nitro bundles the SSR side from the same `#shared/...` imports.
   // Inject `@rollup/plugin-commonjs` scoped to the repo `shared/` dir so the
   // raw `module.exports = { … }` literal in `shared/progress.js` and
   // `shared/scoring.js` gets rewritten to `export const …` / named exports
