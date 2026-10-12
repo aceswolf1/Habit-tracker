@@ -187,6 +187,12 @@
   display: block;
 }
 
+/* W5: the MP4 rendition reserves its box up front (poster loads lazily),
+   so the card doesn't jump when the still frame arrives. */
+video.task-gif {
+  height: 150px;
+}
+
 .task.has-gif {
   padding: 0.75rem;
 }
@@ -364,6 +370,17 @@
  * phones and tablets. Desktop drag-and-drop is unchanged.
  */
 @media (max-width: 1023.98px) {
+  /* W5 perf: per-card infinite glows (box-shadow/border/background) can't be
+     composited and scale with the number of completed/legendary tasks.
+     Below desktop they render static: same colours and borders, no motion. */
+  .task.completed,
+  .task.completed::after,
+  .task.legendary:not(.completed),
+  .task.legendary:not(.completed)::before,
+  .task.legendary:not(.completed)::after,
+  .task.legendary-completed {
+    animation: none;
+  }
   .task-check {
     width: 2.5rem;
     height: 2.5rem;

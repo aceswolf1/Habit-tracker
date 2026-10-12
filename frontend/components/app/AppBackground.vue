@@ -59,6 +59,13 @@ import BackgroundParticles from "../BackgroundParticles.vue";
   }
 }
 
+/* W5 perf: static background below desktop. */
+@media (max-width: 1023.98px) {
+  .background-depth {
+    animation: none;
+  }
+}
+
 /* UB-56: static background for reduced-motion users. */
 @media (prefers-reduced-motion: reduce) {
   .background-depth {

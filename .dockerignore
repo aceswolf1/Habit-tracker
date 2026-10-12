@@ -23,3 +23,6 @@ backend/ormconfig.js
 backend/ormconfig.ts
 **/.claude
 **/tmux-*.log
+
+# W5: source art (originals of public/images) — not shipped
+design

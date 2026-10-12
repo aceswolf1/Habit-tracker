@@ -72,7 +72,7 @@ function getWeekImage(week: any, index: number | string) {
     return week.backgroundImages[0];
   }
   const weekNumber = Number(index) + 1;
-  return `/images/week-${weekNumber}.png`;
+  return `/images/week-${weekNumber}.webp`;
 }
 
 function setCurrentWeek(week: any) {

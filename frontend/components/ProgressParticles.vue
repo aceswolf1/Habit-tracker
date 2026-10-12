@@ -30,7 +30,14 @@ const props = defineProps<{
   bonusThreshold?: number;
 }>();
 
-const maxParticles = computed(() => props.maxParticles ?? 48);
+// W5 perf: below desktop every visible day runs its own looping particles;
+// cap them so tablets (7 day columns) stay smooth. Desktop unchanged.
+const isSmallScreen =
+  typeof window !== "undefined" &&
+  window.matchMedia("(max-width: 1023.98px)").matches;
+const maxParticles = computed(() =>
+  Math.min(props.maxParticles ?? 48, isSmallScreen ? 6 : Infinity)
+);
 const bonusThreshold = computed(() => props.bonusThreshold ?? 100);
 const cappedProgress = computed(() => Math.min(props.progress ?? 0, 110));
 
@@ -95,9 +102,9 @@ function regenParticles() {
 watch([progressBucket, targetCount], regenParticles, { immediate: true });
 
 // Accessibility: respect prefers-reduced-motion
-const prefersReduced = window.matchMedia(
-  "(prefers-reduced-motion: reduce)"
-).matches;
+const prefersReduced =
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (prefersReduced) {
   // drastically reduce particle count
   watch(

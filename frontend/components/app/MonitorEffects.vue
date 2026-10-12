@@ -203,6 +203,16 @@
   }
 }
 
+/* W5 perf: below desktop the CRT layers stay but stop animating
+   (each animated layer repaints a full-screen surface). */
+@media (max-width: 1023.98px) {
+  .crt-scanlines,
+  .rgb-shift,
+  .crt-overlay {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .crt-scanlines,
   .rgb-shift,

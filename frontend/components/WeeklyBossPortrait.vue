@@ -21,8 +21,19 @@
       </div>
     </div>
     <div class="weekly-boss-image">
-      <img v-if="renderMode === 'image'" :src="imageSrc" :alt="weekName" />
-      <video v-if="renderMode === 'video'" class="boss-subtitle-video" autoplay loop muted>
+      <img v-if="renderMode === 'image'" :src="imageSrc" :alt="weekName" decoding="async" />
+      <!-- W5 perf: optional boss videos (~8 MB each) play only while visible. -->
+      <video
+        v-if="renderMode === 'video'"
+        ref="bossVideoEl"
+        class="boss-subtitle-video"
+        loop
+        muted
+        playsinline
+        disablepictureinpicture
+        preload="none"
+        :poster="imageSrc"
+      >
         <source :src="computedVideoSrc" type="video/mp4" />
       </video>
 
@@ -41,11 +52,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
+import { useInViewPlayback } from "../composables/useInViewPlayback";
 import { useSettingsStore } from "../stores/settingsStore";
 import BossHolographicOverlay from "./boss/BossHolographicOverlay.vue";
 import BossRankBadge, { type RankInfo } from "./boss/BossRankBadge.vue";
 import BossProgressBar from "./boss/BossProgressBar.vue";
+
+const bossVideoEl = ref<HTMLVideoElement | null>(null);
+useInViewPlayback(bossVideoEl);
 
 const props = defineProps({
   weekUuid: {

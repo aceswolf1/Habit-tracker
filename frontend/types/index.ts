@@ -29,6 +29,10 @@ export interface Task {
   icon?: string;
   /** GIF URL from the Klipy API. */
   gifUrl?: string;
+  /** W5: MP4 rendition of the same GIF (played instead of the GIF when set). */
+  gifVideoUrl?: string;
+  /** W5: JPG still frame of the same GIF (poster / paused frame). */
+  gifStillUrl?: string;
 }
 
 export interface Day {
@@ -171,7 +175,7 @@ export interface PatchAddTasks {
     dayUuid: string;
     task: Pick<
       Task,
-      "description" | "optional" | "completed" | "legendary" | "uuid" | "recurrenceId" | "order" | "icon" | "gifUrl"
+      "description" | "optional" | "completed" | "legendary" | "uuid" | "recurrenceId" | "order" | "icon" | "gifUrl" | "gifVideoUrl" | "gifStillUrl"
     >;
   }>;
 }
@@ -184,8 +188,10 @@ export interface PatchUpdateTasks {
     optional?: boolean;
     completed?: boolean;
     legendary?: boolean;
-    icon?: string;
-    gifUrl?: string;
+    icon?: string | null;
+    gifUrl?: string | null;
+    gifVideoUrl?: string | null;
+    gifStillUrl?: string | null;
     order?: number;
   }>;
 }

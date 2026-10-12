@@ -26,6 +26,9 @@ const taskInputSchema = z
     order: z.number().int().nonnegative().optional(),
     icon: z.string().min(1).max(32).optional(),
     gifUrl: z.string().url().max(2048).optional(),
+    // W5: MP4 + JPG renditions of the same GIF (optional; travel with gifUrl).
+    gifVideoUrl: z.string().url().max(2048).optional(),
+    gifStillUrl: z.string().url().max(2048).optional(),
   })
   .strict();
 
@@ -40,6 +43,8 @@ const taskUpdateSchema = z
     // Empty string remains invalid; `undefined` keeps the existing value.
     icon: z.string().min(1).max(32).nullable().optional(),
     gifUrl: z.string().url().max(2048).nullable().optional(),
+    gifVideoUrl: z.string().url().max(2048).nullable().optional(),
+    gifStillUrl: z.string().url().max(2048).nullable().optional(),
     order: z.number().int().nonnegative().optional(),
   })
   .strict();

@@ -47,6 +47,16 @@
           />
         </div>
 
+        <div class="setting-row">
+          <label class="setting-label" for="animate-gifs">Animate task GIFs</label>
+          <input
+            id="animate-gifs"
+            type="checkbox"
+            :checked="store.animateGifs"
+            @change="store.setAnimateGifs(($event.target as HTMLInputElement).checked)"
+          />
+        </div>
+
         <div class="setting-row" style="margin-top:0.75rem; flex-direction:column; align-items:flex-start; gap:0.5rem;">
           <div class="setting-label">UI Font</div>
           <div style="display:flex; gap:0.5rem; align-items:center;">

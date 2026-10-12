@@ -575,5 +575,58 @@ check('patchCycle: completed+uncompleted in the same call net to 0 points (no pr
   assert.ok(profileRepo._raw('default-user') == null, 'no profile write on 0-delta');
 });
 
+// =========================================================================
+// W5 — server-assigned task uuid + GIF renditions (gifVideoUrl/gifStillUrl)
+// =========================================================================
+
+check('W5: addTasks without uuid gets a server-generated uuid (t- prefix)', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  const saved = await cycleRepo.create(cycle);
+  const week = saved.weeks[0];
+  const day = week.days[0];
+  await svc.patchCycle(saved.uuid, {
+    type: 'addTasks',
+    additions: [{ weekUuid: week.uuid, dayUuid: day.uuid, task: { description: 'No uuid', optional: false } }],
+  });
+  const raw = cycleRepo._raw(saved.uuid);
+  const added = raw.weeks[0].days[0].tasks.find((t) => t.description === 'No uuid');
+  assert.ok(added, 'task added');
+  assert.ok(typeof added.uuid === 'string' && added.uuid.startsWith('t-'), 'uuid assigned: ' + added.uuid);
+});
+
+check('W5: client-supplied uuid on addTasks is kept as-is', async () => {
+  const { svc, cycleRepo } = makeService();
+  const saved = await cycleRepo.create(fixtures.emptyCycle('Test'));
+  const week = saved.weeks[0];
+  await svc.patchCycle(saved.uuid, {
+    type: 'addTasks',
+    additions: [{ weekUuid: week.uuid, dayUuid: week.days[1].uuid, task: { uuid: 't-mine', description: 'Mine', optional: false } }],
+  });
+  assert.ok(findTask(cycleRepo._raw(saved.uuid), 't-mine'), 'client uuid preserved');
+});
+
+check('W5: gifVideoUrl/gifStillUrl update, and null clears them', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  fixtures.addTask(cycle, 0, 0, { uuid: 't-vid', description: 'A', optional: false, gifUrl: 'https://example.com/a.gif' });
+  const saved = await cycleRepo.create(cycle);
+  await svc.patchCycle(saved.uuid, {
+    type: 'updateTasks',
+    updates: [{ uuid: 't-vid', gifVideoUrl: 'https://example.com/a.mp4', gifStillUrl: 'https://example.com/a.jpg' }],
+  });
+  let task = findTask(cycleRepo._raw(saved.uuid), 't-vid').task;
+  assert.strictEqual(task.gifVideoUrl, 'https://example.com/a.mp4');
+  assert.strictEqual(task.gifStillUrl, 'https://example.com/a.jpg');
+  await svc.patchCycle(saved.uuid, {
+    type: 'updateTasks',
+    updates: [{ uuid: 't-vid', gifUrl: null, gifVideoUrl: null, gifStillUrl: null }],
+  });
+  task = findTask(cycleRepo._raw(saved.uuid), 't-vid').task;
+  assert.strictEqual(task.gifUrl, null);
+  assert.strictEqual(task.gifVideoUrl, null);
+  assert.strictEqual(task.gifStillUrl, null);
+});
+
 console.log(`\n${passed} checks passed`);
 process.exit(0);

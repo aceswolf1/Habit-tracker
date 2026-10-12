@@ -13,7 +13,9 @@
 import { ref, onMounted, onBeforeUnmount, computed, provide, inject } from "vue";
 
 export function useBreakpoint() {
-  const width = ref(typeof window !== "undefined" ? window.innerWidth : 1280);
+  // Start at the desktop default on BOTH server and client so the first
+  // client render matches the SSR markup; snap to the real width on mount.
+  const width = ref(1280);
 
   function onResize() {
     width.value = window.innerWidth;
@@ -42,13 +44,19 @@ export function provideBreakpoints() {
   // Pass the ref directly so consumers re-render when the viewport
   // crosses a breakpoint. Vue's inject+template unwrapping handles the
   // .value access transparently.
-  provide(BREAKPOINT_KEY, { isPhone: bp.isPhone });
+  provide(BREAKPOINT_KEY, { isPhone: bp.isPhone, isTablet: bp.isTablet, isDesktop: bp.isDesktop });
   return bp;
 }
 
 export function injectBreakpoints() {
   // Falls back to a desktop-default ref so SSR markup matches `>= lg`.
-  return inject<{ isPhone: import("vue").Ref<boolean> }>(BREAKPOINT_KEY, {
+  return inject<{
+    isPhone: import("vue").Ref<boolean>;
+    isTablet: import("vue").Ref<boolean>;
+    isDesktop: import("vue").Ref<boolean>;
+  }>(BREAKPOINT_KEY, {
     isPhone: ref(false),
+    isTablet: ref(false),
+    isDesktop: ref(true),
   });
 }

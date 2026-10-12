@@ -300,5 +300,25 @@ check('zodDetails flattens paths with "."', () => {
   );
 });
 
+// ---- W5: GIF renditions ----------------------------------------------------
+
+check('W5: addTasks accepts gifVideoUrl + gifStillUrl', () => {
+  ok('add renditions', patchSchema, {
+    type: 'addTasks',
+    additions: [{ weekUuid: 'w-1', dayUuid: 'd-1', task: {
+      description: 'GIF task', optional: false,
+      gifUrl: 'https://example.com/x.gif',
+      gifVideoUrl: 'https://example.com/x.mp4',
+      gifStillUrl: 'https://example.com/x.jpg',
+    } }],
+  });
+});
+
+check('W5: updateTasks accepts null renditions (clear) and rejects ""', () => {
+  ok('null clears', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', gifVideoUrl: null, gifStillUrl: null }] });
+  bad('empty string', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', gifVideoUrl: '' }] });
+  bad('not a url', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', gifStillUrl: 'nope' }] });
+});
+
 console.log(`\n${passed} checks passed`);
 process.exit(0);

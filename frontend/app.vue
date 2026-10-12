@@ -18,7 +18,7 @@
   >
     <div
       :class="[
-        'inner-wrapper relative max-w-full sm:max-w-[92vw] w-full bg-pixel-dark/80 backdrop-blur-[2px] border-4 border-black p-3 sm:p-6 shadow-pixel',
+        'inner-wrapper relative max-w-full sm:max-w-[92vw] w-full bg-pixel-dark/80 lg:backdrop-blur-[2px] border-4 border-black p-3 sm:p-6 shadow-pixel',
         settingsStore.uiFont === 'cyber' ? 'font-cyber' : 'font-press'
       ]"
     >
@@ -276,6 +276,17 @@ onBeforeUnmount(() => {
 
 body {
   animation: color-temperature 20s ease-in-out infinite;
+}
+
+/* W5 perf: a filter animation on <body> repaints the whole page every frame
+   (GIFs included). Below desktop keep the static look only. */
+@media (max-width: 1023.98px) {
+  body {
+    animation: none;
+  }
+  .main-wrapper {
+    filter: none;
+  }
 }
 
 /* UB-56: no page-wide colour drift for reduced-motion users. */

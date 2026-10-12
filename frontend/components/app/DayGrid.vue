@@ -94,7 +94,9 @@
       with a snap strip and 200 px min card width; on phone (`< sm`) the
       entire grid is hidden because the focused-day wrapper above handles it.
     -->
-    <div class="daily-habit-grid day-grid-all hidden sm:grid">
+    <!-- W5 perf: not rendered at all on phones (only the focused day is
+         shown there), so phones don't build 7 days of task cards/GIFs. -->
+    <div v-if="!isPhone" class="daily-habit-grid day-grid-all hidden sm:grid">
       <Day
         v-for="day in currentWeek.days"
         :key="day.uuid"
@@ -118,6 +120,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import Day from "../Day.vue";
+import { injectBreakpoints } from "../../composables/useBreakpoint";
+
+const { isPhone } = injectBreakpoints();
 
 const props = defineProps<{
   currentWeek: any;

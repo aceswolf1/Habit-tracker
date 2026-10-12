@@ -5,6 +5,10 @@ export const useSettingsStore = defineStore("settings", {
     // Whether to use videos for week avatars (persisted to localStorage)
     useWeekVideos:
       typeof window !== "undefined" && localStorage.getItem("useWeekVideos") === "true",
+    // W5: play task GIF animations (MP4) when on screen. Off = still frames
+    // only (useful on slow devices). Default on; persisted to localStorage.
+    animateGifs:
+      typeof window === "undefined" || localStorage.getItem("animateGifs") !== "false",
     // Drawer open state
     drawerOpen: false,
     // UI font choice: 'press' (Press Start 2P) or 'cyber' (cyberpunk style)
@@ -19,6 +23,12 @@ export const useSettingsStore = defineStore("settings", {
       this.useWeekVideos = val;
       if (typeof window !== "undefined") {
         localStorage.setItem("useWeekVideos", val ? "true" : "false");
+      }
+    },
+    setAnimateGifs(val: boolean) {
+      this.animateGifs = val;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("animateGifs", val ? "true" : "false");
       }
     },
     toggleDrawer(open?: boolean) {

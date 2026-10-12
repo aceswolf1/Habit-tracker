@@ -92,10 +92,11 @@
           ]"
         >
           <img
-            :src="getGifUrl(gif)"
+            :src="getGifPreviewUrl(gif)"
             :alt="gif.title"
             class="w-full h-full object-cover"
             loading="lazy"
+            decoding="async"
           />
         </button>
       </div>
@@ -109,7 +110,7 @@
 
       <div v-if="gifUrl" class="flex items-center gap-2">
         <img
-          :src="gifUrl"
+          :src="gifStillUrl || gifUrl"
           alt="Selected GIF"
           class="w-16 h-16 object-cover border-2 border-yellow-500"
         />
@@ -131,6 +132,8 @@ import data from "@emoji-mart/data";
 import {
   searchGifs,
   getGifUrl as getGifUrlUtil,
+  getGifSources,
+  getGifPreviewUrl,
   type KlipyGif,
 } from "../../utils/klipyApi";
 
@@ -139,6 +142,9 @@ const props = defineProps<{
   visualType: "emoji" | "gif";
   icon: string;
   gifUrl: string;
+  /** W5: MP4 + JPG renditions travel with gifUrl. */
+  gifVideoUrl: string;
+  gifStillUrl: string;
   /** Description used for the auto-suggest watcher. */
   description: string;
 }>();
@@ -147,6 +153,8 @@ const emit = defineEmits<{
   "update:visualType": [value: "emoji" | "gif"];
   "update:icon": [value: string];
   "update:gifUrl": [value: string];
+  "update:gifVideoUrl": [value: string];
+  "update:gifStillUrl": [value: string];
 }>();
 
 const visualTypeLocal = computed({
@@ -203,12 +211,17 @@ function getGifUrl(gif: KlipyGif): string {
 }
 
 function selectGif(gif: KlipyGif) {
-  gifUrlLocal.value = getGifUrlUtil(gif, "sm");
+  const src = getGifSources(gif, "sm");
+  gifUrlLocal.value = src.gif;
+  emit("update:gifVideoUrl", src.video);
+  emit("update:gifStillUrl", src.still);
   iconLocal.value = ""; // Clear emoji when GIF is selected
 }
 
 function clearGif() {
   gifUrlLocal.value = "";
+  emit("update:gifVideoUrl", "");
+  emit("update:gifStillUrl", "");
 }
 
 async function performGifSearch(query: string) {

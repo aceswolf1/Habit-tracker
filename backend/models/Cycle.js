@@ -9,7 +9,11 @@ const TaskSchema = new mongoose.Schema({
   recurrenceId: String,
   order: Number,
   icon: String,
-  gifUrl: String
+  gifUrl: String,
+  // W5: lighter renditions of the same Klipy GIF, picked at selection time.
+  // The UI plays the MP4 (with the JPG as poster) and falls back to gifUrl.
+  gifVideoUrl: String,
+  gifStillUrl: String
 });
 
 const DaySchema = new mongoose.Schema({

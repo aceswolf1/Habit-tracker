@@ -32,6 +32,9 @@ export interface TaskDraftInput {
   icon?: string;
   /** GIF URL (or undefined). */
   gifUrl?: string;
+  /** W5: MP4 + JPG renditions of the GIF (or undefined). */
+  gifVideoUrl?: string;
+  gifStillUrl?: string;
   /** Required for grouping recurring habits. */
   recurrenceId: string;
   /** Position within the day — pass the current tasks length for append. */
@@ -53,6 +56,8 @@ export function createTaskDraft(input: TaskDraftInput): Task {
     order: input.order,
     icon: input.icon,
     gifUrl: input.gifUrl,
+    gifVideoUrl: input.gifVideoUrl,
+    gifStillUrl: input.gifStillUrl,
   };
 }
 

@@ -36,6 +36,8 @@
             v-model:visualType="form.visualType"
             v-model:icon="form.icon"
             v-model:gifUrl="form.gifUrl"
+            v-model:gifVideoUrl="form.gifVideoUrl"
+            v-model:gifStillUrl="form.gifStillUrl"
             :description="form.description"
           />
 
@@ -154,6 +156,8 @@ const form = reactive({
   icon: "" as string,
   visualType: "emoji" as "emoji" | "gif",
   gifUrl: "" as string,
+  gifVideoUrl: "" as string,
+  gifStillUrl: "" as string,
 });
 
 const isSubmitting = ref(false);
@@ -217,6 +221,8 @@ watch(
         form.legendary = (editingTask.value as any).legendary || false;
         form.icon = (editingTask.value as any).icon || "";
         form.gifUrl = (editingTask.value as any).gifUrl || "";
+        form.gifVideoUrl = (editingTask.value as any).gifVideoUrl || "";
+        form.gifStillUrl = (editingTask.value as any).gifStillUrl || "";
         form.visualType = (editingTask.value as any).gifUrl ? "gif" : "emoji";
       } else {
         resetForm();
@@ -238,6 +244,8 @@ function resetForm() {
   form.icon = "";
   form.visualType = "emoji";
   form.gifUrl = "";
+  form.gifVideoUrl = "";
+  form.gifStillUrl = "";
   selectedDayUuids.value = [];
   selectedWeekUuids.value = [];
   editScope.value = "single";
@@ -284,6 +292,8 @@ function submit() {
         baseWeekUuid: props.weekUuid,
         icon: form.icon || undefined,
         gifUrl: form.gifUrl || undefined,
+        gifVideoUrl: form.gifUrl ? form.gifVideoUrl || undefined : undefined,
+        gifStillUrl: form.gifUrl ? form.gifStillUrl || undefined : undefined,
       });
       emit("created");
     } else if (editingTask.value) {
@@ -298,6 +308,9 @@ function submit() {
         legendary: form.legendary,
         icon: iconPayload,
         gifUrl: gifUrlPayload,
+        // W5: renditions follow gifUrl; cleared together when the GIF is.
+        gifVideoUrl: form.gifUrl && form.gifVideoUrl ? form.gifVideoUrl : null,
+        gifStillUrl: form.gifUrl && form.gifStillUrl ? form.gifStillUrl : null,
       });
       emit("updated");
     }

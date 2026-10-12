@@ -69,6 +69,8 @@
         :index="index"
         :icon="task.icon"
         :gifUrl="task.gifUrl"
+        :gifVideoUrl="task.gifVideoUrl"
+        :gifStillUrl="task.gifStillUrl"
         @toggle-complete="toggleTaskComplete(index)"
         @editTask="emit('edit-task', $event)"
         @deleteTask="emit('delete-task', $event)"

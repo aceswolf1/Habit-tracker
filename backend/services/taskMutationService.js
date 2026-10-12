@@ -28,7 +28,7 @@
 
 const { notFound, cycleFinished } = require('./errors');
 const { PROFILE_UUID } = require('../config');
-const { calculateProgress } = require('../../shared/progress');
+const { calculateProgress, generateUuid } = require('../../shared/progress');
 
 /**
  * Pure: push each `addition.task` into the matching week/day.
@@ -44,7 +44,9 @@ function applyAdditions(cycle, additions) {
     for (const week of cycle.weeks) {
       if (week.uuid === addition.weekUuid) {
         const day = week.days.find((d) => d.uuid === addition.dayUuid);
-        if (day) day.tasks.push(addition.task);
+        // W5: the zod schema allows omitting uuid; assign one server-side so
+        // the task can be updated, moved and deleted later.
+        if (day) day.tasks.push({ ...addition.task, uuid: addition.task.uuid || generateUuid('t') });
         break;
       }
     }
@@ -78,6 +80,8 @@ function applyUpdates(cycle, updates) {
         if (update.legendary !== undefined) task.legendary = update.legendary;
         if (update.icon !== undefined) task.icon = update.icon; // null clears
         if (update.gifUrl !== undefined) task.gifUrl = update.gifUrl; // null clears
+        if (update.gifVideoUrl !== undefined) task.gifVideoUrl = update.gifVideoUrl; // null clears
+        if (update.gifStillUrl !== undefined) task.gifStillUrl = update.gifStillUrl; // null clears
         if (update.order !== undefined) task.order = update.order;
 
         if (update.completed !== undefined && wasCompleted !== update.completed) {

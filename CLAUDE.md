@@ -327,6 +327,18 @@ Breakpoints are Tailwind's defaults: **phone** `< 640px`, **tablet** `640–1023
 - **404:** the app has no `pages/` router, so `app.vue` raises a fatal 404 for any path other than `/`; `error.vue` renders it ("BACK TO QUESTS"). API 404s come from the Nitro catch-all (`server/api/[...].ts`) as v2 envelopes.
 - **Checking layouts:** `bash scripts/preview/screenshot.sh <out-dir> [url]` captures 375 / 768 / 1024 / 1440 (viewport width × full page height).
 
+### Performance (W5)
+
+Measured with `development/remediation-w5/measurements/bench.mjs` (headless Chrome, 4× CPU throttle, 84-task month with 42 GIFs). Results are in `development/remediation-w5/06-handoff-remediation-w5.md`.
+
+- **Task GIFs:** when a GIF is picked, the task stores three Klipy renditions: `gifUrl` (GIF/WebP fallback), `gifVideoUrl` (MP4) and `gifStillUrl` (JPG still). Cards render `<video preload="none" :poster="gifStillUrl">`; `composables/useInViewPlayback.ts` plays it only while ≥ 25% is on screen and the tab is visible, never under reduced motion. Tasks without `gifVideoUrl` (older data) fall back to a lazy `<img>`.
+- **Settings → "Animate task GIFs"** (`settingsStore.animateGifs`, localStorage `animateGifs`, default on). Off = still frames only.
+- **Phones and tablets (< 1024px):** card glow/legendary animations, body/CRT/background animations and `backdrop-blur` are off; progress particles are capped at 6. Phones don't mount the hidden 7-day grid. Desktop looks the same.
+- **Completion burst** (`TaskCompletionEffect`) mounts only for a completion made in this session and unmounts after 1.6 s.
+- **Background particles** run at ≤ 30 fps and pause while the tab is hidden.
+- **Boss portraits** are 600px WebP in `frontend/public/images/` (originals in `design/portraits/`, excluded from Docker builds); boss videos also use in-view playback.
+- The backend assigns a task `uuid` when `addTasks` omits one. Task fields `gifVideoUrl`/`gifStillUrl` are optional URLs (≤ 2048 chars); `updateTasks` accepts `null` to clear them.
+
 ## Tests + CI
 
 Tests are standalone `node` runners — no framework dependency:

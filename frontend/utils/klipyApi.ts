@@ -119,6 +119,36 @@ export function getGifUrl(gif: KlipyGif, size: "xs" | "sm" | "md" | "hd" = "sm")
 }
 
 /**
+ * W5: all renditions of one GIF for task cards.
+ *   - gif:   the classic animated GIF (kept for compatibility / fallback)
+ *   - video: MP4 (hardware-decoded, ~5x smaller than the GIF)
+ *   - still: JPG first frame (poster while paused / off screen)
+ */
+export interface GifSources {
+  gif: string;
+  video: string;
+  still: string;
+}
+
+export function getGifSources(gif: KlipyGif, size: "xs" | "sm" | "md" | "hd" = "sm"): GifSources {
+  const f = gif.file[size] || gif.file.sm || gif.file.xs || gif.file.md || gif.file.hd;
+  return {
+    gif: f?.gif?.url || f?.webp?.url || "",
+    video: f?.mp4?.url || "",
+    still: f?.jpg?.url || "",
+  };
+}
+
+/**
+ * W5: lightweight preview for the picker grid (many results at once):
+ * prefer the small animated WebP, then the GIF.
+ */
+export function getGifPreviewUrl(gif: KlipyGif): string {
+  const f = gif.file.xs || gif.file.sm || gif.file.md || gif.file.hd;
+  return f?.webp?.url || f?.gif?.url || "";
+}
+
+/**
  * Track GIF share (optional, for analytics) via same-origin Nitro proxy
  */
 export async function trackGifShare(slug: string): Promise<void> {

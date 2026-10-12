@@ -91,9 +91,18 @@ function resize() {
   // (debug log removed; resize paths are exercised via visual overlay)
 }
 
+// W5 perf: the ambient field is slow-moving, so 30 fps looks the same as 60
+// and halves the full-screen redraw cost. Paused entirely while the tab is
+// hidden (rAF already throttles, this also stops the loop).
+const FRAME_MS = 1000 / 30;
+
 function step(ts: number) {
   if (!ctx) return;
-  const dt = lastTs ? ts - lastTs : 16; // ms
+  if (lastTs && ts - lastTs < FRAME_MS - 1) {
+    frameId = requestAnimationFrame(step);
+    return;
+  }
+  const dt = lastTs ? Math.min(ts - lastTs, 100) : 16; // ms (clamped after pauses)
   lastTs = ts;
 
   ctx.clearRect(0, 0, width, height);
@@ -213,12 +222,22 @@ onMounted(() => {
   if (typeof window === "undefined") return; // SSR safeguard
   resize();
   window.addEventListener("resize", resize, { passive: true });
+  document.addEventListener("visibilitychange", onVisibility);
   start();
   // (debug log removed)
 });
 
+function onVisibility() {
+  cancelAnimationFrame(frameId);
+  if (!document.hidden) {
+    lastTs = 0;
+    start();
+  }
+}
+
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resize);
+  document.removeEventListener("visibilitychange", onVisibility);
   cancelAnimationFrame(frameId);
 });
 </script>

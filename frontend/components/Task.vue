@@ -19,17 +19,36 @@
       class="task"
       :style="taskStyles"
       @dblclick="emitEdit"
-      :class="{ completed, 'has-gif': !!gifUrl, 'legendary': legendary, 'legendary-completed': legendary && completed }"
+      :class="{ completed, 'has-gif': !!(gifUrl || gifVideoUrl), 'legendary': legendary, 'legendary-completed': legendary && completed }"
     >
-      <TaskCompletionEffect v-if="completed" :effectKey="effectKey" />
+      <TaskCompletionEffect v-if="showEffect" :effectKey="effectKey" />
 
       <!-- GIF Display (appears first) -->
-      <div v-if="gifUrl" class="task-gif-container">
+      <div v-if="gifUrl || gifVideoUrl" class="task-gif-container">
+        <!-- W5 perf: MP4 rendition (hardware-decoded, plays only on screen),
+             JPG poster until then. Older tasks without renditions keep the GIF. -->
+        <video
+          v-if="gifVideoUrl && !videoFailed"
+          ref="videoEl"
+          class="task-gif"
+          :poster="gifStillUrl || undefined"
+          :aria-label="description"
+          muted
+          loop
+          playsinline
+          disablepictureinpicture
+          preload="none"
+          @error="videoFailed = true"
+        >
+          <source :src="gifVideoUrl" type="video/mp4" @error="videoFailed = true" />
+        </video>
         <img
+          v-else-if="gifUrl"
           :src="gifUrl"
           :alt="description"
           class="task-gif"
           loading="lazy"
+          decoding="async"
           @error="onGifError"
         />
       </div>
@@ -62,8 +81,16 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, onBeforeUnmount } from "vue";
 import TaskCompletionEffect from "./task/TaskCompletionEffect.vue";
+import { useInViewPlayback } from "../composables/useInViewPlayback";
+import { useSettingsStore } from "../stores/settingsStore";
+
+// W5 perf: MP4 GIF rendition plays only while visible.
+const videoEl = ref(null);
+const videoFailed = ref(false);
+const settings = useSettingsStore();
+useInViewPlayback(videoEl, () => settings.animateGifs);
 
 const props = defineProps({
   description: { type: String, required: true },
@@ -75,6 +102,8 @@ const props = defineProps({
   index: { type: Number, required: true },
   icon: { type: String, default: "" },
   gifUrl: { type: String, default: "" },
+  gifVideoUrl: { type: String, default: "" },
+  gifStillUrl: { type: String, default: "" },
 });
 
 const emit = defineEmits([
@@ -130,10 +159,24 @@ const taskStyles = computed(() => ({
 const effectKey = ref(0);
 const justCompleted = ref(false);
 
+// W5 perf: the sparkle/particle burst is a one-shot reward for ticking a
+// task in this session. It is NOT mounted for tasks that load as completed
+// (that fired one burst per completed card on every page load and left
+// ~13 animated nodes per card in the DOM), and it unmounts once its
+// longest animation (particle-move, 1.5 s) has finished.
+const EFFECT_MS = 1600;
+const showEffect = ref(false);
+let effectTimer = null;
+
 watch(
   () => props.completed,
   (val) => {
     if (val) {
+      showEffect.value = true;
+      clearTimeout(effectTimer);
+      effectTimer = setTimeout(() => {
+        showEffect.value = false;
+      }, EFFECT_MS);
       // Small timeout to ensure DOM reflow if rapidly toggled
       requestAnimationFrame(() => effectKey.value++);
 
@@ -145,6 +188,8 @@ watch(
     }
   }
 );
+
+onBeforeUnmount(() => clearTimeout(effectTimer));
 
 const checkStyles = computed(() => ({
   "background-color": props.completed

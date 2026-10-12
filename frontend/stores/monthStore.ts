@@ -227,6 +227,8 @@ export const useMonthStore = defineStore("month", {
       persist?: boolean;
       icon?: string;
       gifUrl?: string;
+      gifVideoUrl?: string;
+      gifStillUrl?: string;
     }) {
       if (!this.currentMonth || this.currentMonth.finished) return;
       const {
@@ -237,6 +239,8 @@ export const useMonthStore = defineStore("month", {
         persist = true,
         icon,
         gifUrl,
+        gifVideoUrl,
+        gifStillUrl,
       } = options;
       const recurrenceId = options.recurrenceId || generateRecurrenceId();
       const additions: Extract<PatchBody, { type: "addTasks" }>["additions"] = [];
@@ -260,6 +264,8 @@ export const useMonthStore = defineStore("month", {
             legendary,
             icon,
             gifUrl,
+            gifVideoUrl,
+            gifStillUrl,
             recurrenceId,
             order: day.tasks.length,
           });
@@ -286,6 +292,8 @@ export const useMonthStore = defineStore("month", {
         legendary?: boolean;
         icon?: string | null;
         gifUrl?: string | null;
+        gifVideoUrl?: string | null;
+        gifStillUrl?: string | null;
       }
     ) {
       if (this.currentMonth?.finished) return;
@@ -297,6 +305,8 @@ export const useMonthStore = defineStore("month", {
       // `!== undefined` covers null + string (set/clear); strict undefined = no-op.
       if (payload.icon !== undefined) task.icon = payload.icon as Task["icon"];
       if (payload.gifUrl !== undefined) task.gifUrl = payload.gifUrl as Task["gifUrl"];
+      if (payload.gifVideoUrl !== undefined) task.gifVideoUrl = payload.gifVideoUrl as Task["gifVideoUrl"];
+      if (payload.gifStillUrl !== undefined) task.gifStillUrl = payload.gifStillUrl as Task["gifStillUrl"];
       refreshProgressLocal(this.currentMonth);
 
       this.enqueueCycleMutation(this.currentMonth.uuid, "habit update", {

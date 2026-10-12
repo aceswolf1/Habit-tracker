@@ -45,8 +45,8 @@ function getWeekImage(week: any, index: number | string) {
   if (week.backgroundImages && week.backgroundImages[0]) {
     return week.backgroundImages[0];
   }
-  // Otherwise, use default week images (week-1.png, week-2.png, etc.)
+  // Otherwise, use default week images (week-1.webp, week-2.webp, etc. — W5: 600px WebP)
   const weekNumber = Number(index) + 1;
-  return `/images/week-${weekNumber}.png`;
+  return `/images/week-${weekNumber}.webp`;
 }
 </script>
