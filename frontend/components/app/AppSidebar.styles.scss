@@ -22,9 +22,12 @@
 }
 
 @media (min-width: 1024px) {
-  /* Desktop: always rendered, never a drawer. */
+  /* Desktop: always rendered, never a drawer. The root shrinks to the
+     sidebar column so it can never cover the dashboard; it keeps
+     pointer-events: none (only `.app-sidebar` takes clicks). */
   .app-sidebar-root {
-    pointer-events: auto;
+    right: auto;
+    width: 256px;
     overflow: visible;
   }
 }
@@ -33,13 +36,16 @@
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
-  pointer-events: auto;
+  /* Only clickable while the menu is open; a closed (invisible) scrim
+     must not swallow clicks on the dashboard. */
+  pointer-events: none;
   opacity: 0;
   transition: opacity 0.18s ease;
 }
 
 .app-sidebar-root--open .app-sidebar-scrim {
   opacity: 1;
+  pointer-events: auto;
 }
 
 @media (min-width: 1024px) {
