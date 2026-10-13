@@ -284,60 +284,59 @@ Rules:
   closure from `onAppEvent` is the unsubscribe fn.
 - Dispatch sites: `frontend/stores/monthStore.ts` (all three) and
   `frontend/components/task/TaskModal.vue` (`toast`).
-- Listener sites: `frontend/app.vue` (toast), `frontend/components/FloatingPoints.vue`,
-  `frontend/components/ParticleBurst.vue`.
+- Listener sites: `frontend/app.vue` (toast), `frontend/components/FloatingPoints.vue`.
 - After W4a **no `new CustomEvent(...)` or `window.addEventListener('appToast' | … | 'taskCompleted')`
   remains in `frontend/`**. The old custom-event listeners were removed.
 
-### Frontend folder layout (W4a split)
+## V2 "Combat Deck" UI (v2.0)
 
-`frontend/components/` is now organised by parent so ownership stays obvious.
-New subfolders (only the ones introduced in W4a — see
-`development/remediation-w4/orchestration-ctx/team-plan-remediation-w4.md`):
+Design source: `.claude/v2/DESIGN.md` (+ `code.html`, `screen.png`). Plan, contract and reports: `development/v2-redesign/` (contract: `orchestration-ctx/decisions/ui-contract-v2.md`).
 
+### Design system
+- **Tokens:** `frontend/assets/css/tokens.css` (`--pp-void`, `--pp-panel`, `--pp-card`, `--pp-card-active`, `--pp-line`, `--pp-text`, `--pp-muted`, `--pp-cyan`, `--pp-magenta`, `--pp-amber`, `--pp-green`, `--pp-done-bg`, `--pp-danger`, tier colors, plus `-rgb` triplets and static `--pp-glow-*` shadows), mapped to Tailwind `pp-*` colors. Radius is 0 everywhere (`rounded-full` only for dots/avatars).
+- **Type:** `font-display` = Space Grotesk (headings, uppercase), `font-mono` = JetBrains Mono (body). Sizes `text-display` … `text-label-sm` from DESIGN.md. Self-hosted via `@fontsource/*` — never a font/icon/CSS CDN.
+- **Primitives** (`frontend/components/ui/`, auto-imported as `<UiPp…>`): `PpIcon` (inline SVG; names/type in `ui/iconNames.ts` — `<script setup>` can't export), `PpButton` (`primary|critical|ghost|micro`), `PpPanel` (optional chamfer/glow), `PpBadge`, `PpSegmentedProgress`. `node frontend/scripts/check-icons.mjs` checks every icon has a path.
+
+### Structure
 | Path | Owns |
 |---|---|
-| `frontend/components/app/` | `app.vue`-level shell: `AppHeader`, `AppBackground`, `DayGrid`, `EditableMonthView`, `FinishedViewToggle`, `ModalsHost`, `MonitorEffects`, `StatsOrReadonly`, `TierBadge`, `WeekStrip`, `ActionButtons` |
-| `frontend/components/stats/` | Read-only statistics view: `AchievementsSection`, `BestWorstHabits`, `DayOfWeekAnalysis`, `HeroSection`, `HighlightsGrid`, `StatsFooter`, `TaskInsightsGrid`, `WeekPerformanceGrid` |
-| `frontend/components/task/` | Task-related UI: `TaskCard`, `TaskCompletionEffect`, `TaskModalDayScope`, `TaskModalVisualPicker` (plus per-component `.styles.scss` siblings) |
-| `frontend/components/boss/` | Boss portrait: `BossHolographicOverlay`, `BossProgressBar`, `BossRankBadge` (plus `BossHolographicOverlay.styles.scss`) |
-| `frontend/utils/` | Pure helpers / network: `cycleCloning`, `cycleMutations`, `cycleNetwork`, `cycleRecurrence`, `klipyApi`, `sharedProgress` (re-export of `#shared/progress.js`), `sharedScoring` (re-export of `#shared/scoring.js`), `taskFactory`, `taskUtils` |
+| `components/app/` | Shell: `AppShell` (sidebar + header + main), `AppSidebar` (Campaign/Stats, cycles list, New/Finish month, Settings; slide-in menu below lg), `AppHeader` (month title, tier + XP, inline tier icons, New Habit), `AppBackground` (static dot/scanline), `EditableMonthView`, `ModalsHost`, `StatsOrReadonly`, `StatsUnfinishedPanel`, `TierBadge` |
+| `components/campaign/` | `CampaignView` (view bar: Spotlight / 7D Grid / Holo-Deck), `WeekTabs`, `DayStrip`, `DaySpotlight` + `TaskRow` + `TaskRowMenu` (phone ⋯ menu) + `TaskFilterBar`, `WeekGrid` + `TaskTile`, `CampaignCockpit` (boss, week XP bar, daily XP chart, upcoming days), `CloneDayPanel` |
+| `components/task/` | `TaskMedia` (video/still/img/emoji, in-view playback), `TaskModalFields`, `TaskModalDayScope`, `TaskModalMoveTo`, `TaskModalVisualPicker` |
+| `components/stats/`, `components/month/`, `components/boss/` | Statistics view, month summary, boss portrait parts |
+| `composables/useCampaignStats.ts` | Pure helpers: `getTaskXp`, `getDayStats`, `getWeekDayXp`, `getReplicatedLabel` (`node frontend/scripts/check-campaign-stats.mjs`) |
+| `composables/useMonthPageState.ts` | Page state factory + `providePageState`/`injectPageState`. **`app.vue` is the single owner** (it merges `useTaskModal()` openers in); children must `injectPageState()` — calling `useMonthPageState()` again creates a second, disconnected state (that bug made edit/add do nothing). |
 
-Component files must stay ≤ 400 lines (`frontend/components/*/*.vue` /
-`.ts`). Any exception should be justified in the relevant
-`tasks/W*/completion-report.md`.
+Component files stay ≤ 400 lines.
 
-### Responsive layout, theme tokens, motion (W4b)
-
-Breakpoints are Tailwind's defaults: **phone** `< 640px`, **tablet** `640–1023px`, **desktop** `≥ 1024px` (desktop layout is unchanged from v0.4.0).
-
+### Layout by breakpoint (phone < 640, tablet 640–1023, desktop ≥ 1024)
 | Area | Phone | Tablet | Desktop |
 |---|---|---|---|
-| Header (`components/app/AppHeader.vue`) | stacked: title, XP row, buttons | one or two rows | one row |
-| Tier ladder (`TierBadge.vue`) | short labels (Br/Si/Go/Ch/Fi) | full labels | full labels |
-| Boss portraits (`WeekStrip.vue`) | 2×2 grid | row of 4 | row of 4 |
-| Days (`DayGrid.vue`) | one day at a time: PREV/NEXT week + MON…SUN picker (defaults to today's weekday) | horizontal scroll-snap strip, days ≥ 200px | 7 equal columns |
-| Task buttons (`task/TaskCard.styles.scss`) | ≥ 40×40px | ≥ 40×40px | compact |
-| Task dialog (`TaskModal.vue`) | full-screen sheet | centered | centered |
-| Settings drawer | full-width sheet | 320px panel | 320px panel |
+| Sidebar | slide-in menu (hamburger) | slide-in menu | fixed 256px |
+| Campaign view | Day Spotlight only | Spotlight or 7D Grid (scroll-snap columns ≥ 220px) | Spotlight + cockpit (8/4) or 7D Grid (7 columns) |
+| Task row | check · 64×36 thumb · 2-line title · ⋯ menu | 96×54 thumb, inline actions | ~66px rows; 7 rows fit at 1440×900 |
+| Cockpit | under the list, boss as 16:9 banner | under the list | right column (hidden in Grid view) |
+| Task dialog | full-screen sheet | centered | centered |
 
-- **Moving tasks on touch:** the task edit dialog has a **Move to…** week/day picker (`components/task/TaskModalMoveTo.vue`, hidden for finished months) on every device; desktop keeps drag-and-drop.
-- **Theme tokens:** colors live in `frontend/assets/css/tokens.css` as `--pp-*` custom properties (plus `--pp-*-rgb` triplets for alpha), mapped to `pixel-*` colors in `tailwind.config.js`. Use tokens in new CSS. Remaining literals are one-off shades or values passed through component props/JS (canvas/SVG).
-- **Motion:** every animated effect honors `prefers-reduced-motion: reduce`. On phones the CRT noise/flicker is off and background particles scale down with screen area.
-- **404:** the app has no `pages/` router, so `app.vue` raises a fatal 404 for any path other than `/`; `error.vue` renders it ("BACK TO QUESTS"). API 404s come from the Nitro catch-all (`server/api/[...].ts`) as v2 envelopes.
-- **Checking layouts:** `bash scripts/preview/screenshot.sh <out-dir> [url]` captures 375 / 768 / 1024 / 1440 (viewport width × full page height).
+- **Default view** is Day Spotlight; the Grid choice is saved (`settingsStore.campaignView`, localStorage). **Holo-Deck** = `settingsStore.animateGifs`.
+- **Clone day:** `monthStore.cloneDayTasks(sourceDayUuid, targetDayUuids)` copies a day's tasks (new uuids, not completed, no recurrence; skips identical tasks) in one `addTasks` PATCH. UI: Clone in the Spotlight header.
+- **Task notes:** optional `notes` (≤ 280) on tasks; `updateTasks` accepts `null` to clear. Shown in the row and edited in the task dialog.
+- **Days have no stored dates:** the strip shows `MON // W1`; TODAY is inferred by weekday.
+- **Moving tasks on touch:** **Move to…** in the edit dialog; desktop also has drag-and-drop (reorder in Spotlight, between days in Grid).
+- **404:** `app.vue` raises a fatal 404 for any path other than `/`; `error.vue` renders it.
 
-### Performance (W5)
+### Performance
+Measured with `development/remediation-w5/measurements/bench.mjs` (V2 copy: `development/v2-redesign/tasks/W3-qa/bench-v2.mjs`). V2 vs v0.6.0: same 60 fps, far fewer running animations and media bytes; JS heap ~1 MB higher (accepted).
+- **Task GIFs:** a picked GIF stores `gifUrl` (fallback), `gifVideoUrl` (MP4) and `gifStillUrl` (still). `TaskMedia` renders `<video preload="none" :poster>` and `useInViewPlayback` plays it only while ≥ 25% visible and the tab is visible, never under reduced motion. Older tasks fall back to a lazy `<img>`.
+- No particle canvases, CRT effects or animated glows; glows are static shadows. Completion feedback is a ≤ 400 ms CSS pulse on the check button. `FloatingPoints` is the only animated overlay. All motion honors `prefers-reduced-motion`.
+- Boss portraits are 600px WebP (`frontend/public/images/`; originals in `design/portraits/`, excluded from Docker builds); boss videos use in-view playback.
+- The backend assigns a task `uuid` when `addTasks` omits one.
 
-Measured with `development/remediation-w5/measurements/bench.mjs` (headless Chrome, 4× CPU throttle, 84-task month with 42 GIFs). Results are in `development/remediation-w5/06-handoff-remediation-w5.md`.
-
-- **Task GIFs:** when a GIF is picked, the task stores three Klipy renditions: `gifUrl` (GIF/WebP fallback), `gifVideoUrl` (MP4) and `gifStillUrl` (JPG still). Cards render `<video preload="none" :poster="gifStillUrl">`; `composables/useInViewPlayback.ts` plays it only while ≥ 25% is on screen and the tab is visible, never under reduced motion. Tasks without `gifVideoUrl` (older data) fall back to a lazy `<img>`.
-- **Settings → "Animate task GIFs"** (`settingsStore.animateGifs`, localStorage `animateGifs`, default on). Off = still frames only.
-- **Phones and tablets (< 1024px):** card glow/legendary animations, body/CRT/background animations and `backdrop-blur` are off; progress particles are capped at 6. Phones don't mount the hidden 7-day grid. Desktop looks the same.
-- **Completion burst** (`TaskCompletionEffect`) mounts only for a completion made in this session and unmounts after 1.6 s.
-- **Background particles** run at ≤ 30 fps and pause while the tab is hidden.
-- **Boss portraits** are 600px WebP in `frontend/public/images/` (originals in `design/portraits/`, excluded from Docker builds); boss videos also use in-view playback.
-- The backend assigns a task `uuid` when `addTasks` omits one. Task fields `gifVideoUrl`/`gifStillUrl` are optional URLs (≤ 2048 chars); `updateTasks` accepts `null` to clear them.
+### Dev notes
+- `vite.build.commonjsOptions` only applies to builds. `nuxt.config.ts` has a dev-only plugin (`pp-shared-cjs-dev`) that turns `shared/*.js` CJS into ESM for the browser in `nuxt dev`; without it the current month never loads in dev.
+- Use Node 22 (`nvm`); `/usr/local/bin/node` is v18 on this machine and breaks the preview harness (`--import` in `NODE_OPTIONS`).
+- Editing `nuxt.config.ts` restarts `nuxt dev`, which can crash the preview; rerun `scripts/preview/start.sh`. `start.sh` doesn't restart a running backend — kill it first after backend changes.
+- **Verify with data visible**, not just HTTP 200: a page can return 200 with no month loaded.
 
 ## Tests + CI
 
