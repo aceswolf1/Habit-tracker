@@ -1,110 +1,95 @@
 <!--
-  TaskModalDayScope.vue (W4 split, UB-55).
+  TaskModalDayScope.vue (W1 restyle, V2 Combat Deck).
 
-  Owns the "APPLY TO (THIS WEEK)" radio, the day-of-week chip grid, the
-  "REPEAT IN OTHER WEEKS" section, and (when editing a recurring task) the
-  "EDIT SCOPE" radio. Source-of-truth for the selections lives in the
-  parent TaskModal (it bubbles back via v-model:selectedDayUuids and
-  v-model:selectedWeekUuids); this component owns only the toggle UX.
+  Owns the "APPLY TO (THIS WEEK)" radio, the day-of-week chip grid,
+  the "REPEAT IN OTHER WEEKS" section, and (when editing a recurring
+  task) the "EDIT SCOPE" radio. Source-of-truth for the selections
+  lives in the parent TaskModal (it bubbles back via
+  v-model:selectedDayUuids and v-model:selectedWeekUuids); this
+  component owns only the toggle UX.
+
+  V2 styling: cyan amber amber-day chips, sharp 1px borders, no pixel
+  font, no animated glows.
 -->
 <template>
   <!-- Scope inside week -->
-  <div class="mb-5">
-    <div class="text-white font-press text-xs mb-2">APPLY TO (THIS WEEK)</div>
-    <div class="flex flex-wrap gap-4 text-[10px] font-press mb-3">
-      <label
-        class="flex items-center gap-2 text-white cursor-pointer hover:text-yellow-400 transition-colors"
-      >
+  <div class="dscope">
+    <div class="dscope-label">APPLY TO (THIS WEEK)</div>
+    <div class="dscope-types font-mono">
+      <label class="dscope-type">
         <input type="radio" value="single" v-model="weekScopeLocal" />
-        Single Day
+        <span>SINGLE DAY</span>
       </label>
-      <label
-        class="flex items-center gap-2 text-white cursor-pointer hover:text-yellow-400 transition-colors"
-      >
+      <label class="dscope-type">
         <input type="radio" value="multiple" v-model="weekScopeLocal" />
-        Selected Days
+        <span>SELECTED DAYS</span>
       </label>
-      <label
-        class="flex items-center gap-2 text-white cursor-pointer hover:text-yellow-400 transition-colors"
-      >
+      <label class="dscope-type">
         <input type="radio" value="all" v-model="weekScopeLocal" />
-        All Days
+        <span>ALL DAYS</span>
       </label>
     </div>
-    <div v-if="showDaySelector" class="mt-2 grid grid-cols-7 gap-1">
+
+    <div v-if="showDaySelector" class="dscope-days">
       <button
         v-for="d in weekDays"
         :key="d.uuid"
         type="button"
-        @click="toggleDay(d.uuid)"
         :class="[
-          'border-2 border-black text-[10px] font-press py-2 transition-all transform hover:scale-105',
-          selectedDayUuids.includes(d.uuid)
-            ? 'bg-yellow-500 text-black shadow-[2px_2px_0_rgba(0,0,0,0.5)] translate-x-[-1px] translate-y-[-1px]'
-            : 'bg-gray-700 text-white hover:bg-gray-600',
+          'dscope-day font-mono',
+          selectedDayUuids.includes(d.uuid) ? 'dscope-day--on' : '',
         ]"
-      >
-        {{ d.short }}
-      </button>
+        @click="toggleDay(d.uuid)"
+      >{{ d.short }}</button>
     </div>
-  </div>
 
-  <!-- Recurrence across weeks -->
-  <div class="mb-5 p-3 border-2 border-dashed border-gray-600 bg-gray-800/50">
-    <label
-      class="flex items-center gap-2 text-white font-press text-[10px] mb-2 cursor-pointer"
-    >
-      <input type="checkbox" v-model="repeatAcrossWeeksLocal" />
-      REPEAT IN OTHER WEEKS
-    </label>
-    <div v-if="repeatAcrossWeeks" class="space-y-2 mt-2">
-      <div class="flex flex-wrap gap-2 text-[10px] font-press">
-        <button
-          type="button"
-          @click="selectAllWeeks"
-          class="px-2 py-1 border-2 border-black bg-blue-600 hover:bg-blue-500 text-white transition-colors"
-        >
-          All Weeks
-        </button>
-        <button
-          type="button"
-          @click="selectedWeekUuidsLocal = []"
-          class="px-2 py-1 border-2 border-black bg-gray-600 hover:bg-gray-500 text-white transition-colors"
-        >
-          Clear
-        </button>
-      </div>
-      <div class="flex flex-wrap gap-2 mt-2">
-        <button
-          v-for="w in otherWeeks"
-          :key="w.uuid"
-          type="button"
-          @click="toggleWeek(w.uuid)"
-          :class="[
-            'px-2 py-1 border-2 border-black text-[10px] font-press transition-colors',
-            selectedWeekUuids.includes(w.uuid)
-              ? 'bg-yellow-500 text-black'
-              : 'bg-gray-700 text-white hover:bg-gray-600',
-          ]"
-        >
-          {{ w.label }}
-        </button>
+    <!-- Recurrence across weeks -->
+    <div class="dscope-recurrence">
+      <label class="dscope-recurrence-toggle font-mono">
+        <input type="checkbox" v-model="repeatAcrossWeeksLocal" />
+        <span>REPEAT IN OTHER WEEKS</span>
+      </label>
+      <div v-if="repeatAcrossWeeks" class="dscope-recurrence-body">
+        <div class="dscope-recurrence-actions font-mono">
+          <button
+            type="button"
+            class="dscope-recurrence-btn dscope-recurrence-btn--accent"
+            @click="selectAllWeeks"
+          >ALL WEEKS</button>
+          <button
+            type="button"
+            class="dscope-recurrence-btn"
+            @click="selectedWeekUuidsLocal = []"
+          >CLEAR</button>
+        </div>
+        <div class="dscope-recurrence-weeks font-mono">
+          <button
+            v-for="w in otherWeeks"
+            :key="w.uuid"
+            type="button"
+            :class="[
+              'dscope-week',
+              selectedWeekUuids.includes(w.uuid) ? 'dscope-week--on' : '',
+            ]"
+            @click="toggleWeek(w.uuid)"
+          >{{ w.label }}</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Edit recurrence scope -->
-  <div v-if="isEdit && hasRecurrence" class="mb-5">
-    <div class="text-white font-press text-xs mb-2">EDIT SCOPE</div>
-    <div class="flex flex-wrap gap-4 text-[10px] font-press">
-      <label class="flex items-center gap-2 text-white cursor-pointer">
-        <input type="radio" value="single" v-model="editScopeLocal" />
-        This Task Only
-      </label>
-      <label class="flex items-center gap-2 text-white cursor-pointer">
-        <input type="radio" value="recurrence" v-model="editScopeLocal" />
-        All In Recurrence
-      </label>
+    <!-- Edit recurrence scope -->
+    <div v-if="isEdit && hasRecurrence">
+      <div class="dscope-label dscope-label--sm">EDIT SCOPE</div>
+      <div class="dscope-types font-mono">
+        <label class="dscope-type">
+          <input type="radio" value="single" v-model="editScopeLocal" />
+          <span>THIS TASK ONLY</span>
+        </label>
+        <label class="dscope-type">
+          <input type="radio" value="recurrence" v-model="editScopeLocal" />
+          <span>ALL IN RECURRENCE</span>
+        </label>
+      </div>
     </div>
   </div>
 </template>
@@ -202,3 +187,182 @@ function selectAllWeeks() {
   selectedWeekUuidsLocal.value = otherWeeks.value.map((w) => w.uuid);
 }
 </script>
+
+<style scoped>
+.dscope {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dscope-label {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pp-cyan);
+}
+
+.dscope-label--sm {
+  font-size: 0.65rem;
+}
+
+.dscope-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dscope-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  color: var(--pp-text);
+}
+
+.dscope-type input {
+  accent-color: var(--pp-cyan);
+}
+
+.dscope-type:hover {
+  color: var(--pp-amber);
+}
+
+.dscope-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.dscope-day {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--pp-panel);
+  color: var(--pp-text);
+  border: 1px solid var(--pp-line);
+  padding: 0.4rem 0;
+  cursor: pointer;
+  min-height: 36px;
+  transition: color 0.15s ease, background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.dscope-day:hover,
+.dscope-day:focus-visible {
+  color: var(--pp-amber);
+  border-color: var(--pp-amber);
+  outline: none;
+}
+
+.dscope-day--on {
+  background: var(--pp-amber);
+  color: var(--pp-void);
+  border-color: var(--pp-amber);
+}
+
+.dscope-recurrence {
+  border: 1px dashed var(--pp-line);
+  background: rgb(var(--pp-void-rgb) / 0.6);
+  padding: 0.75rem;
+}
+
+.dscope-recurrence-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  color: var(--pp-text);
+}
+
+.dscope-recurrence-toggle input {
+  accent-color: var(--pp-cyan);
+}
+
+.dscope-recurrence-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.dscope-recurrence-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dscope-recurrence-btn {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--pp-card);
+  color: var(--pp-text);
+  border: 1px solid var(--pp-line);
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.dscope-recurrence-btn:hover,
+.dscope-recurrence-btn:focus-visible {
+  color: var(--pp-cyan);
+  border-color: var(--pp-cyan);
+  outline: none;
+}
+
+.dscope-recurrence-btn--accent {
+  color: var(--pp-cyan);
+  border-color: var(--pp-cyan);
+}
+
+.dscope-recurrence-weeks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dscope-week {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--pp-card);
+  color: var(--pp-text);
+  border: 1px solid var(--pp-line);
+  padding: 0.35rem 0.55rem;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.dscope-week:hover {
+  color: var(--pp-cyan);
+  border-color: var(--pp-cyan);
+}
+
+.dscope-week--on {
+  background: var(--pp-amber);
+  color: var(--pp-void);
+  border-color: var(--pp-amber);
+}
+</style>

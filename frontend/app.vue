@@ -1,54 +1,38 @@
 <template>
-  <!-- Effects layer (CRT scanlines, RGB shift, noise, vignette, flicker, overlay) -->
-  <MonitorEffects />
+  <!-- Static Combat Deck background (CSS-only, no canvas). -->
+  <AppBackground />
 
   <!-- Toast Notifications (bus-driven via useAppEvents) -->
   <ToastNotification ref="toastRef" />
 
-  <!-- Floating Points + Particle Burst components -->
+  <!-- FloatingPoints stays per contract §6 (W1 restyles in Wave B). -->
   <FloatingPoints />
-  <ParticleBurst />
 
-  <!-- Fixed gradient depth background + ambient particles -->
-  <AppBackground />
-
-  <!-- Main wrapper -->
-  <div
-    class="main-wrapper relative min-h-screen flex items-start justify-center p-2 sm:p-4 z-[2]"
+  <!--
+    Shell: sidebar + header + <main> with section-aware content.
+    AppShell owns the local 'campaign'/'stats' section state and the
+    sidebar open/close state; the page content (slot below) reacts to
+    the current section via v-model.
+  -->
+  <AppShell
+    v-model:section="section"
+    :currentMonth="currentMonth"
+    :months="months"
+    :currentMonthUuid="currentMonthUuid"
+    :lifetimeScore="lifetimeScore"
+    :hasMonth="hasMonth"
+    :isFinished="isFinished"
+    :openSettings="openSettings"
+    :newMonth="newMonth"
+    :finishMonth="finishMonth"
+    :refreshData="refreshDataFromStore"
+    :openCreateTask="openCreateTask"
   >
-    <div
-      :class="[
-        'inner-wrapper relative max-w-full sm:max-w-[92vw] w-full bg-pixel-dark/80 lg:backdrop-blur-[2px] border-4 border-black p-3 sm:p-6 shadow-pixel',
-        settingsStore.uiFont === 'cyber' ? 'font-cyber' : 'font-press'
-      ]"
-    >
-      <AppHeader
-        :currentMonth="currentMonth"
-        :months="months"
-        :lifetimeScore="lifetimeScore"
-        :hasMonth="hasMonth"
-        :isFinished="isFinished"
-        :openSettings="openSettings"
-      />
-
-      <!-- Toggle Button for Finished Months -->
-      <FinishedViewToggle
-        :isFinished="isFinished"
-        :hasMonth="hasMonth"
-        :viewMode="viewMode"
-        :toggleView="toggleView"
-      />
-
-      <!-- Statistics / Read-Only routing for finished months -->
-      <StatsOrReadonly
-        :isFinished="isFinished"
-        :hasMonth="hasMonth"
-        :viewMode="viewMode"
-        :currentMonth="currentMonth"
-      />
-
-      <!-- Normal Editable View for Active Months -->
+    <!-- Campaign section: EditableMonthView for active months,
+         ReadOnlyMonthView for finished months. -->
+    <template v-if="section === 'campaign'">
       <EditableMonthView
+        v-if="!isFinished && hasMonth"
         :isFinished="isFinished"
         :hasMonth="hasMonth"
         :weeks="weeks"
@@ -69,10 +53,34 @@
         :openCreateTask="openCreateTask"
         :finishMonth="finishMonth"
       />
-    </div>
-  </div>
+      <ReadOnlyMonthView
+        v-else-if="isFinished && hasMonth"
+        :month="currentMonth"
+      />
+    </template>
 
-  <!-- Modal hosts -->
+    <!-- Stats section: full statistics for finished months;
+         progress + "unlock on finish" + finished-months list for
+         unfinished months. -->
+    <template v-else>
+      <StatsOrReadonly
+        v-if="hasMonth && isFinished"
+        :isFinished="isFinished"
+        :hasMonth="hasMonth"
+        :viewMode="viewMode"
+        :currentMonth="currentMonth"
+      />
+      <StatsUnfinishedPanel
+        v-else
+        :currentMonth="currentMonth"
+        :months="months"
+        :currentMonthUuid="currentMonthUuid"
+        @selectMonth="onSelectMonthFromPanel"
+      />
+    </template>
+  </AppShell>
+
+  <!-- Modal hosts (create/edit task + settings drawer). -->
   <ModalsHost
     :taskModalOpen="taskModalOpen"
     :selectedDayUuid="selectedDayUuid"
@@ -90,29 +98,36 @@ import { storeToRefs } from "pinia";
 import { useMonthStore } from "./stores/monthStore";
 import { useSettingsStore } from "./stores/settingsStore";
 import { onAppEvent } from "./composables/useAppEvents";
-import { useMonthPageState } from "./composables/useMonthPageState";
+import {
+  providePageState,
+  useMonthPageState,
+} from "./composables/useMonthPageState";
 import { useTaskModal } from "./composables/useTaskModal";
 import { useMonthViewMode } from "./composables/useMonthViewMode";
 import { provideBreakpoints } from "./composables/useBreakpoint";
 
-import MonitorEffects from "./components/app/MonitorEffects.vue";
+import AppShell from "./components/app/AppShell.vue";
 import AppBackground from "./components/app/AppBackground.vue";
 import AppHeader from "./components/app/AppHeader.vue";
-import FinishedViewToggle from "./components/app/FinishedViewToggle.vue";
-import StatsOrReadonly from "./components/app/StatsOrReadonly.vue";
 import EditableMonthView from "./components/app/EditableMonthView.vue";
+import ReadOnlyMonthView from "./components/ReadOnlyMonthView.vue";
+import StatsOrReadonly from "./components/app/StatsOrReadonly.vue";
+import StatsUnfinishedPanel from "./components/app/StatsUnfinishedPanel.vue";
 import ModalsHost from "./components/app/ModalsHost.vue";
 
 import ToastNotification from "./components/ToastNotification.vue";
 import FloatingPoints from "./components/FloatingPoints.vue";
-import ParticleBurst from "./components/ParticleBurst.vue";
 
-// W4b 404: the app is a single page with no `pages/` router, so Nuxt would
-// render this shell for any URL. Anything other than "/" is a real 404 and
-// is rendered by `error.vue` (SSR responds with status 404).
+// W4b 404: the app is a single page with no `pages/` router, so Nuxt
+// would render this shell for any URL. Anything other than "/" is a
+// real 404 and is rendered by `error.vue` (SSR responds with 404).
 const requestPath = useRoute().path;
 if (requestPath !== "/" && requestPath !== "") {
-  throw createError({ statusCode: 404, statusMessage: "Page not found", fatal: true });
+  throw createError({
+    statusCode: 404,
+    statusMessage: "Page not found",
+    fatal: true,
+  });
 }
 
 // Stores
@@ -122,15 +137,17 @@ const settingsStore = useSettingsStore();
 // Page state composables
 const {
   currentWeek,
+  currentDay,
   currentDayUuid,
   weeks,
   currentMonth,
+  weekIndex,
+  hasPrevWeek,
+  hasNextWeek,
   setCurrentWeek,
   setCurrentDay,
   prevWeek,
   nextWeek,
-  hasPrevWeek,
-  hasNextWeek,
   refreshDataFromStore,
   toggleTask,
   moveTask,
@@ -138,8 +155,9 @@ const {
 } = useMonthPageState();
 
 // W4b additions: provide reactive breakpoint state to deep descendants
-// (AppHeader's TierBadge switches to compact mode on phones).
+// (kept for any Wave-B descendant that still needs it).
 provideBreakpoints();
+
 const {
   taskModalOpen,
   selectedDayUuid,
@@ -151,13 +169,94 @@ const {
 } = useTaskModal();
 const { viewMode, toggleView } = useMonthViewMode();
 
+// W2-integration / page-state-sharing: app.vue is the SINGLE owner of
+// the page state. We provide the merged state (page-state refs +
+// task-modal openers) so that any descendant — most importantly
+// `CampaignView.vue` — calls `injectPageState()` instead of creating
+// its own copy via `useMonthPageState()`. Fixes M-1 (TaskModal never
+// opens because `openEditTask` was undefined on the duplicate state).
+const pageStateBundle = {
+  currentWeek,
+  currentDay,
+  currentDayUuid,
+  weeks,
+  currentMonth,
+  weekIndex,
+  hasPrevWeek,
+  hasNextWeek,
+  setCurrentWeek,
+  setCurrentDay,
+  nextWeek,
+  prevWeek,
+  refreshDataFromStore,
+  toggleTask,
+  moveTask,
+  deleteSingleTask,
+};
+providePageState({
+  ...pageStateBundle,
+  taskModalOpen,
+  selectedDayUuid,
+  editingTaskUuid,
+  openCreateTask,
+  openCreateTaskForDay,
+  openEditTask,
+  closeTaskModal,
+});
+
+// V2 shell: local section state owned here, bound v-model to AppShell.
+const section = ref<"campaign" | "stats">("campaign");
+
 // Toast + reactive slices
 const toastRef = ref<InstanceType<typeof ToastNotification> | null>(null);
 const storeRefs: any = storeToRefs(monthStore as any);
 const months = storeRefs.months;
 const lifetimeScore = storeRefs.lifetimeScore;
+const currentMonthUuid = storeRefs.currentMonthUuid;
 const isFinished = computed(() => currentMonth.value?.finished || false);
 const hasMonth = computed(() => !!currentMonth.value);
+
+function openSettings() {
+  settingsStore.toggleDrawer(true);
+}
+
+function newMonth() {
+  const defaultName = new Date().toLocaleString("default", {
+    month: "long",
+    year: "numeric",
+  });
+  monthStore.createMonth(defaultName);
+  section.value = "campaign";
+}
+
+function finishMonth() {
+  if (isFinished.value) return;
+  const score = currentMonth.value?.score || 0;
+  if (
+    confirm(
+      `Finish this month? You achieved ${score} XP.\n\nThis will lock all tasks and calculate statistics.`,
+    )
+  ) {
+    monthStore.finishCurrentMonth().then((result) => {
+      if (result?.cycle) {
+        toastRef.value?.add({
+          title: "MONTH COMPLETED!",
+          message: `${score} XP added to your legacy!`,
+          type: "success",
+        });
+        viewMode.value = "stats";
+        section.value = "stats";
+      }
+    });
+  }
+}
+
+function onSelectMonthFromPanel(uuid: string) {
+  if (uuid !== currentMonthUuid.value) {
+    monthStore.setCurrentMonth(uuid);
+  }
+  section.value = "stats";
+}
 
 // Notify adapter object — ModalsHost calls these on create/edit/delete.
 const notify = {
@@ -187,41 +286,6 @@ const notify = {
     }),
 };
 
-function openSettings() {
-  settingsStore.toggleDrawer(true);
-}
-
-function finishMonth() {
-  if (isFinished.value) return;
-  const tier = tierText.value;
-  const score = currentMonth.value?.score || 0;
-  if (
-    confirm(
-      `Finish this month? You achieved ${tier} with ${score} XP.\n\nThis will lock all tasks and calculate statistics.`
-    )
-  ) {
-    monthStore.finishCurrentMonth().then((result) => {
-      if (result?.cycle) {
-        toastRef.value?.add({
-          title: "MONTH COMPLETED!",
-          message: `${tier} earned! ${score} XP added to your legacy!`,
-          type: "success",
-        });
-        viewMode.value = "stats";
-      }
-    });
-  }
-}
-
-const tierText = computed(() => {
-  const progress = currentMonth.value?.progress || 0;
-  if (progress >= 90) return "CHAMPION TIER!";
-  if (progress >= 75) return "GOLD TIER!";
-  if (progress >= 50) return "SILVER TIER!";
-  if (progress >= 25) return "BRONZE TIER!";
-  return "BEGINNER TIER!";
-});
-
 // --- Typed event bus + legacy window listener (UB-54) ---
 function handleToast(detail: {
   type: "success" | "error" | "info" | "warning";
@@ -235,7 +299,6 @@ function handleToast(detail: {
   });
 }
 
-// Typed-bus subscription (UB-54). Returned fn unsubscribes in onBeforeUnmount.
 const toastFromBus = onAppEvent("toast", handleToast);
 
 onMounted(async () => {
@@ -251,57 +314,8 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss">
-.main-wrapper {
-  width: 100%;
-  z-index: 2;
-
-  .inner-wrapper {
-    min-height: 92vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    grid-template-areas:
-      "header header"
-      "weekly-boss weekly-boss"
-      "daily-habit daily-habit"
-      "stats stats"
-      "actions actions";
-  }
-}
-
-.main-wrapper {
-  transform: perspective(1000px) rotateX(0deg);
-  filter: contrast(1.02) brightness(0.98);
-}
-
-body {
-  animation: color-temperature 20s ease-in-out infinite;
-}
-
-/* W5 perf: a filter animation on <body> repaints the whole page every frame
-   (GIFs included). Below desktop keep the static look only. */
-@media (max-width: 1023.98px) {
-  body {
-    animation: none;
-  }
-  .main-wrapper {
-    filter: none;
-  }
-}
-
-/* UB-56: no page-wide colour drift for reduced-motion users. */
-@media (prefers-reduced-motion: reduce) {
-  body {
-    animation: none;
-  }
-}
-
-@keyframes color-temperature {
-  0%, 100% {
-    filter: hue-rotate(0deg) saturate(1);
-  }
-  50% {
-    filter: hue-rotate(1deg) saturate(1.02);
-  }
-}
+/* V2: no page-wide colour drift / filter animation. The Combat Deck
+   background is a static `--pp-void` with a tiny CSS dot/scanline
+   overlay. The FloatingPoints component (kept per contract §6) is
+   the only animated element on the page. */
 </style>

@@ -1,29 +1,27 @@
 <!--
-  TaskModalMoveTo.vue (W4b, B-T2).
+  TaskModalMoveTo.vue (W1 restyle, V2 Combat Deck).
 
   Edit-mode only "Move to…" control inside TaskModal. Two cascading
   selects (week → day) and a MOVE button that emits the chosen
-  `{ weekUuid, dayUuid }`. Hidden when `finished` is true (the user-
-  facing rule from the W4b additions). The parent (TaskModal.vue)
-  performs the actual `store.moveTask(...)` call, fires a toast on
-  success via `emitAppEvent('toast', …)`, and closes the modal.
+  `{ weekUuid, dayUuid }`. Hidden when `finished` is true. The parent
+  (TaskModal.vue) performs the actual `store.moveTask(...)` call, fires
+  a toast on success via `emitAppEvent('toast', …)`, and closes the
+  modal.
 
-  Visible only when `isEdit` AND `!finished`. Defaults to the task's
-  current week + current day so the picker pre-selects the move
-  source, giving the user a "no-op" initial state.
+  V2 styling: cyan/magenta accent, sharp borders, mono body.
 -->
 <template>
   <div
     v-if="isEdit && !finished"
-    class="mb-5 p-3 border-2 border-dashed border-gray-600 bg-gray-800/50"
+    class="mmove"
   >
-    <div class="text-white font-press text-[10px] mb-2">MOVE TO…</div>
-    <div class="flex gap-3 mb-3">
-      <label class="block flex-1">
-        <span class="text-white font-press text-[10px] block mb-1">Week</span>
+    <div class="mmove-title font-mono">MOVE TO…</div>
+    <div class="mmove-grid">
+      <label class="mmove-field">
+        <span class="mmove-label font-mono">WEEK</span>
         <select
           v-model="selectedWeek"
-          class="w-full bg-gray-800 text-white p-2 border-2 border-black font-mono text-xs focus:outline-none focus:border-blue-500"
+          class="mmove-select font-mono"
           aria-label="Target week"
         >
           <option v-for="w in weeks" :key="w.uuid" :value="w.uuid">
@@ -31,11 +29,11 @@
           </option>
         </select>
       </label>
-      <label class="block flex-1">
-        <span class="text-white font-press text-[10px] block mb-1">Day</span>
+      <label class="mmove-field">
+        <span class="mmove-label font-mono">DAY</span>
         <select
           v-model="selectedDay"
-          class="w-full bg-gray-800 text-white p-2 border-2 border-black font-mono text-xs focus:outline-none focus:border-blue-500"
+          class="mmove-select font-mono"
           aria-label="Target day"
           :disabled="daysOfSelectedWeek.length === 0"
         >
@@ -47,12 +45,10 @@
     </div>
     <button
       type="button"
-      class="w-full px-3 py-3 border-2 border-black bg-blue-600 hover:bg-blue-500 text-white font-press text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      class="mmove-submit font-mono"
       :disabled="!canMove"
       @click="emitMove"
-    >
-      MOVE
-    </button>
+    >MOVE</button>
   </div>
 </template>
 
@@ -123,3 +119,88 @@ function emitMove() {
   emit("move", { weekUuid: selectedWeek.value, dayUuid: selectedDay.value });
 }
 </script>
+
+<style scoped>
+.mmove {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px dashed var(--pp-line);
+  background: rgb(var(--pp-void-rgb) / 0.6);
+  padding: 0.75rem;
+}
+
+.mmove-title {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pp-magenta);
+  font-weight: 700;
+}
+
+.mmove-grid {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mmove-field {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 0.25rem;
+}
+
+.mmove-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-cyan);
+  font-weight: 700;
+}
+
+.mmove-select {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.75rem;
+  background: var(--pp-panel);
+  color: var(--pp-text);
+  border: 1px solid var(--pp-line);
+  padding: 0.55rem 0.6rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mmove-select:focus,
+.mmove-select:focus-visible {
+  border-color: var(--pp-cyan);
+  box-shadow: 0 0 0 1px var(--pp-cyan);
+}
+
+.mmove-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mmove-submit {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--pp-cyan);
+  color: var(--pp-void);
+  border: 1px solid var(--pp-cyan);
+  padding: 0.65rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  min-height: 40px;
+}
+
+.mmove-submit:hover:not(:disabled) {
+  background: rgb(var(--pp-cyan-rgb) / 0.85);
+}
+
+.mmove-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+</style>

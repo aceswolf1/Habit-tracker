@@ -1,35 +1,42 @@
 <!--
-  TaskModal.vue (W4 split, UB-55).
-  Thin orchestrator. The visual picker (Emoji + GIF) lives in
-  `components/task/TaskModalVisualPicker.vue`, and the week/day/recurrence
-  selectors live in `components/task/TaskModalDayScope.vue`. Form state,
-  submit, and the create/edit decision stay here. App-level error toasts
-  go through `useAppEvents.emitAppEvent('toast', …)` (UB-54).
+  TaskModal.vue (W1 restyle, V2 Combat Deck).
+
+  Thin orchestrator for the create/edit quest dialog. Form fields are
+  extracted into `TaskModalFields.vue`. The visual picker (emoji + GIF),
+  the week/day/recurrence selectors, and the edit-mode Move-to control
+  each live in their own subcomponent. The form state, submit, and the
+  create/edit decision stay here.
+
+  V2 styling: cyan title, sharp 1px `--pp-line` borders, JetBrains Mono
+  body, Space Grotesk title, no legacy arcade fonts. Static
+  transitions only (no animated glows). Honors reduced motion.
 -->
 <template>
   <Transition name="modal-bounce">
-    <div v-if="open" class="fixed inset-0 flex items-center justify-center z-50">
-      <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="close"></div>
-      <div
-        class="task-modal-sheet relative bg-pixel-dark border-4 border-black p-6 w-full max-w-lg shadow-pixel transform transition-all"
-      >
-        <h2 class="font-press text-white text-base mb-6 text-center border-b-4 border-black pb-4">
-          {{ isEdit ? "EDIT QUEST" : "NEW QUEST" }}
-        </h2>
+    <div v-if="open" class="task-modal-root">
+      <div class="task-modal-scrim" @click="close"></div>
 
-        <form @submit.prevent="submit">
-          <!-- Description -->
-          <label
-            class="block mb-5 text-white font-press text-xs tracking-wide"
-            >DESCRIPTION
-            <input
-              v-model.trim="form.description"
-              class="mt-2 w-full bg-gray-800 text-white p-3 border-2 border-black font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors"
-              placeholder="Enter quest details..."
-              required
-              autoFocus
-            />
-          </label>
+      <div class="task-modal-sheet" role="dialog" aria-modal="true">
+        <header class="task-modal-header">
+          <span class="task-modal-title">
+            {{ isEdit ? "EDIT QUEST" : "NEW QUEST" }}
+          </span>
+          <button
+            type="button"
+            class="task-modal-close"
+            aria-label="Close"
+            @click="close"
+          >✕</button>
+        </header>
+
+        <form class="task-modal-form" @submit.prevent="submit">
+          <TaskModalFields
+            v-model:description="form.description"
+            v-model:notes="form.notes"
+            v-model:optional="form.optional"
+            v-model:legendary="form.legendary"
+            :autofocus="true"
+          />
 
           <!-- Visual type + emoji/gif picker subcomponent -->
           <TaskModalVisualPicker
@@ -40,30 +47,6 @@
             v-model:gifStillUrl="form.gifStillUrl"
             :description="form.description"
           />
-
-          <!-- Optional Flag -->
-          <label
-            class="flex items-center gap-3 mb-5 text-white font-press text-xs cursor-pointer group"
-          >
-            <div class="relative">
-              <input type="checkbox" v-model="form.optional" class="peer sr-only" />
-              <div class="w-5 h-5 border-2 border-white bg-gray-800 peer-checked:bg-blue-500 transition-colors"></div>
-              <div class="absolute inset-0 flex items-center justify-center text-white opacity-0 peer-checked:opacity-100 pointer-events-none">✓</div>
-            </div>
-            <span class="group-hover:text-blue-400 transition-colors">OPTIONAL SIDE QUEST</span>
-          </label>
-
-          <!-- Legendary Flag -->
-          <label
-            class="flex items-center gap-3 mb-5 text-white font-press text-xs cursor-pointer group"
-          >
-            <div class="relative">
-              <input type="checkbox" v-model="form.legendary" class="peer sr-only" />
-              <div class="w-5 h-5 border-2 border-purple-500 bg-gray-800 peer-checked:bg-purple-600 transition-colors"></div>
-              <div class="absolute inset-0 flex items-center justify-center text-white opacity-0 peer-checked:opacity-100 pointer-events-none">⭐</div>
-            </div>
-            <span class="group-hover:text-purple-400 transition-colors">LEGENDARY QUEST (3X SCORE)</span>
-          </label>
 
           <!-- Day/week/recurrence selector subcomponent -->
           <TaskModalDayScope
@@ -88,32 +71,26 @@
           />
 
           <!-- Actions -->
-          <div class="flex justify-between mt-8 pt-4 border-t-4 border-black">
+          <footer class="task-modal-footer">
             <button
               type="button"
+              class="task-btn task-btn--ghost"
               @click="close"
-              class="font-press text-xs px-4 py-3 bg-gray-600 border-2 border-black text-white hover:bg-gray-500 hover:scale-105 transition-all shadow-[4px_4px_0_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
-            >
-              CANCEL
-            </button>
-            <div class="flex gap-3">
+            >CANCEL</button>
+            <div class="task-modal-footer__right">
               <button
                 v-if="isEdit"
                 type="button"
+                class="task-btn task-btn--danger"
                 @click="emitDelete"
-                class="font-press text-xs px-4 py-3 bg-red-600 border-2 border-black text-white hover:bg-red-500 hover:scale-105 transition-all shadow-[4px_4px_0_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
-              >
-                DELETE
-              </button>
+              >DELETE</button>
               <button
                 type="submit"
-                class="font-press text-xs px-4 py-3 bg-blue-600 border-2 border-black text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-500 hover:scale-105 transition-all shadow-[4px_4px_0_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+                class="task-btn task-btn--primary"
                 :disabled="isSubmitting"
-              >
-                {{ isEdit ? "SAVE QUEST" : "START QUEST" }}
-              </button>
+              >{{ isEdit ? "SAVE QUEST" : "START QUEST" }}</button>
             </div>
-          </div>
+          </footer>
         </form>
       </div>
     </div>
@@ -125,6 +102,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { useMonthStore } from "../stores/monthStore";
 import { emitAppEvent } from "../composables/useAppEvents";
 import { buildDaySelection, type WeekScope } from "../utils/cycleRecurrence";
+import TaskModalFields from "./task/TaskModalFields.vue";
 import TaskModalVisualPicker from "./task/TaskModalVisualPicker.vue";
 import TaskModalDayScope from "./task/TaskModalDayScope.vue";
 import TaskModalMoveTo from "./task/TaskModalMoveTo.vue";
@@ -140,8 +118,7 @@ const emit = defineEmits(["close", "created", "updated", "deleted"]);
 const store = useMonthStore();
 
 // UB-40: surface synchronous task-mutation failures via `emitAppEvent('toast', …)`
-// (same envelope as `monthStore.notifyPersistError`) and keep the modal open so
-// the user can retry or adjust instead of silently losing the form.
+// and keep the modal open so the user can retry instead of silently losing the form.
 function notifyError(title: string, message: string) {
   emitAppEvent("toast", { type: "error", title, message });
 }
@@ -158,6 +135,10 @@ const form = reactive({
   gifUrl: "" as string,
   gifVideoUrl: "" as string,
   gifStillUrl: "" as string,
+  // V2 A8: optional free-form memo (≤ 280 chars). Empty string means
+  // "no notes" — `submit()` translates that to `null` on edit PATCHes
+  // so the server clears the field.
+  notes: "",
 });
 
 const isSubmitting = ref(false);
@@ -224,6 +205,8 @@ watch(
         form.gifVideoUrl = (editingTask.value as any).gifVideoUrl || "";
         form.gifStillUrl = (editingTask.value as any).gifStillUrl || "";
         form.visualType = (editingTask.value as any).gifUrl ? "gif" : "emoji";
+        // V2 A8: load the saved notes (may be undefined for older tasks).
+        form.notes = (editingTask.value as any).notes || "";
       } else {
         resetForm();
         if (props.prefillDayUuid) {
@@ -246,6 +229,7 @@ function resetForm() {
   form.gifUrl = "";
   form.gifVideoUrl = "";
   form.gifStillUrl = "";
+  form.notes = "";
   selectedDayUuids.value = [];
   selectedWeekUuids.value = [];
   editScope.value = "single";
@@ -294,14 +278,19 @@ function submit() {
         gifUrl: form.gifUrl || undefined,
         gifVideoUrl: form.gifUrl ? form.gifVideoUrl || undefined : undefined,
         gifStillUrl: form.gifUrl ? form.gifStillUrl || undefined : undefined,
+        // V2 A8: only attach notes when the user typed something;
+        // omitting keeps addTasks tasks notes-less by default.
+        notes: form.notes || undefined,
       });
       emit("created");
     } else if (editingTask.value) {
       // FIX-01: in edit mode, an empty visual field means "clear it
       // server-side" → send `null`. `undefined` would mean "leave it",
       // which is wrong when the user has just toggled visualType.
+      // V2 A8 extends the same null-clear semantics to `notes`.
       const iconPayload = form.icon ? form.icon : null;
       const gifUrlPayload = form.gifUrl ? form.gifUrl : null;
+      const notesPayload = form.notes ? form.notes : null;
       store.updateTask((editingTask.value as any).uuid, {
         description: form.description,
         optional: form.optional,
@@ -311,6 +300,7 @@ function submit() {
         // W5: renditions follow gifUrl; cleared together when the GIF is.
         gifVideoUrl: form.gifUrl && form.gifVideoUrl ? form.gifVideoUrl : null,
         gifStillUrl: form.gifUrl && form.gifStillUrl ? form.gifStillUrl : null,
+        notes: notesPayload,
       });
       emit("updated");
     }
@@ -336,7 +326,6 @@ function emitDelete() {
     close();
   } catch (e) {
     console.error(e);
-    // UB-40: keep modal open on delete failure; surface via toast
     notifyError("DELETE FAILED", "Could not remove quest. Please retry.");
     isSubmitting.value = false;
   }

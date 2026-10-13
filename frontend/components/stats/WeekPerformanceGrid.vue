@@ -1,20 +1,25 @@
+<!--
+  WeekPerformanceGrid.vue (W1 restyle, V2 Combat Deck).
+
+  Grid of 4 StatCard tiles, one per week of the finished cycle.
+  Best/Worst weeks receive the amber / danger accent. The header is
+  the V2 section header style (mono caps with cyan accent rule).
+-->
 <template>
-  <div>
-    <div class="section-header">
-      <h2>📊 WEEKLY PERFORMANCE</h2>
-    </div>
-    <div class="week-grid">
+  <section class="wpg">
+    <h2 class="wpg__header font-display">WEEKLY PERFORMANCE</h2>
+    <div class="wpg__grid">
       <StatCard
         v-for="week in statistics?.weekStats || []"
         :key="week.weekUuid"
         :title="week.weekName"
         :value="`${week.progress}%`"
         :subtitle="`${week.requiredCompleted}/${week.requiredTotal} Tasks`"
-        icon="🏰"
+        icon="▦"
         :rank="getWeekRank(week)"
       />
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -31,23 +36,33 @@ function getWeekRank(week: any) {
 }
 </script>
 
-<style scoped lang="scss">
-.section-header {
-  margin-top: 1rem;
+<style scoped>
+.wpg {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.section-header h2 {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 1rem;
-  color: var(--pp-gold-acc);
-  text-shadow: 2px 2px 0 #000;
+.wpg__header {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-cyan);
   padding-bottom: 0.5rem;
-  border-bottom: 3px solid var(--pp-gold-acc);
+  border-bottom: 1px solid var(--pp-line);
 }
 
-.week-grid {
+.wpg__grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .wpg__grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 </style>

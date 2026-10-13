@@ -1,126 +1,118 @@
 <!--
-  TaskModalVisualPicker.vue (W4 split, UB-55).
+  TaskModalVisualPicker.vue (W1 restyle, V2 Combat Deck).
 
   Owns the "VISUAL TYPE" radio + the emoji-mart popover + the GIF search
   panel. Three v-models live here: `visualType`, `icon` (emoji), and
   `gifUrl`. The parent TaskModal keeps the source-of-truth form and just
   syncs three fields back/forth.
 
-  All GIF-search state (`gifSearchQuery`, debounce, `gifResults`,
-  `isLoadingGifs`) and the auto-suggest watches on `description`/`visualType`
-  live here too — none of it leaks back into TaskModal.
+  V2 styling: cyan title, sharp 1px borders, mono body, cyan focus ring.
+  No legacy arcade font, no animated glows.
 -->
 <template>
-  <div class="mb-5">
-    <div class="text-white font-press text-xs mb-2">VISUAL TYPE</div>
-    <div class="flex gap-4 text-[10px] font-press mb-3">
-      <label
-        class="flex items-center gap-2 text-white cursor-pointer hover:text-yellow-400 transition-colors"
-      >
-        <input type="radio" value="emoji" v-model="visualTypeLocal" />
-        Emoji
+  <div class="vpicker">
+    <div class="vpicker-label">VISUAL TYPE</div>
+    <div class="vpicker-types font-mono">
+      <label class="vpicker-type">
+        <input
+          type="radio"
+          value="emoji"
+          v-model="visualTypeLocal"
+        />
+        <span>EMOJI</span>
       </label>
-      <label
-        class="flex items-center gap-2 text-white cursor-pointer hover:text-yellow-400 transition-colors"
-      >
-        <input type="radio" value="gif" v-model="visualTypeLocal" />
-        GIF
+      <label class="vpicker-type">
+        <input
+          type="radio"
+          value="gif"
+          v-model="visualTypeLocal"
+        />
+        <span>GIF</span>
       </label>
     </div>
 
     <!-- Emoji Picker -->
-    <div v-if="visualType === 'emoji'">
-      <div class="flex items-center gap-3">
+    <div v-if="visualType === 'emoji'" class="vpicker-emoji">
+      <div class="vpicker-emoji-row">
         <button
           type="button"
+          class="vpicker-emoji-toggle"
           @click="showEmojiPicker = !showEmojiPicker"
-          class="px-3 py-2 border-2 border-black bg-gray-700 hover:bg-gray-600 text-white font-press text-xs transition-colors"
         >
           {{ icon || "SELECT EMOJI" }}
         </button>
-        <span v-if="icon" class="text-white text-xl animate-bounce">{{ icon }}</span>
+        <span v-if="icon" class="vpicker-emoji-preview">{{ icon }}</span>
         <button
           v-if="icon"
           type="button"
+          class="vpicker-clear"
           @click="iconLocal = ''"
-          class="px-2 py-1 border-2 border-black bg-red-600 hover:bg-red-500 text-white font-press text-[10px] transition-colors"
-        >
-          CLEAR
-        </button>
+        >CLEAR</button>
       </div>
       <div
         v-if="showEmojiPicker"
-        class="mt-2 border-2 border-black bg-gray-800 p-2 max-h-60 overflow-y-auto absolute z-10 shadow-xl"
+        class="vpicker-popover"
       >
         <div v-if="isClient">
           <div ref="pickerRef"></div>
         </div>
-        <div v-else class="text-[10px] font-press text-gray-400">Loading...</div>
+        <div v-else class="vpicker-loading font-mono">LOADING…</div>
       </div>
     </div>
 
     <!-- GIF Picker -->
-    <div v-if="visualType === 'gif'" class="space-y-3">
+    <div v-if="visualType === 'gif'" class="vpicker-gif">
       <input
         v-model.trim="gifSearchQuery"
         @input="onGifSearchInput"
-        class="w-full bg-gray-800 text-white p-2 border-2 border-black font-mono text-xs focus:outline-none focus:border-blue-500 transition-colors"
-        placeholder="Search for a GIF..."
+        class="vpicker-input font-mono"
+        placeholder="Search for a GIF…"
+        type="text"
       />
 
       <div
         v-if="isLoadingGifs"
-        class="text-center text-white font-press text-[10px] py-4"
-      >
-        LOADING GIFS...
-      </div>
+        class="vpicker-loading font-mono"
+      >LOADING GIFS…</div>
 
       <div
         v-else-if="gifResults.length > 0"
-        class="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto border-2 border-black bg-gray-900 p-2"
+        class="vpicker-grid"
       >
         <button
           v-for="gif in gifResults"
           :key="gif.id"
           type="button"
+          class="vpicker-grid-tile"
+          :class="gifUrl && gifUrl === getGifUrl(gif) ? 'vpicker-grid-tile--selected' : ''"
           @click="selectGif(gif)"
-          :class="[
-            'border-2 transition-all overflow-hidden aspect-square',
-            gifUrl && gifUrl === getGifUrl(gif)
-              ? 'border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]'
-              : 'border-gray-700 hover:border-blue-500',
-          ]"
         >
           <img
             :src="getGifPreviewUrl(gif)"
             :alt="gif.title"
-            class="w-full h-full object-cover"
             loading="lazy"
             decoding="async"
+            class="vpicker-grid-thumb"
           />
         </button>
       </div>
 
       <div
         v-else-if="gifSearchQuery"
-        class="text-center text-gray-400 font-press text-[10px] py-4"
-      >
-        NO GIFS FOUND
-      </div>
+        class="vpicker-loading font-mono"
+      >NO GIFS FOUND</div>
 
-      <div v-if="gifUrl" class="flex items-center gap-2">
+      <div v-if="gifUrl" class="vpicker-selected">
         <img
           :src="gifStillUrl || gifUrl"
           alt="Selected GIF"
-          class="w-16 h-16 object-cover border-2 border-yellow-500"
+          class="vpicker-selected-thumb"
         />
         <button
           type="button"
+          class="vpicker-clear"
           @click="clearGif"
-          class="px-2 py-1 border-2 border-black bg-red-600 hover:bg-red-500 text-white font-press text-[10px] transition-colors"
-        >
-          CLEAR GIF
-        </button>
+        >CLEAR GIF</button>
       </div>
     </div>
   </div>
@@ -275,3 +267,5 @@ watch(() => props.visualType, (newType) => {
   }
 });
 </script>
+
+<style scoped src="./TaskModalVisualPicker.styles.scss"></style>

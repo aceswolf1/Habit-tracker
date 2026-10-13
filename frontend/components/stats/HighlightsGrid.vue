@@ -1,25 +1,30 @@
+<!--
+  HighlightsGrid.vue (W1 restyle, V2 Combat Deck).
+
+  Three-tile highlight row: Best Week, Worst Week, Consistency. Uses
+  StatCard with the `best`/`worst` rank accents already wired in.
+-->
 <template>
   <div class="highlights-grid">
     <StatCard
       title="Best Week"
       :value="statistics?.bestWeek?.weekName || 'N/A'"
       :subtitle="`${statistics?.bestWeek?.progress || 0}% Complete`"
-      icon="🏆"
+      icon="◈"
       rank="best"
     />
     <StatCard
       title="Worst Week"
       :value="statistics?.worstWeek?.weekName || 'N/A'"
       :subtitle="`${statistics?.worstWeek?.progress || 0}% Complete`"
-      icon="⚠️"
+      icon="▽"
       rank="worst"
     />
     <StatCard
       title="Consistency"
       :value="consistencyScore"
-      :subtitle="`Std Dev: ${statistics?.weekConsistency?.toFixed(1) || 0}`"
-      icon="📈"
-      color="#8b5cf6"
+      :subtitle="`Std Dev: ${(statistics?.weekConsistency || 0).toFixed(1)}`"
+      icon="⌬"
     />
   </div>
 </template>
@@ -41,10 +46,16 @@ const consistencyScore = computed(() => {
 });
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .highlights-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .highlights-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 </style>

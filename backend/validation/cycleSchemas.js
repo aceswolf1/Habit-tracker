@@ -29,6 +29,9 @@ const taskInputSchema = z
     // W5: MP4 + JPG renditions of the same GIF (optional; travel with gifUrl).
     gifVideoUrl: z.string().url().max(2048).optional(),
     gifStillUrl: z.string().url().max(2048).optional(),
+    // V2: optional free-form note for a task. Capped at 280 chars to match
+    // `description`; the FE shows a live char counter and rejects longer input.
+    notes: shortText(280).optional(),
   })
   .strict();
 
@@ -45,6 +48,8 @@ const taskUpdateSchema = z
     gifUrl: z.string().url().max(2048).nullable().optional(),
     gifVideoUrl: z.string().url().max(2048).nullable().optional(),
     gifStillUrl: z.string().url().max(2048).nullable().optional(),
+    // V2: notes accept `null` to clear, `undefined` to leave alone.
+    notes: shortText(280).nullable().optional(),
     order: z.number().int().nonnegative().optional(),
   })
   .strict();

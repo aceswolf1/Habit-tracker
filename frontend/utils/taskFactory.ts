@@ -35,6 +35,8 @@ export interface TaskDraftInput {
   /** W5: MP4 + JPG renditions of the GIF (or undefined). */
   gifVideoUrl?: string;
   gifStillUrl?: string;
+  /** V2: optional free-form memo (≤ 280 chars). */
+  notes?: string;
   /** Required for grouping recurring habits. */
   recurrenceId: string;
   /** Position within the day — pass the current tasks length for append. */
@@ -58,6 +60,7 @@ export function createTaskDraft(input: TaskDraftInput): Task {
     gifUrl: input.gifUrl,
     gifVideoUrl: input.gifVideoUrl,
     gifStillUrl: input.gifStillUrl,
+    notes: input.notes,
   };
 }
 

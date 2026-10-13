@@ -320,5 +320,46 @@ check('W5: updateTasks accepts null renditions (clear) and rejects ""', () => {
   bad('not a url', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', gifStillUrl: 'nope' }] });
 });
 
+// ---- V2 A8: Task `notes` field -------------------------------------------
+
+check('V2: addTasks accepts notes (optional, ≤ 280 chars)', () => {
+  ok('notes add', patchSchema, {
+    type: 'addTasks',
+    additions: [{ weekUuid: 'w-1', dayUuid: 'd-1', task: {
+      description: 'with notes', optional: false, notes: 'a free-form memo',
+    } }],
+  });
+  ok('notes at limit', patchSchema, {
+    type: 'addTasks',
+    additions: [{ weekUuid: 'w-1', dayUuid: 'd-1', task: {
+      description: 'long notes', optional: false, notes: 'x'.repeat(280),
+    } }],
+  });
+});
+
+check('V2: addTasks rejects notes > 280 chars', () => {
+  bad('notes too long', patchSchema, {
+    type: 'addTasks',
+    additions: [{ weekUuid: 'w-1', dayUuid: 'd-1', task: {
+      description: 'too long', optional: false, notes: 'x'.repeat(281),
+    } }],
+  });
+});
+
+check('V2: addTasks rejects empty notes (shortText(280) min 1)', () => {
+  bad('empty notes', patchSchema, {
+    type: 'addTasks',
+    additions: [{ weekUuid: 'w-1', dayUuid: 'd-1', task: {
+      description: 'empty', optional: false, notes: '',
+    } }],
+  });
+});
+
+check('V2: updateTasks accepts notes (set) and null (clear); rejects ""', () => {
+  ok('set notes', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', notes: 'updated memo' }] });
+  ok('null clears notes', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', notes: null }] });
+  bad('empty string', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', notes: '' }] });
+});
+
 console.log(`\n${passed} checks passed`);
 process.exit(0);

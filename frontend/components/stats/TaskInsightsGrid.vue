@@ -1,39 +1,39 @@
+<!--
+  TaskInsightsGrid.vue (W1 restyle, V2 Combat Deck).
+
+  Four-tile summary of required / optional / legendary / overall task
+  counts. Uses the same V2 StatCard pattern as the other sections.
+-->
 <template>
-  <div>
-    <div class="section-header">
-      <h2>✅ TASK INSIGHTS</h2>
-    </div>
-    <div class="task-stats-grid">
+  <section class="tig">
+    <h2 class="tig__header font-display">TASK INSIGHTS</h2>
+    <div class="tig__grid">
       <StatCard
         title="Required Tasks"
         :value="`${statistics?.requiredTasksCompleted || 0}/${statistics?.requiredTasksTotal || 0}`"
         :subtitle="`${statistics?.requiredCompletionRate || 0}% Complete`"
         icon="⚡"
-        color="#ef4444"
       />
       <StatCard
         title="Optional Tasks"
         :value="`${statistics?.optionalTasksCompleted || 0}/${statistics?.optionalTasksTotal || 0}`"
         :subtitle="`${statistics?.optionalCompletionRate || 0}% Complete`"
-        icon="💎"
-        color="#3b82f6"
+        icon="◇"
       />
       <StatCard
         title="Legendary Tasks"
         :value="statistics?.legendaryTasksCompleted || 0"
         subtitle="3x XP Earned"
-        icon="👑"
-        color="#fbbf24"
+        icon="★"
       />
       <StatCard
         title="Overall Rate"
         :value="`${statistics?.taskCompletionRate || 0}%`"
         :subtitle="`${statistics?.completedTasks || 0}/${statistics?.totalTasks || 0} Total`"
-        icon="📋"
-        color="#10b981"
+        icon="◉"
       />
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -44,23 +44,33 @@ defineProps<{
 }>();
 </script>
 
-<style scoped lang="scss">
-.section-header {
-  margin-top: 1rem;
+<style scoped>
+.tig {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.section-header h2 {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 1rem;
-  color: var(--pp-gold-acc);
-  text-shadow: 2px 2px 0 #000;
+.tig__header {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-cyan);
   padding-bottom: 0.5rem;
-  border-bottom: 3px solid var(--pp-gold-acc);
+  border-bottom: 1px solid var(--pp-line);
 }
 
-.task-stats-grid {
+.tig__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  gap: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .tig__grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 </style>

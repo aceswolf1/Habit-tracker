@@ -1,152 +1,138 @@
+<!--
+  StatCard.vue (W1 restyle, V2 Combat Deck).
+
+  Generic stat tile used by every section of MonthStatistics. Sharp
+  1px `--pp-line` border, `--pp-card` resting background, mono body
+  text. Best / worst badges light up with `--pp-amber` / `--pp-danger`
+  accent strips (no animated glow).
+-->
 <template>
   <div
-    :class="['stat-card', rankClass]"
-    :style="{ borderColor: borderColor }"
+    class="stat-card"
+    :class="[
+      rank === 'best' ? 'stat-card--best' : '',
+      rank === 'worst' ? 'stat-card--worst' : '',
+    ]"
   >
-    <div class="stat-icon" v-if="icon">{{ icon }}</div>
-    <div class="stat-content">
-      <div class="stat-title">{{ title }}</div>
-      <div class="stat-value">{{ value }}</div>
-      <div class="stat-subtitle" v-if="subtitle">{{ subtitle }}</div>
+    <div v-if="icon" class="stat-card__icon" aria-hidden="true">{{ icon }}</div>
+    <div class="stat-card__body">
+      <div class="stat-card__title">{{ title }}</div>
+      <div class="stat-card__value">{{ value }}</div>
+      <div v-if="subtitle" class="stat-card__subtitle">{{ subtitle }}</div>
     </div>
-    <div class="stat-rank" v-if="rank">
-      <span class="rank-badge">{{ rank }}</span>
+    <div v-if="rank" class="stat-card__rank">
+      <span
+        class="stat-card__rank-badge font-mono"
+        :class="rank === 'best' ? 'stat-card__rank-badge--best' : 'stat-card__rank-badge--worst'"
+      >{{ rank === 'best' ? 'BEST' : 'WORST' }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-
 interface Props {
   title: string;
   value: string | number;
   subtitle?: string;
   icon?: string;
-  color?: string;
   rank?: 'best' | 'worst' | null;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   subtitle: '',
   icon: '',
-  color: '#1d4ed8',
-  rank: null
-});
-
-const rankClass = computed(() => {
-  if (props.rank === 'best') return 'rank-best';
-  if (props.rank === 'worst') return 'rank-worst';
-  return '';
-});
-
-const borderColor = computed(() => {
-  if (props.rank === 'best') return '#ffd700';
-  if (props.rank === 'worst') return '#ef4444';
-  return props.color;
+  rank: null,
 });
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .stat-card {
-  background-color: rgba(26, 32, 44, 0.9);
-  border: 3px solid;
-  padding: 1rem;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.8);
-  position: relative;
+  background: var(--pp-card);
+  border: 1px solid var(--pp-line);
+  padding: 0.85rem 1rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  transition: transform 0.2s, box-shadow 0.2s;
-
-  &:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.8);
-  }
+  gap: 0.85rem;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  color: var(--pp-text);
+  position: relative;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.rank-best {
-  border-color: var(--pp-gold);
-  box-shadow:
-    4px 4px 0 rgba(0, 0, 0, 0.8),
-    0 0 20px rgba(255, 215, 0, 0.3);
-  animation: gold-glow 2s ease-in-out infinite;
+.stat-card:hover {
+  background: var(--pp-card-active);
+  border-color: var(--pp-cyan);
 }
 
-.rank-worst {
-  border-color: var(--pp-danger);
-  box-shadow:
-    4px 4px 0 rgba(0, 0, 0, 0.8),
-    0 0 15px rgba(239, 68, 68, 0.2);
+.stat-card__icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
-@keyframes gold-glow {
-  0%, 100% {
-    box-shadow:
-      4px 4px 0 rgba(0, 0, 0, 0.8),
-      0 0 15px rgba(255, 215, 0, 0.3);
-  }
-  50% {
-    box-shadow:
-      4px 4px 0 rgba(0, 0, 0, 0.8),
-      0 0 25px rgba(255, 215, 0, 0.5);
-  }
-}
-
-.stat-icon {
-  font-size: 2rem;
-  min-width: 2.5rem;
-  text-align: center;
-}
-
-.stat-content {
-  flex: 1;
+.stat-card__body {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.15rem;
 }
 
-.stat-title {
-  font-family: 'Press Start 2P', cursive;
+.stat-card__title {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
   font-size: 0.65rem;
-  color: var(--pp-gold-acc);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  text-shadow: 2px 2px 0 #000;
+  color: var(--pp-muted);
 }
 
-.stat-value {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 1.25rem;
-  color: white;
-  text-shadow: 2px 2px 0 #000;
+.stat-card__value {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+  color: var(--pp-text);
+  word-break: break-word;
 }
 
-.stat-subtitle {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 0.5rem;
-  color: var(--pp-text-muted);
-  text-shadow: 1px 1px 0 #000;
+.stat-card__subtitle {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: var(--pp-muted);
 }
 
-.stat-rank {
+.stat-card__rank {
   position: absolute;
-  top: 0.5rem;
+  top: 0.4rem;
   right: 0.5rem;
 }
 
-.rank-badge {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 0.5rem;
-  background-color: var(--pp-gold);
-  color: #000;
-  padding: 0.25rem 0.5rem;
-  border: 2px solid #000;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+.stat-card__rank-badge {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--pp-line);
 }
 
-.rank-worst .rank-badge {
-  background-color: var(--pp-danger);
-  color: white;
+.stat-card__rank-badge--best {
+  background: var(--pp-amber);
+  color: var(--pp-void);
+  border-color: var(--pp-amber);
+}
+
+.stat-card__rank-badge--worst {
+  background: var(--pp-danger);
+  color: var(--pp-text);
+  border-color: var(--pp-danger);
+}
+
+.stat-card--best {
+  border-color: var(--pp-amber);
+}
+.stat-card--worst {
+  border-color: var(--pp-danger);
 }
 </style>

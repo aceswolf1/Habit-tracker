@@ -23,6 +23,41 @@ const sharedInclude = [/shared[\\/]/, /#shared[\\/]/]
 // build artifacts. Default stays `.nuxt` so existing flows are unchanged.
 const buildDir = process.env.NUXT_BUILD_DIR || '.nuxt'
 
+// V2: `vite.build.commonjsOptions` only runs for production builds. In
+// `nuxt dev` the browser receives `shared/*.js` as raw CJS, so the namespace
+// import in `utils/sharedProgress.ts` finds no exports ("calculateProgress
+// is not a function") and the current month never loads. This dev-only
+// client transform wraps the CJS body and re-exports the keys listed in its
+// `module.exports = { … }` literal. Prod builds and SSR are untouched.
+const sharedFile = /[\\/]shared[\\/](progress|scoring)\.js$/
+const sharedCjsDevPlugin = {
+  name: 'pp-shared-cjs-dev',
+  apply: 'serve' as const,
+  enforce: 'pre' as const,
+  transform(code: string, id: string, options?: { ssr?: boolean }) {
+    if (options?.ssr || !sharedFile.test(id.split('?')[0])) return null
+    const match = code.match(/module\.exports\s*=\s*\{([^}]*)\}/)
+    if (!match) return null
+    const keys = match[1]
+      .split(',')
+      .map((k) => k.split(':')[0].trim())
+      .filter((k) => /^[A-Za-z_$][\w$]*$/.test(k))
+    return {
+      code: [
+        'const module = { exports: {} };',
+        'const exports = module.exports;',
+        code,
+        'export default module.exports;',
+        // Aliased so the export names never collide with the file's own
+        // top-level declarations (e.g. `function generateUuid`).
+        ...keys.map((k) => `const __pp_${k} = module.exports.${k};`),
+        `export { ${keys.map((k) => `__pp_${k} as ${k}`).join(', ')} };`,
+      ].join('\n'),
+      map: null,
+    }
+  },
+}
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   buildDir, // A-T5
@@ -31,11 +66,15 @@ export default defineNuxtConfig({
     '@pinia/nuxt'
   ],
   css: [
-    // UB-34: self-hosted fonts (no Google Fonts CDN). Imported before the
-    // app stylesheet so `.font-press` / `.font-cyber` family names resolve.
-    '@fontsource/press-start-2p',
-    '@fontsource/orbitron',
-    // UB-57: design tokens first so every later stylesheet can resolve
+    // V2 (W1): self-hosted type — only the latin weights used by the FE.
+    // Body default = JetBrains Mono; display = Space Grotesk. No CDN,
+    // no Google Fonts URLs anywhere in `frontend/`.
+    '@fontsource/space-grotesk/600.css',
+    '@fontsource/space-grotesk/700.css',
+    '@fontsource/jetbrains-mono/400.css',
+    '@fontsource/jetbrains-mono/500.css',
+    '@fontsource/jetbrains-mono/700.css',
+    // Design tokens first so every later stylesheet can resolve
     // `var(--pp-*)` even when the consuming component is scoped.
     '~/assets/css/tokens.css',
     '~/assets/css/main.css',
@@ -56,6 +95,7 @@ export default defineNuxtConfig({
   logLevel: process.env.NODE_ENV === 'development' ? 'info' : 'silent',
   // Vue devtools only in development (UB-35)
   vite: {
+    plugins: [sharedCjsDevPlugin],
     vue: {
       reactivityTransform: true,
       devtools: process.env.NODE_ENV === 'development',
@@ -107,13 +147,27 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: 'PixelPaladin - 8-bit Habit Tracker',
+      title: 'PixelPaladin — Combat Deck Habit Tracker',
       meta: [
         {
           name: 'description',
-          content: 'A gamified habit tracker with 8-bit pixel graphics and RPG elements'
-        }
-      ]
+          content: 'A gamified cyberpunk habit tracker with RPG progression'
+        },
+        { name: 'theme-color', content: '#090b10' },
+        { name: 'application-name', content: 'PixelPaladin' },
+        { name: 'apple-mobile-web-app-title', content: 'PixelPaladin' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+        { name: 'mobile-web-app-capable', content: 'yes' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
+      ],
+      link: [
+        { rel: 'manifest', href: '/manifest.webmanifest' },
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'icon', type: 'image/png', sizes: '192x192', href: '/icon-192.png' },
+        { rel: 'icon', type: 'image/png', sizes: '512x512', href: '/icon-512.png' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
+      ],
     }
   },
   // Set explicit development server port

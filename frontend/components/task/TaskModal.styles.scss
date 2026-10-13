@@ -1,64 +1,215 @@
-/* TaskModal.vue scoped styles (W4b split — co-located so the SFC stays
- * small). All rules target elements rendered directly by
- * TaskModal.vue's template (`.task-modal-sheet`, `.font-press`,
- * `.bg-pixel-dark`, `.shadow-pixel`, the `modal-bounce-*` animation
- * classes, and the responsive media query that turns the dialog into a
- * full-screen sheet on phones).
+/* TaskModal.vue scoped styles (W1 restyle, V2 Combat Deck).
  *
- * Pulled in via `<style scoped src>` so the rules inherit TaskModal.vue's
- * scope data attribute automatically.
+ * Each rule targets elements rendered by TaskModal.vue's template
+ * (`.task-modal-root`, `.task-modal-sheet`, `.task-modal-header`,
+ * `.task-modal-title`, `.task-modal-close`, `.task-modal-form`,
+ * `.task-modal-footer`, `.task-btn--*`), plus the responsive media
+ * query that turns the dialog into a full-screen sheet on phones and
+ * the reduced-motion override for the modal-bounce transition.
+ *
+ * Pulled in via `<style scoped src>` so the rules inherit
+ * TaskModal.vue's scope data attribute automatically.
  */
 
-.font-press {
-  font-family: "Press Start 2P", cursive;
-}
-.bg-pixel-dark {
-  background: var(--pp-bg-panel);
-}
-.shadow-pixel {
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.8);
+/* ---------- Scrim + sheet container ---------- */
+.task-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Modal Bounce Animation */
+.task-modal-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 11, 16, 0.78);
+}
+
+.task-modal-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 36rem; /* ~ lg dialog */
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  background: var(--pp-panel);
+  border: 1px solid var(--pp-line);
+  box-shadow: 0 0 0 1px var(--pp-void), 0 24px 48px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px var(--pp-line);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  color: var(--pp-text);
+}
+
+.task-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--pp-line);
+  background: var(--pp-card);
+}
+
+.task-modal-title {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-cyan);
+}
+
+.task-modal-close {
+  background: transparent;
+  border: 1px solid var(--pp-line);
+  width: 32px;
+  height: 32px;
+  color: var(--pp-muted);
+  cursor: pointer;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.task-modal-close:hover,
+.task-modal-close:focus-visible {
+  color: var(--pp-cyan);
+  border-color: var(--pp-cyan);
+}
+
+.task-modal-form {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.task-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--pp-line);
+}
+
+.task-modal-footer__right {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ---------- Buttons ---------- */
+.task-btn {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--pp-line);
+  background: var(--pp-card);
+  color: var(--pp-text);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease,
+    border-color 0.15s ease, opacity 0.15s ease;
+  min-width: 96px;
+  min-height: 40px;
+}
+
+.task-btn:focus-visible {
+  outline: 2px solid var(--pp-cyan);
+  outline-offset: 2px;
+}
+
+.task-btn--primary {
+  background: var(--pp-cyan);
+  color: var(--pp-void);
+  border-color: var(--pp-cyan);
+}
+.task-btn--primary:hover:not(:disabled) {
+  background: rgb(var(--pp-cyan-rgb) / 0.85);
+}
+
+.task-btn--ghost {
+  background: var(--pp-card);
+  color: var(--pp-text);
+  border-color: var(--pp-line);
+}
+.task-btn--ghost:hover {
+  color: var(--pp-cyan);
+  border-color: var(--pp-cyan);
+}
+
+.task-btn--danger {
+  background: var(--pp-danger);
+  color: var(--pp-text);
+  border-color: var(--pp-danger);
+}
+.task-btn--danger:hover {
+  background: rgb(var(--pp-danger-rgb) / 0.85);
+}
+
+.task-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Modal bounce (entry) ----------
+ * Honors `prefers-reduced-motion: reduce` (no animation).
+ */
 .modal-bounce-enter-active {
-  animation: bounce-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: bounce-in 240ms ease;
 }
 .modal-bounce-leave-active {
-  animation: bounce-in 0.3s reverse;
+  animation: bounce-in 180ms ease reverse;
 }
 
 @keyframes bounce-in {
   0% {
     opacity: 0;
-    transform: scale(0.3);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
-  70% {
-    transform: scale(0.9);
+    transform: scale(0.96);
   }
   100% {
+    opacity: 1;
     transform: scale(1);
   }
 }
 
-/*
- * B-T2: phones (< 640 px, below `sm`) — the modal becomes a full-screen
- * sheet so the controls fit without horizontal scroll. Tablet (768) and
- * desktop keep the centered max-w-lg dialog.
+@media (prefers-reduced-motion: reduce) {
+  .modal-bounce-enter-active,
+  .modal-bounce-leave-active {
+    animation: none !important;
+  }
+}
+
+/* ---------- Phone: full-screen sheet ----------
+ * Mirrors the W4b rule: < 640 px → fill the viewport.
  */
 @media (max-width: 639.98px) {
+  .task-modal-root {
+    align-items: stretch;
+  }
   .task-modal-sheet {
-    width: 100% !important;
-    max-width: none !important;
+    max-width: none;
+    width: 100%;
     height: 100vh;
+    max-height: none;
     border-width: 0;
-    border-radius: 0;
     box-shadow: none;
-    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 1.25rem;
+  }
+  .task-modal-form {
+    padding: 1rem;
+  }
+  .task-modal-footer {
+    flex-wrap: wrap;
+  }
+  .task-modal-footer__right {
+    margin-left: auto;
   }
 }

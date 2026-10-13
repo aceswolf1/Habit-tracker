@@ -1,62 +1,46 @@
+<!--
+  EditableMonthView.vue (W2 rewrite).
+
+  Thin shell that mounts the V2 CampaignView when the month is active
+  and unfinished. The legacy `WeekStrip` + `DayGrid` components have
+  been removed (W2 A7); the old `Day.vue` / `Task.vue` / etc. are still
+  on disk because `ReadOnlyMonthView.vue` (W1 Wave B) depends on them.
+
+  Inherits the same incoming props as before so `app.vue` doesn't
+  change. `month` is read from the store inside `CampaignView` so the
+  parent doesn't need to forward it.
+-->
 <template>
-  <!--
-    Normal Editable View for Active Months. Fragment, not a wrapper <div>,
-    so the resulting DOM matches the pre-split markup exactly.
-  -->
   <template v-if="!isFinished && hasMonth">
-    <WeekStrip
-      :weeks="weeks"
-      :currentWeek="currentWeek"
-      :setCurrentWeek="setCurrentWeek"
-    />
-    <DayGrid
-      :currentWeek="currentWeek"
-      :currentDayUuid="currentDayUuid"
-      :hasPrevWeek="hasPrevWeek"
-      :hasNextWeek="hasNextWeek"
-      :toggleTask="toggleTask"
-      :openCreateTaskForDay="openCreateTaskForDay"
-      :moveTask="moveTask"
-      :openEditTask="openEditTask"
-      :deleteSingleTask="deleteSingleTask"
-      :setCurrentDay="setCurrentDay"
-      :prevWeek="prevWeek"
-      :nextWeek="nextWeek"
-    />
-    <ActionButtons
-      :isFinished="isFinished"
-      :hasMonth="hasMonth"
-      :refreshData="refreshData"
-      :openCreateTask="openCreateTask"
-      :finishMonth="finishMonth"
-    />
+    <CampaignView :isFinished="isFinished" :hasMonth="hasMonth" />
   </template>
 </template>
 
 <script setup lang="ts">
-import WeekStrip from "./WeekStrip.vue";
-import DayGrid from "./DayGrid.vue";
-import ActionButtons from "./ActionButtons.vue";
+import CampaignView from "../campaign/CampaignView.vue";
 
 defineProps<{
   isFinished: boolean;
   hasMonth: boolean;
-  weeks: any[];
-  currentWeek: any;
-  currentDayUuid: string | null;
-  hasPrevWeek: boolean;
-  hasNextWeek: boolean;
-  setCurrentWeek: (week: any) => void;
-  setCurrentDay: (dayUuid: string) => void;
-  prevWeek: () => void;
-  nextWeek: () => void;
-  toggleTask: (taskUuid: string) => void;
-  openCreateTaskForDay: (dayUuid: string) => void;
-  moveTask: (payload: { taskUuid: string; toDayUuid: string }) => void;
-  openEditTask: (taskUuid: string) => void;
-  deleteSingleTask: (taskUuid: string) => void;
-  refreshData: () => void;
-  openCreateTask: () => void;
-  finishMonth: () => void;
+  // The following are still in the prop signature so app.vue doesn't
+  // need to change; CampaignView pulls what it needs from the store
+  // directly. Kept as unused-but-typed to avoid breaking callers.
+  weeks?: unknown[];
+  currentWeek?: unknown;
+  currentDayUuid?: string | null;
+  hasPrevWeek?: boolean;
+  hasNextWeek?: boolean;
+  setCurrentWeek?: (w: unknown) => void;
+  setCurrentDay?: (uuid: string) => void;
+  prevWeek?: () => void;
+  nextWeek?: () => void;
+  toggleTask?: (uuid: string) => void;
+  openCreateTaskForDay?: (uuid: string) => void;
+  moveTask?: (payload: { taskUuid: string; toDayUuid: string }) => void;
+  openEditTask?: (uuid: string) => void;
+  deleteSingleTask?: (uuid: string) => void;
+  refreshData?: () => void;
+  openCreateTask?: () => void;
+  finishMonth?: () => void;
 }>();
 </script>

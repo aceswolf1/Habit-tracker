@@ -1,27 +1,27 @@
+<!--
+  MonthStatistics.vue (W1 restyle, V2 Combat Deck).
+
+  Read-only view rendered after a cycle is `finished: true`. Composes
+  the eight `stats/*` sections in the order the contract calls for.
+  No animations, no pixel font, sharp 1px `--pp-line` rhythm between
+  sections.
+-->
 <template>
   <div class="month-statistics">
-    <!-- Hero Section -->
     <HeroSection :statistics="statistics" />
 
-    <!-- Week Performance Section -->
     <WeekPerformanceGrid :statistics="statistics" />
 
-    <!-- Week Highlights -->
     <HighlightsGrid :statistics="statistics" />
 
-    <!-- Task Insights Section -->
     <TaskInsightsGrid :statistics="statistics" />
 
-    <!-- Best & Worst Habits -->
     <BestWorstHabits :statistics="statistics" />
 
-    <!-- Day of Week Analysis -->
     <DayOfWeekAnalysis :statistics="statistics" />
 
-    <!-- Achievement Summary -->
     <AchievementsSection :statistics="statistics" />
 
-    <!-- Footer Info -->
     <StatsFooter :month="month" />
   </div>
 </template>
@@ -42,22 +42,11 @@ defineProps<{
 }>();
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .month-statistics {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  animation: fadeIn 0.5s ease-in;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  gap: 1.25rem;
+  max-width: 1100px;
 }
 </style>

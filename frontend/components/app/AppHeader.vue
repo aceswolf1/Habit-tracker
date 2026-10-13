@@ -1,304 +1,350 @@
+<!--
+  V2 Combat Deck header (contract §3).
+
+  Two rows:
+    1. Month title + tier/XP block + compact inline tier icon strip +
+       NEW HABIT button + hamburger (phone) / settings (≥lg).
+    2. Tier-ladder progress bar (the segmented track).
+
+  Inline tier icons are next to the tier/XP block — see
+  `.claude/v2/screen.png`. On phone the title row stacks tighter and
+  the action cluster collapses to a hamburger + primary NEW HABIT.
+
+  Below lg the header lives at the top edge of `<main>`'s column (no
+  sidebar), so its horizontal padding matches the main content.
+  ≥ lg the sidebar takes 256px; we add horizontal padding so the title
+  no longer touches x = 256.
+-->
 <template>
-  <header class="mb-6">
-    <!--
-      Mobile-first header:
-        - phone (<640): three stacked rows — title, then XP totals, then
-          settings/gift buttons.
-        - tablet/desktop: single row with the same items side-by-side.
-      Same inline color/font/shadow as the original markup so desktop
-      parity is preserved.
-    -->
-    <div
-      class="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center sm:gap-0"
-    >
-      <h1
-        class="font-press text-pixel-text text-2xl m-1"
-        style="text-shadow: 2px 2px 0 var(--pp-black)"
+  <header
+    class="app-header"
+    :data-pp-cycle-uuid="hasMonth ? currentMonth?.uuid : ''"
+    :data-pp-ready="hasMonth ? 'true' : 'false'"
+  >
+    <div class="app-header__row">
+      <button
+        v-if="showHamburger"
+        class="app-header__menu pp-btn pp-btn--ghost pp-btn--micro"
+        type="button"
+        title="Open menu"
+        aria-label="Open menu"
+        @click="emit('toggleMenu')"
       >
-        {{ monthName }}
-        <span
-          v-if="isFinished"
-          class="text-xs sm:ml-4"
-          style="color: var(--pp-danger)"
-        >🔒 LOCKED</span>
-      </h1>
-      <!-- XP totals row (own line on phone) -->
-      <div
-        v-if="hasMonth"
-        class="flex flex-row items-center gap-2 sm:flex-col sm:items-end sm:gap-1"
-      >
-        <div class="flex items-center gap-2">
-          <span style="color: var(--pp-gold); font-family: 'Press Start 2P', cursive; font-size: 0.7rem; text-shadow: 2px 2px 0 var(--pp-black)">MONTH</span>
-          <span style="color: var(--pp-text); font-family: 'Press Start 2P', cursive; font-size: 0.9rem; text-shadow: 2px 2px 0 var(--pp-black)">{{ currentMonth?.score || 0 }} XP</span>
+        <UiPpIcon name="menu" :size="20" />
+      </button>
+
+      <div class="app-header__title">
+        <div class="app-header__month">
+          <span class="app-header__month-name">
+            {{ monthTitle }}
+          </span>
+          <span class="app-header__month-protocol">
+            <template v-if="hasMonth">// PROTOCOL CYCLE</template>
+            <template v-else>// NO CYCLE</template>
+          </span>
+          <UiPpBadge v-if="isFinished" kind="boss">LOCKED</UiPpBadge>
         </div>
-        <div class="flex items-center gap-2">
-          <span style="color: var(--pp-danger-lt); font-family: 'Press Start 2P', cursive; font-size: 0.7rem; text-shadow: 2px 2px 0 var(--pp-black)">TOTAL</span>
-          <span style="color: var(--pp-text); font-family: 'Press Start 2P', cursive; font-size: 0.9rem; text-shadow: 2px 2px 0 var(--pp-black)">{{ lifetimeScore }} XP</span>
+
+        <div
+          v-if="hasMonth && !compact"
+          class="app-header__tier font-mono"
+          :title="`Bronze 25 · Silver 50 · Gold 75 · Champion 90 · Final 100`"
+        >
+          <span class="app-header__tier-label">
+            {{ tierText }}
+          </span>
+          <span class="app-header__tier-xp">
+            MONTH: {{ currentMonth?.score || 0 }} XP
+            <span class="app-header__tier-xp-sep">|</span>
+            TOTAL: {{ lifetimeScore }} XP
+          </span>
+
+          <!--
+            Compact inline tier icon strip. Each icon mirrors the
+            TierBadge colourway but stripped to a single glyph so it
+            fits next to the tier/XP block instead of sitting on a
+            separate row. Order = Bronze → Final.
+            The colour is applied via the `--tier-color` custom property
+            on the wrapper; unearned = muted slate, earned = tier colour.
+          -->
+          <span class="app-header__tier-icons" aria-hidden="true">
+            <UiPpIcon
+              v-for="badge in tierBadges"
+              :key="badge.label"
+              :name="badge.icon"
+              :size="14"
+              :filled="monthProgress >= badge.threshold"
+              :style="{
+                color: monthProgress >= badge.threshold ? badge.colorVar : 'var(--pp-muted)'
+              }"
+            />
+          </span>
         </div>
       </div>
-      <!-- Settings + gift buttons row (own line on phone) -->
-      <div class="flex items-center gap-3">
-        <span
-          class="hidden sm:inline font-press text-pixel-text mr-2"
-          style="text-shadow: 2px 2px 0 var(--pp-black)"
-        >PixelPaladin</span>
-        <button
-          @click="onOpenSettings"
-          class="pp-tap"
-          style="background: transparent; border: 2px solid var(--pp-black); padding: 0.4rem; margin-right: 0.5rem; cursor: pointer; box-shadow: 2px 2px 0 rgba(0,0,0,0.5);"
+
+      <div class="app-header__actions">
+        <PpButton
+          variant="primary"
+          icon="add_box"
+          :title="'NEW HABIT'"
+          @click="onNewHabit"
+        >
+          NEW HABIT
+        </PpButton>
+        <PpButton
+          v-if="!compact"
+          variant="ghost"
+          icon="settings"
+          :title="'Settings'"
           aria-label="Open settings"
-        >
-          ⚙️
-        </button>
-        <div
-          class="pp-tap"
-          style="background-color: var(--pp-danger); padding: 0.5rem; border: 2px solid var(--pp-black); box-shadow: 2px 2px 0 rgba(0,0,0,0.5);"
-        >
-          <span style="font-size: 1.25rem">🎁</span>
-        </div>
+          @click="emit('openSettings')"
+        />
       </div>
     </div>
 
-    <MonthSelector v-if="months.length" />
-
-    <div v-if="hasMonth" class="mt-2">
-      <div
-        class="flex justify-between items-center font-press text-white"
-        style="font-size: 0.75rem; margin-bottom: 0.25rem"
-      >
-        <span>OVERALL PROGRESS</span>
-        <span>{{ displayMonthProgress }}</span>
-      </div>
-      <div
-        :class="['month-progress-wrapper', { completed: isMonthComplete }]"
-      >
-        <ProgressParticles :progress="monthProgress" />
-        <div
-          :style="{
-            width: Math.min(monthProgress, 100) + '%',
-            height: '100%',
-            backgroundColor: monthProgressBarColor,
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            transition: 'width 0.4s ease',
-          }"
-        ></div>
-        <div class="month-progress-text">
-          {{ tierText }}
-        </div>
-        <div v-if="isMonthComplete" class="month-shine" />
-      </div>
-    </div>
-    <div
-      v-else
-      class="flex flex-col items-center gap-2 mt-4 font-mono text-center text-white"
-    >
-      <div class="text-2xl animate-bounce">👾</div>
-      <div class="text-xs font-press animate-pulse">LOADING WORLD...</div>
-    </div>
-    <!--
-      Tier ladder row.
-        - phone: icons-only row so labels don't run together at 375 px;
-          tier name shows under each icon, line-broken if needed.
-        - tablet/desktop: original 5-up row with full labels.
-    -->
-    <div
-      v-if="hasMonth"
-      class="mt-4 flex justify-between gap-1 sm:gap-2"
-    >
-      <TierBadge
-        v-for="badge in tierBadges"
-        :key="badge.label"
-        :threshold="badge.threshold"
-        :label="badge.label"
-        :icon="badge.icon"
-        :monthProgress="monthProgress"
+    <div v-if="hasMonth" class="app-header__progress">
+      <UiPpSegmentedProgress
+        :value="monthProgress"
+        :color="progressColor"
+        :height="6"
       />
     </div>
+
+    <!--
+      Hidden marker so headless screenshot tools (and devtools) can confirm
+      the cycle data is loaded even when visual chrome hasn't settled yet.
+    -->
+    <span hidden data-pp-week-name>{{ weekName }}</span>
   </header>
 </template>
 
 <script setup lang="ts">
+/*
+ * V2 Combat Deck header (contract §3).
+ *
+ * The header is a thin chrome strip. It owns the month title, the
+ * current tier label, the month-vs-lifetime XP readout, the XP
+ * progress bar, the inline tier icon strip, and the primary NEW HABIT
+ * button. The standalone tier-ladder row (Wave A) was removed in Wave
+ * B to satisfy the lead review (W4 feedback: tier ladder was a tall
+ * separate row; the mockup places the icons next to the tier/XP block).
+ */
+
 import { computed } from "vue";
-import MonthSelector from "../MonthSelector.vue";
-import ProgressParticles from "../ProgressParticles.vue";
-import TierBadge from "./TierBadge.vue";
+import UiPpIcon from "../ui/PpIcon.vue";
+import UiPpBadge from "../ui/PpBadge.vue";
+import PpButton from "../ui/PpButton.vue";
+import UiPpSegmentedProgress from "../ui/PpSegmentedProgress.vue";
+import type { IconName } from "../ui/iconNames";
 
 const props = defineProps<{
   currentMonth: any;
-  months: any[];
   lifetimeScore: number;
   hasMonth: boolean;
   isFinished: boolean;
+  compact: boolean;
+  showHamburger: boolean;
+  openCreateTask: () => void;
   openSettings: () => void;
 }>();
 
-function onOpenSettings() {
-  props.openSettings();
-}
+const emit = defineEmits<{
+  (e: "toggleMenu"): void;
+  (e: "openSettings"): void;
+}>();
 
-const monthName = computed(() => props.currentMonth?.name || "");
+const monthTitle = computed(() => {
+  const name = props.currentMonth?.name;
+  return (name || "READY").toUpperCase();
+});
+
+const weekName = computed(() => {
+  const weeks = props.currentMonth?.weeks;
+  return weeks?.[0]?.name || "";
+});
+
 const monthProgress = computed(() => props.currentMonth?.progress || 0);
-const isMonthComplete = computed(() => monthProgress.value >= 100);
-const displayMonthProgress = computed(() => {
-  if (monthProgress.value <= 100) return monthProgress.value + "%";
-  return `100% +${monthProgress.value - 100}%`;
-});
-const monthProgressBarColor = computed(() => {
-  const p = monthProgress.value;
-  if (p >= 100) return "var(--pp-gold-dk)"; // gold for completed (even bonus)
-  if (p >= 75) return "var(--pp-gold-acc)";
-  if (p >= 50) return "var(--pp-gold-acc)";
-  if (p >= 25) return "var(--pp-gold-acc)";
-  return "var(--pp-danger)";
-});
+
 const tierText = computed(() => {
-  const progress = monthProgress.value;
-  if (progress >= 90) return "CHAMPION TIER!";
-  if (progress >= 75) return "GOLD TIER!";
-  if (progress >= 50) return "SILVER TIER!";
-  if (progress >= 25) return "BRONZE TIER!";
-  return "BEGINNER TIER!";
+  const p = monthProgress.value;
+  if (p >= 100) return "CHAMPION TIER";
+  if (p >= 90) return "CHAMPION TIER";
+  if (p >= 75) return "GOLD TIER";
+  if (p >= 50) return "SILVER TIER";
+  if (p >= 25) return "BRONZE TIER";
+  return "BEGINNER TIER";
 });
 
-// Tier badges row — extracted to keep this template flat.
-const tierBadges = [
-  { threshold: 25, label: "Bronze", icon: "🏆" },
-  { threshold: 50, label: "Silver", icon: "🏆" },
-  { threshold: 75, label: "Gold", icon: "⚔️" },
-  { threshold: 90, label: "Champion", icon: "👑" },
-  { threshold: 100, label: "Final", icon: "✨" },
+// Progress bar colour follows the active tier. Below 25 % uses cyan as
+// a neutral base. ≥ 75 % turns amber (rewards), ≥ 90 % turns magenta
+// (champion) — keeps the header visually tied to the tier ladder.
+const progressColor = computed<
+  "cyan" | "amber" | "green" | "gradient"
+>(() => {
+  if (monthProgress.value >= 100) return "green";
+  if (monthProgress.value >= 90) return "gradient";
+  if (monthProgress.value >= 75) return "amber";
+  return "cyan";
+});
+
+// Tier icon strip — Bronze / Silver / Gold / Champion / Final.
+// Order matches the screen.png mockup.
+const tierBadges: { key: string; label: string; threshold: number; icon: IconName; colorVar: string }[] = [
+  { key: "bronze", label: "Bronze", threshold: 25, icon: "workspace_premium", colorVar: "var(--pp-bronze)" },
+  { key: "silver", label: "Silver", threshold: 50, icon: "workspace_premium", colorVar: "var(--pp-silver)" },
+  { key: "gold", label: "Gold", threshold: 75, icon: "workspace_premium", colorVar: "var(--pp-amber)" },
+  { key: "champion", label: "Champion", threshold: 90, icon: "military_tech", colorVar: "var(--pp-champion)" },
+  { key: "final", label: "Final", threshold: 100, icon: "shield", colorVar: "var(--pp-cyan)" },
 ];
+
+function onNewHabit() {
+  props.openCreateTask();
+}
 </script>
 
-<style lang="scss">
-/* Month progress bar completion effect (mirrors task completion aesthetic) */
-.month-progress-wrapper {
-  width: 100%;
-  height: 1.5rem;
-  background-color: var(--pp-gray);
+<style scoped>
+.app-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+  border-bottom: 1px solid var(--pp-line);
   position: relative;
-  border: 2px solid var(--pp-black);
+  z-index: 5;
+}
+
+@media (min-width: 1024px) {
+  /*
+    Lead fix: header content had no left padding next to the sidebar
+    (title touched x = 256). Match the main content padding (2rem at lg)
+    so the header and main align horizontally.
+  */
+  .app-header {
+    padding: 0.5rem 2rem;
+  }
+}
+
+.app-header__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-header__menu {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-header__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.app-header__month {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.app-header__month-name {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.125rem;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pp-cyan);
+  white-space: nowrap;
   overflow: hidden;
-  box-shadow: 0 0 0 0 var(--pp-black) inset;
-  transition: box-shadow 0.4s;
+  text-overflow: ellipsis;
 }
-.month-progress-wrapper.completed {
-  background: linear-gradient(var(--pp-gray), var(--pp-gray)) padding-box,
-    linear-gradient(
-        130deg,
-        var(--pp-gold-dk2),
-        var(--pp-gold-bd),
-        var(--pp-gold),
-        var(--pp-gold-pale),
-        var(--pp-gold),
-        var(--pp-gold-bd),
-        var(--pp-gold-dk2)
-      )
-      border-box;
-  animation: month-border-shine 8s linear infinite,
-    month-glow-pulse 2.5s ease-in-out infinite;
-  box-shadow: 0 0 6px 2px rgb(var(--pp-gold-rgb) / 0.33),
-    0 0 18px 4px rgb(var(--pp-gold-eb-rgb) / 0.27),
-    0 0 32px 10px rgb(var(--pp-gold-rgb) / 0.13);
-}
-.month-progress-wrapper.completed::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    115deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.15) 45%,
-    rgba(255, 255, 255, 0.6) 50%,
-    rgba(255, 255, 255, 0.15) 55%,
-    transparent 100%
-  );
-  background-size: 250% 250%;
-  mix-blend-mode: screen;
-  pointer-events: none;
-  animation: month-sweep 4.5s linear infinite;
-}
-.month-progress-text {
-  position: relative;
-  text-align: center;
-  padding: 0.25rem 0;
-  color: var(--pp-text);
-  font-family: "Press Start 2P", cursive;
+
+.app-header__month-protocol {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
   font-size: 0.75rem;
-  z-index: 2;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pp-muted);
 }
-.month-shine {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(
-    circle at center,
-    rgb(var(--pp-gold-rgb) / 0.2) 0%,
-    rgb(var(--pp-gold-rgb) / 0.02) 70%,
-    transparent 80%
-  );
-  animation: month-backdrop-fade 1.6s ease-out infinite;
-  mix-blend-mode: screen;
+
+.app-header__tier {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
-@keyframes month-border-shine {
-  0% {
-    background-position: 0% 0%, 0% 50%;
-  }
-  50% {
-    background-position: 100% 100%, 50% 50%;
-  }
-  100% {
-    background-position: 0% 0%, 100% 50%;
-  }
+
+.app-header__tier-label {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-gold-acc);
 }
-@keyframes month-glow-pulse {
-  0% {
-    box-shadow: 0 0 4px 1px rgb(var(--pp-gold-rgb) / 0.4),
-      0 0 14px 3px rgb(var(--pp-gold-mid-rgb) / 0.33),
-      0 0 26px 6px rgb(var(--pp-gold-rgb) / 0.13);
-  }
-  50% {
-    box-shadow: 0 0 10px 2px rgb(var(--pp-gold-rgb) / 0.67),
-      0 0 26px 8px rgb(var(--pp-gold-mid-rgb) / 0.4),
-      0 0 42px 14px rgb(var(--pp-gold-rgb) / 0.2);
-  }
-  100% {
-    box-shadow: 0 0 4px 1px rgb(var(--pp-gold-rgb) / 0.4),
-      0 0 14px 3px rgb(var(--pp-gold-mid-rgb) / 0.33),
-      0 0 26px 6px rgb(var(--pp-gold-rgb) / 0.13);
-  }
+
+.app-header__tier-xp {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pp-muted);
 }
-@keyframes month-sweep {
-  0% {
-    background-position: 200% 0%;
-    opacity: 0;
-  }
-  8% {
-    opacity: 1;
-  }
-  23% {
-    background-position: 0% 100%;
-    opacity: 0.9;
-  }
-  30% {
-    opacity: 0;
-  }
-  100% {
-    background-position: 0% 100%;
-    opacity: 0;
-  }
+
+.app-header__tier-xp-sep {
+  color: var(--pp-line);
+  margin: 0 0.25rem;
 }
-@keyframes month-backdrop-fade {
-  0% {
-    opacity: 0;
+
+/*
+  Inline tier icon strip — the compact, mockup-aligned replacement for
+  the standalone TierBadge row. Each icon's `color` is bound in the
+  template (earned = tier colour, unearned = --pp-muted).
+*/
+.app-header__tier-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.app-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.app-header__progress {
+  margin-top: 0.125rem;
+  /* Pinned width to keep the segmented track feeling like a terminal
+     level meter; on wide screens it stretches to the column width. */
+  max-width: 640px;
+}
+
+@media (max-width: 639.98px) {
+  .app-header__month-name {
+    font-size: 0.95rem;
   }
-  35% {
-    opacity: 1;
+  .app-header__month-protocol {
+    font-size: 0.65rem;
   }
-  100% {
-    opacity: 0;
+  .app-header__tier-label,
+  .app-header__tier-xp {
+    font-size: 0.6rem;
+  }
+  /* Compact tier icon strip on phone — keep visible, tighter gap. */
+  .app-header__tier-icons {
+    gap: 0.15rem;
   }
 }
 </style>

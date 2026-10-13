@@ -1,0 +1,260 @@
+/*
+ * V2 Combat Deck sidebar styles.
+ *
+ * Extracted from AppSidebar.vue to keep the .vue file under the 400-line
+ * cap (the design system standard set by the team plan). All class
+ * names share the `app-sidebar` prefix; Nuxt's auto-import for SCSS
+ * sibling files in `components/` is not configured, so AppSidebar.vue
+ * imports this file explicitly via `import "./AppSidebar.styles.scss"`.
+ */
+
+/*
+ * The root is a fixed, full-viewport clip layer. The scrim and the
+ * aside both live INSIDE this layer, so the off-canvas translateX
+ * can never widen the page (lesson from v0.5.1).
+ */
+.app-sidebar-root {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+  /* Desktop: always rendered, never a drawer. */
+  .app-sidebar-root {
+    pointer-events: auto;
+    overflow: visible;
+  }
+}
+
+.app-sidebar-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.app-sidebar-root--open .app-sidebar-scrim {
+  opacity: 1;
+}
+
+@media (min-width: 1024px) {
+  .app-sidebar-scrim {
+    display: none;
+  }
+}
+
+.app-sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 256px;
+  background: var(--pp-panel);
+  border-right: 1px solid var(--pp-line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  pointer-events: auto;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+  overflow-y: auto;
+}
+
+.app-sidebar-root--open .app-sidebar {
+  transform: translateX(0);
+}
+
+@media (min-width: 1024px) {
+  .app-sidebar {
+    transform: translateX(0);
+  }
+}
+
+.app-sidebar__logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+}
+
+.app-sidebar__logo-mark {
+  width: 40px;
+  height: 40px;
+  background: var(--pp-cyan);
+  color: var(--pp-void);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0;
+  box-shadow: var(--pp-glow-cyan);
+}
+
+.app-sidebar__logo-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app-sidebar__logo-name {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pp-cyan);
+  white-space: nowrap;
+}
+
+.app-sidebar__logo-sub {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.55rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--pp-muted);
+}
+
+.app-sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin-top: 0.25rem;
+}
+
+.app-sidebar__nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-text);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease, color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.app-sidebar__nav-item:hover {
+  background: var(--pp-card);
+  color: var(--pp-text);
+}
+
+.app-sidebar__nav-item--active {
+  background: var(--pp-card-active);
+  color: var(--pp-cyan);
+  border-color: var(--pp-cyan);
+  box-shadow: 0 0 6px rgba(0, 240, 255, 0.25);
+}
+
+.app-sidebar__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--pp-line);
+  padding-top: 0.5rem;
+}
+
+.app-sidebar__section-label {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--pp-muted);
+  padding: 0 0.25rem;
+}
+
+.app-sidebar__month-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.app-sidebar__month {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  background: var(--pp-card);
+  border: 1px solid var(--pp-line);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: var(--pp-text);
+  cursor: pointer;
+  text-align: left;
+  min-width: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.app-sidebar__month:hover {
+  background: var(--pp-card-active);
+}
+
+.app-sidebar__month--current {
+  border-color: var(--pp-cyan);
+  background: var(--pp-card-active);
+  color: var(--pp-cyan);
+}
+
+.app-sidebar__month--finished {
+  opacity: 0.7;
+}
+
+.app-sidebar__month-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.app-sidebar__month-empty {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: var(--pp-muted);
+  padding: 0.5rem 0.25rem;
+}
+
+.app-sidebar__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  border-top: 1px solid var(--pp-line);
+  padding-top: 0.5rem;
+}
+
+.app-sidebar__footer {
+  margin-top: auto;
+  border-top: 1px solid var(--pp-line);
+  padding-top: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar,
+  .app-sidebar-scrim,
+  .app-sidebar__nav-item,
+  .app-sidebar__month {
+    transition: none;
+  }
+}

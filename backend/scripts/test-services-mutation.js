@@ -628,5 +628,82 @@ check('W5: gifVideoUrl/gifStillUrl update, and null clears them', async () => {
   assert.strictEqual(task.gifStillUrl, null);
 });
 
+// =========================================================================
+// V2 A8 — Task `notes` field (set, clear, preserve through addTasks)
+// =========================================================================
+
+check('V2: addTasks with notes stores the notes on the new task', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  const saved = await cycleRepo.create(cycle);
+  const week = saved.weeks[0];
+  const day = week.days[0];
+  await svc.patchCycle(saved.uuid, {
+    type: 'addTasks',
+    additions: [{ weekUuid: week.uuid, dayUuid: day.uuid, task: {
+      description: 'memo task', optional: false, notes: 'morning routine',
+    } }],
+  });
+  const raw = cycleRepo._raw(saved.uuid);
+  const added = raw.weeks[0].days[0].tasks[0];
+  assert.strictEqual(added.notes, 'morning routine', 'notes stored on the new task');
+});
+
+check('V2: addTasks preserves a notes-less task (notes undefined)', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  const saved = await cycleRepo.create(cycle);
+  const week = saved.weeks[0];
+  await svc.patchCycle(saved.uuid, {
+    type: 'addTasks',
+    additions: [{ weekUuid: week.uuid, dayUuid: week.days[0].uuid, task: {
+      description: 'plain task', optional: false,
+    } }],
+  });
+  const raw = cycleRepo._raw(saved.uuid);
+  const added = raw.weeks[0].days[0].tasks[0];
+  assert.ok(!('notes' in added) || added.notes === undefined,
+    'notes absent when omitted (no extra field written)');
+});
+
+check('V2: updateTasks sets notes on an existing task', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  fixtures.addTask(cycle, 0, 0, { uuid: 't-notes', description: 'A', optional: false });
+  const saved = await cycleRepo.create(cycle);
+  await svc.patchCycle(saved.uuid, {
+    type: 'updateTasks',
+    updates: [{ uuid: 't-notes', notes: 'evening supplement' }],
+  });
+  const task = findTask(cycleRepo._raw(saved.uuid), 't-notes').task;
+  assert.strictEqual(task.notes, 'evening supplement');
+});
+
+check('V2: updateTasks with notes:null clears the field', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  fixtures.addTask(cycle, 0, 0, { uuid: 't-notes', description: 'A', optional: false, notes: 'initial' });
+  const saved = await cycleRepo.create(cycle);
+  await svc.patchCycle(saved.uuid, {
+    type: 'updateTasks',
+    updates: [{ uuid: 't-notes', notes: null }],
+  });
+  const task = findTask(cycleRepo._raw(saved.uuid), 't-notes').task;
+  assert.strictEqual(task.notes, null, 'notes cleared to null');
+});
+
+check('V2: updateTasks without notes leaves the existing value untouched', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  fixtures.addTask(cycle, 0, 0, { uuid: 't-keep', description: 'A', optional: false, notes: 'preserved' });
+  const saved = await cycleRepo.create(cycle);
+  await svc.patchCycle(saved.uuid, {
+    type: 'updateTasks',
+    updates: [{ uuid: 't-keep', description: 'renamed only' }],
+  });
+  const task = findTask(cycleRepo._raw(saved.uuid), 't-keep').task;
+  assert.strictEqual(task.notes, 'preserved', 'notes preserved on unrelated edit');
+});
+
 console.log(`\n${passed} checks passed`);
 process.exit(0);

@@ -1,80 +1,86 @@
 /*
- * PixelPaladin theme tokens (UB-57, W4b).
+ * PixelPaladin V2 design tokens (W1).
  *
- * Single source of truth for the colors actually used across the FE shell,
- * backgrounds, panel chrome, tier ladder, and action buttons. Values are
- * lifted verbatim from the hex literals used in `components/app/*`,
- * `components/stats/*`, `app.vue`, `StatCard.vue`, `MonthSelector.vue`,
- * `ToastNotification.vue`, `SettingsDrawer.vue`, `MonthStatistics.vue`,
- * `ReadOnlyMonthView.vue`, `BackgroundParticles.vue`, `FloatingPoints.vue`
- * and `ParticleBurst.vue` — so swapping a literal for `var(--pp-*)` keeps
- * the rendered pixels identical.
+ * Single source of truth for the V2 "Combat Deck" palette, type, and
+ * glow ramps. Tailwind picks these up via `tailwind.config.js`
+ * (e.g. `bg-pp-void`, `text-pp-cyan`, `border-pp-line`).
  *
- * Convention: `--pp-<role>` where role is the FEEL of the color, not its
- * raw hex. Two parallel sets exist intentionally:
- *   - `--pp-<role>`        — base/foreground color, used directly in CSS
- *   - `--pp-<role>-rgb`    — comma-separated r,g,b triplet, used for
- *                             `rgb(var(--pp-<role>-rgb) / <alpha>)` so a
- *                             single token yields a full glow / alpha
- *                             ramp without a separate token per shade.
+ * Each named color ships with a matching `--pp-<name>-rgb` triplet so a
+ * single token yields a full alpha ramp via
+ * `rgb(var(--pp-<name>-rgb) / <alpha>)` without a separate token per shade.
  *
- * Tailwind picks these up via `tailwind.config.js` `extend.colors.pixel`
- * (e.g. `bg-pixel-gold`, `text-pixel-danger`).
+ * Aliases: the old W4b `--pp-bg-*` / `--pp-text-muted` / `--pp-black`
+ * remain as aliases mapped to the nearest V2 value. The Wave B sweep
+ * removed the rest (legacy colour-family aliases + the old font aliases)
+ * once no live consumers remained.
  */
 
 :root {
-  /* Backgrounds — outer void → deepest wash */
-  --pp-bg-deepest: #05080e;
-  --pp-bg-deep:    #070b14;
-  --pp-bg-mid:     #0a101b;
-  --pp-bg-up:      #0d1625;
-  --pp-bg-panel:   #1f2937;       /* Tailwind `bg-pixel-dark` panel chrome */
-  --pp-bg-card:    #1a202c;       /* card / habit card surface */
+  /* ── V2 surfaces ──────────────────────────────────────────────────── */
+  --pp-void:          #090b10;   /* page canvas */
+  --pp-panel:         #0f141f;   /* sidebar, panels, inputs */
+  --pp-card:          #151b28;   /* resting card / row */
+  --pp-card-active:   #1a2233;   /* hover / selected card */
+  --pp-line:          #243048;   /* 1px borders, grid lines */
 
-  /* Foreground / text */
-  --pp-text:        #ffffff;
-  --pp-text-muted:  #9ca3af;
+  /* ── V2 text ─────────────────────────────────────────────────────── */
+  --pp-text:          #f0f6fc;
+  --pp-muted:         #6e7f9d;
 
-  /* Tier ladder */
-  --pp-bronze:    #cd7f32;
-  --pp-silver:    #c0c0c0;
-  --pp-gold:      #ffd700;        /* base tier / XP / bonus */
-  --pp-gold-acc:  #fbbf24;        /* tier label / accent stroke / border */
-  --pp-gold-dk:   #f59e0b;        /* progress bar fill, button bg */
-  --pp-gold-bd:   #b8860b;        /* gold border accent */
-  --pp-gold-dk2:  #6d5206;        /* gradient dark stop */
-  --pp-gold-pale: #fff7c2;        /* gradient light stop */
-  --pp-gold-mid:  #ffec8f;        /* glow mid (alpha applied at use-site) */
-  --pp-gold-eb:   #ffeb8a;        /* glow eb (alpha applied at use-site) */
-  --pp-champion:  #a78bfa;        /* Champion tier, achievement border */
-  --pp-purple:    #8b5cf6;        /* mid purple (Consistency card, etc.) */
+  /* ── V2 neon accents ─────────────────────────────────────────────── */
+  --pp-cyan:          #00f0ff;   /* primary, active, XP */
+  --pp-magenta:       #ff007f;   /* legendary, critical, boss */
+  --pp-amber:         #ffbe0b;   /* today, optional, rewards */
+  --pp-green:         #00ff66;   /* completed, check */
+  --pp-danger:        #ff4d6d;   /* delete, errors */
+  --pp-done-bg:       #12201d;   /* completed row background */
 
-  /* Brand / actions */
-  --pp-blue:        #1d4ed8;      /* primary button bg, progress bar border */
-  --pp-blue-mid:    #3b82f6;      /* gradient / icon */
-  --pp-blue-light:  #60a5fa;      /* particle burst */
-  --pp-cancel:      #dc2626;      /* finish-month button */
-  --pp-danger:      #ef4444;      /* LOCKED label, worst tier, danger border */
-  --pp-danger-lt:   #ff6b6b;      /* burst + total XP label */
-  --pp-success:     #4ade80;      /* Completion card */
-  --pp-emerald:     #10b981;      /* Overall Rate */
-  --pp-orange:      #f97316;      /* Streak accent */
-  --pp-orange-lt:   #fb923c;      /* Best Streak card */
+  /* ── Tier ladder (unchanged names; values preserved from W4b) ────── */
+  --pp-bronze:        #cd7f32;
+  --pp-silver:        #c0c0c0;
+  --pp-gold:          #ffd700;
+  --pp-gold-acc:      #fbbf24;
+  --pp-gold-dk:       #f59e0b;
+  --pp-gold-bd:       #b8860b;
+  --pp-gold-dk2:      #6d5206;
+  --pp-gold-pale:     #fff7c2;
+  --pp-gold-mid:      #ffec8f;
+  --pp-gold-eb:       #ffeb8a;
+  --pp-champion:      #a78bfa;
+  --pp-final:         #f0f6fc;   /* V2: "Final" tier reads as near-white */
 
-  /* Neutral chrome */
-  --pp-gray:        #374151;      /* disabled button bg, progress bar track */
-  --pp-gray-mid:    #4b5563;
-  --pp-gray-dk:     #18181b;
+  /* ── Legacy color names kept as aliases (Wave B sweep) ────────────── */
+  --pp-text-muted:    var(--pp-muted);
+  --pp-black:         #000000;   /* keep distinct for hard 1px borders */
 
-  /* Black / outline */
-  --pp-black:       #000000;
+  /* ── V2 glow ramps (static box-shadow values, never animated) ───── */
+  --pp-glow-cyan:     0 0 10px rgba(0, 240, 255, .45), inset 0 0 6px rgba(0, 240, 255, .2);
+  --pp-glow-magenta:  0 0 12px rgba(255, 0, 127, .5),  inset 0 0 4px rgba(255, 0, 127, .25);
+  --pp-glow-amber:    0 0 8px  rgba(255, 190, 11, .4);
 
-  /* RGB triplets — for `rgb(var(--pp-*-rgb) / <alpha>)` glow ramps */
-  --pp-gold-rgb:      255 215 0;
-  --pp-gold-mid-rgb:  255 236 143;
-  --pp-gold-eb-rgb:   255 235 138;
-  --pp-blue-rgb:      29 78 216;
-  --pp-danger-rgb:    239 68 68;
-  --pp-champion-rgb:  167 139 250;
-  --pp-bg-rgb:        10 16 27;
+  /* ── RGB triplets (for `rgb(var(--pp-*-rgb) / <alpha>)`) ────────── */
+  --pp-void-rgb:        9 11 16;
+  --pp-panel-rgb:       15 20 31;
+  --pp-card-rgb:        21 27 40;
+  --pp-card-active-rgb: 26 34 51;
+  --pp-line-rgb:        36 48 72;
+  --pp-text-rgb:        240 246 252;
+  --pp-muted-rgb:       110 127 157;
+  --pp-cyan-rgb:        0 240 255;
+  --pp-magenta-rgb:     255 0 127;
+  --pp-amber-rgb:       255 190 11;
+  --pp-green-rgb:       0 255 102;
+  --pp-danger-rgb:      255 77 109;
+  --pp-done-bg-rgb:     18 32 29;
+  --pp-bronze-rgb:      205 127 50;
+  --pp-silver-rgb:      192 192 192;
+  --pp-gold-rgb:        255 215 0;
+  --pp-gold-acc-rgb:    251 191 36;
+  --pp-gold-mid-rgb:    255 236 143;
+  --pp-gold-eb-rgb:     255 235 138;
+  --pp-gold-dk-rgb:     245 158 11;
+  --pp-gold-bd-rgb:     184 134 11;
+  --pp-champion-rgb:    167 139 250;
+  --pp-final-rgb:       240 246 252;
+  --pp-black-rgb:       0 0 0;
 }

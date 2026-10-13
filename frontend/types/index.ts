@@ -33,6 +33,8 @@ export interface Task {
   gifVideoUrl?: string;
   /** W5: JPG still frame of the same GIF (poster / paused frame). */
   gifStillUrl?: string;
+  /** V2: optional free-form memo (≤ 280 chars) attached to the task. */
+  notes?: string;
 }
 
 export interface Day {
@@ -175,7 +177,7 @@ export interface PatchAddTasks {
     dayUuid: string;
     task: Pick<
       Task,
-      "description" | "optional" | "completed" | "legendary" | "uuid" | "recurrenceId" | "order" | "icon" | "gifUrl" | "gifVideoUrl" | "gifStillUrl"
+      "description" | "optional" | "completed" | "legendary" | "uuid" | "recurrenceId" | "order" | "icon" | "gifUrl" | "gifVideoUrl" | "gifStillUrl" | "notes"
     >;
   }>;
 }
@@ -192,6 +194,8 @@ export interface PatchUpdateTasks {
     gifUrl?: string | null;
     gifVideoUrl?: string | null;
     gifStillUrl?: string | null;
+    /** V2: pass `null` to clear the notes field, omit to leave it alone. */
+    notes?: string | null;
     order?: number;
   }>;
 }

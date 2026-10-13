@@ -3,51 +3,31 @@
  * callers in components compile unchanged. The ONLY HTTP-calling consumer
  * of `services/cycleApi.ts`. Pure cycle walking + Task construction lives
  * in `utils/cycleMutations.ts` + `utils/taskFactory.ts`; cloning + progress
- * math lives in `utils/cycleCloning.ts`; long API orchestration lives in
- * `utils/cycleNetwork.ts`. App-level events (`toast`, `pointsEarned`,
- * `taskCompleted`) flow through `composables/useAppEvents.emitAppEvent`.
+ * math lives in `utils/cycleCloning.ts` + `utils/cloneDay.ts`; long API
+ * orchestration lives in `utils/cycleNetwork.ts`. App-level events
+ * (`toast`, `pointsEarned`, `taskCompleted`) flow through
+ * `composables/useAppEvents.emitAppEvent`.
  *
  * W4 contract: public action names + signatures, getter names, and the
  * state shape are unchanged. Components compile without edits.
  */
-
 import { defineStore } from "pinia";
 import type {
-  Cycle,
-  CycleSummary,
-  FinishResult,
-  PatchBody,
-  Profile,
-  Task,
+  Cycle, CycleSummary, FinishResult, PatchBody, Profile, Task,
 } from "../types/index";
+import { ApiError, patchCycle as apiPatchCycle } from "../services/cycleApi";
 import {
-  ApiError,
-  patchCycle as apiPatchCycle,
-} from "../services/cycleApi";
-import {
-  findDayByUuid,
-  findTaskByUuid,
-  findTaskLocation,
-  findWeekByUuid,
-  moveTaskInCycle,
-  removeRecurrenceFromDay,
-  removeTaskFromDay,
+  findDayByUuid, findTaskByUuid, findTaskLocation, findWeekByUuid,
+  moveTaskInCycle, removeRecurrenceFromDay, removeTaskFromDay,
 } from "../utils/cycleMutations";
 import {
-  createTaskDraft,
-  generateRecurrenceId,
-  isSameAddPayload,
+  createTaskDraft, generateRecurrenceId, isSameAddPayload,
 } from "../utils/taskFactory";
+import { applyProgressToCopy, refreshProgressLocal } from "../utils/cycleCloning";
+import { buildCloneAdditions, appendClonedTasksToCycle } from "../utils/cloneDay";
 import {
-  applyProgressToCopy,
-  refreshProgressLocal,
-} from "../utils/cycleCloning";
-import {
-  createMonthAction,
-  fetchMonthDataAction,
-  finishCurrentMonthAction,
-  resetToOriginalAction,
-  setCurrentMonthAction,
+  createMonthAction, fetchMonthDataAction, finishCurrentMonthAction,
+  resetToOriginalAction, setCurrentMonthAction,
 } from "../utils/cycleNetwork";
 import { emitAppEvent } from "../composables/useAppEvents";
 
@@ -113,10 +93,8 @@ export const useMonthStore = defineStore("month", {
      * UB-10 FE: apply pointsEarned when !== 0; keep lifetimeScore >= 0.
      * Floating UI may still show a negative delta via the pointsEarned event.
      */
-    applyPointsEarned(
-      pointsEarned: number | undefined | null,
-      detail: { taskUuid?: string; tier?: string | null; isLegendary?: boolean } = {}
-    ) {
+    applyPointsEarned(pointsEarned: number | undefined | null,
+      detail: { taskUuid?: string; tier?: string | null; isLegendary?: boolean } = {}) {
       if (pointsEarned == null || pointsEarned === 0) return;
       emitAppEvent("pointsEarned", {
         points: pointsEarned,
@@ -144,17 +122,10 @@ export const useMonthStore = defineStore("month", {
      * `recoverFromPersistFailure` (refetch + toast). Stale-guard drops
      * the response if the user switched cycles mid-flight.
      */
-    enqueueCycleMutation(
-      cycleUuid: string,
-      operation: string,
-      body: PatchBody,
+    enqueueCycleMutation(cycleUuid: string, operation: string, body: PatchBody,
       onSuccess?: (res: {
-        cycle: Cycle;
-        pointsEarned: number;
-        isLegendary: boolean;
-        currentTier: string;
-      }) => void
-    ) {
+        cycle: Cycle; pointsEarned: number; isLegendary: boolean; currentTier: string;
+      }) => void) {
       const run = async () => {
         try {
           const result = await apiPatchCycle(cycleUuid, body);
@@ -229,6 +200,8 @@ export const useMonthStore = defineStore("month", {
       gifUrl?: string;
       gifVideoUrl?: string;
       gifStillUrl?: string;
+      /** V2: optional free-form memo applied to every added task. */
+      notes?: string;
     }) {
       if (!this.currentMonth || this.currentMonth.finished) return;
       const {
@@ -241,6 +214,7 @@ export const useMonthStore = defineStore("month", {
         gifUrl,
         gifVideoUrl,
         gifStillUrl,
+        notes,
       } = options;
       const recurrenceId = options.recurrenceId || generateRecurrenceId();
       const additions: Extract<PatchBody, { type: "addTasks" }>["additions"] = [];
@@ -266,6 +240,7 @@ export const useMonthStore = defineStore("month", {
             gifUrl,
             gifVideoUrl,
             gifStillUrl,
+            notes,
             recurrenceId,
             order: day.tasks.length,
           });
@@ -285,7 +260,8 @@ export const useMonthStore = defineStore("month", {
     updateTask(
       taskUuid: string,
       // FIX-01: `icon` / `gifUrl` accept `null` to clear the field
-      // server-side; `undefined` keeps the existing value.
+      // server-side; `undefined` keeps the existing value. V2 A8 extends
+      // the same null/clear semantics to `notes`.
       payload: {
         description?: string;
         optional?: boolean;
@@ -294,6 +270,7 @@ export const useMonthStore = defineStore("month", {
         gifUrl?: string | null;
         gifVideoUrl?: string | null;
         gifStillUrl?: string | null;
+        notes?: string | null;
       }
     ) {
       if (this.currentMonth?.finished) return;
@@ -307,6 +284,7 @@ export const useMonthStore = defineStore("month", {
       if (payload.gifUrl !== undefined) task.gifUrl = payload.gifUrl as Task["gifUrl"];
       if (payload.gifVideoUrl !== undefined) task.gifVideoUrl = payload.gifVideoUrl as Task["gifVideoUrl"];
       if (payload.gifStillUrl !== undefined) task.gifStillUrl = payload.gifStillUrl as Task["gifStillUrl"];
+      if (payload.notes !== undefined) task.notes = payload.notes as Task["notes"];
       refreshProgressLocal(this.currentMonth);
 
       this.enqueueCycleMutation(this.currentMonth.uuid, "habit update", {
@@ -364,6 +342,33 @@ export const useMonthStore = defineStore("month", {
         targetDayUuid,
         targetIndex: moved.insertedAt,
       });
+    },
+
+    /**
+     * V2 A9 — Clone every task from `sourceDayUuid` into each day in
+     * `targetDayUuids` via a single PATCH `addTasks`. Returns the
+     * number of tasks actually added (dedup skips existing matches).
+     * Finished month = no-op (returns 0).
+     */
+    cloneDayTasks(sourceDayUuid: string, targetDayUuids: string[]): number {
+      if (!this.currentMonth || this.currentMonth.finished) return 0;
+      if (!sourceDayUuid || !targetDayUuids?.length) return 0;
+      const { additions } = buildCloneAdditions({
+        weeks: this.currentMonth.weeks, sourceDayUuid, targetDayUuids,
+      });
+      if (additions.length === 0) return 0;
+      appendClonedTasksToCycle(this.currentMonth.weeks, additions);
+      refreshProgressLocal(this.currentMonth);
+      this.enqueueCycleMutation(this.currentMonth.uuid, "cloning day", {
+        type: "addTasks", additions,
+      });
+      const added = additions.length;
+      emitAppEvent("toast", {
+        type: "success",
+        title: "DAY CLONED",
+        message: `Synced ${added} ${added === 1 ? "task" : "tasks"} across selected days.`,
+      });
+      return added;
     },
 
     /** Legacy local-only `addTask` was removed in W2b — `bulkAddTasks` is the only

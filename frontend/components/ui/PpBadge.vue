@@ -1,0 +1,100 @@
+<template>
+  <span :class="classes">
+    <slot />
+  </span>
+</template>
+
+<script setup lang="ts">
+/*
+ * V2 Combat Deck badge (contract §2).
+ *
+ * Sharp tag with a 1px border and a low-opacity wash. Kinds:
+ *   - legendary  → magenta border + wash, magenta text.
+ *   - optional   → amber dashed border, amber text.
+ *   - common     → muted slate border, white text (default).
+ *   - rare       → cyan border + wash, cyan text.
+ *   - active     → cyan border + wash, cyan text (same as rare — used
+ *                  for "ACTIVE", "TODAY"-style state pills).
+ *   - boss       → magenta border + wash, magenta text (same family
+ *                  as legendary; gives the boss a slightly different
+ *                  surface to live on).
+ *   - today      → amber border + wash, amber text.
+ *   - done       → green border + wash, green text.
+ */
+
+import { computed } from "vue";
+
+const props = withDefaults(
+  defineProps<{
+    kind:
+      | "legendary"
+      | "optional"
+      | "common"
+      | "rare"
+      | "active"
+      | "boss"
+      | "today"
+      | "done";
+  }>(),
+  { kind: "common" },
+);
+
+const classes = computed(() => ["pp-badge", `pp-badge--${props.kind}`]);
+</script>
+
+<style scoped>
+.pp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.625rem;
+  line-height: 1.4;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--pp-line);
+  background: var(--pp-card);
+  color: var(--pp-text);
+  white-space: nowrap;
+}
+
+.pp-badge--legendary {
+  border-color: var(--pp-magenta);
+  background: rgba(255, 0, 127, 0.12);
+  color: var(--pp-magenta);
+}
+.pp-badge--boss {
+  border-color: var(--pp-magenta);
+  background: rgba(255, 0, 127, 0.18);
+  color: var(--pp-magenta);
+}
+.pp-badge--rare,
+.pp-badge--active {
+  border-color: var(--pp-cyan);
+  background: rgba(0, 240, 255, 0.1);
+  color: var(--pp-cyan);
+}
+.pp-badge--today {
+  border-color: var(--pp-amber);
+  background: rgba(255, 190, 11, 0.12);
+  color: var(--pp-amber);
+}
+.pp-badge--optional {
+  border-color: var(--pp-amber);
+  background: transparent;
+  color: var(--pp-amber);
+  border-style: dashed;
+}
+.pp-badge--done {
+  border-color: var(--pp-green);
+  background: rgba(0, 255, 102, 0.12);
+  color: var(--pp-green);
+}
+.pp-badge--common {
+  border-color: var(--pp-line);
+  background: var(--pp-card);
+  color: var(--pp-text);
+}
+</style>

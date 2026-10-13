@@ -1,39 +1,47 @@
+<!--
+  HeroSection.vue (W1 restyle, V2 Combat Deck).
+
+  Header section of MonthStatistics — final tier badge + the four KPI
+  cards (Total XP, Completion %, Perfect Days, Best Streak). Uses
+  StatCard (V2) and the per-tier colour tokens. No animations, no
+  pixel font.
+-->
 <template>
-  <div class="hero-section">
-    <div class="tier-badge" :class="`tier-${tierClass}`">
-      <div class="tier-icon">{{ tierIcon }}</div>
-      <div class="tier-text">{{ statistics?.finalTier || 'Bronze' }} TIER</div>
+  <section class="hero-section">
+    <div class="hero-section__tier" :class="`hero-tier--${tierKey}`">
+      <span class="hero-section__tier-icon" aria-hidden="true">{{ tierIcon }}</span>
+      <span class="hero-section__tier-text font-display">
+        {{ statistics?.finalTier || 'BRONZE' }} TIER
+      </span>
     </div>
+
     <div class="hero-stats">
       <StatCard
         title="Total XP"
         :value="`${statistics?.totalXP || 0} XP`"
-        icon="⚔️"
-        color="#ffd700"
+        icon="⚔"
+        rank="best"
       />
       <StatCard
         title="Completion"
         :value="`${statistics?.finalProgress || 0}%`"
         :subtitle="bonusText"
-        icon="🎯"
-        color="#4ade80"
+        icon="◎"
       />
       <StatCard
         title="Perfect Days"
         :value="statistics?.totalPerfectDays || 0"
         subtitle="100% Completed"
-        icon="✨"
-        color="#a78bfa"
+        icon="✦"
       />
       <StatCard
         title="Best Streak"
         :value="`${statistics?.longestStreak || 0} Days`"
         subtitle="Consecutive Perfect"
-        icon="🔥"
-        color="#fb923c"
+        icon="⌁"
       />
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -44,7 +52,7 @@ const props = defineProps<{
   statistics: any;
 }>();
 
-const tierClass = computed(() => {
+const tierKey = computed(() => {
   const tier = props.statistics?.finalTier || 'Bronze';
   return tier.toLowerCase();
 });
@@ -52,79 +60,88 @@ const tierClass = computed(() => {
 const tierIcon = computed(() => {
   const tier = props.statistics?.finalTier || 'Bronze';
   switch (tier) {
-    case 'Final': return '✨';
-    case 'Champion': return '👑';
-    case 'Gold': return '⚔️';
-    case 'Silver': return '🏆';
-    case 'Bronze': return '🏆';
-    default: return '🏆';
+    case 'Final': return '✦';
+    case 'Champion': return '✪';
+    case 'Gold': return '◈';
+    case 'Silver': return '◆';
+    case 'Bronze': return '◆';
+    default: return '◆';
   }
 });
 
 const bonusText = computed(() => {
   const bonus = props.statistics?.bonusPercentage || 0;
-  return bonus > 0 ? `+${bonus}% Bonus!` : 'Base Progress';
+  return bonus > 0 ? `+${bonus}% Bonus` : 'Base Progress';
 });
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .hero-section {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 2rem;
-  background: linear-gradient(135deg, rgba(29, 78, 216, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
-  border: 3px solid var(--pp-blue);
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.8);
+  align-items: stretch;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--pp-card);
+  border: 1px solid var(--pp-line);
 }
 
-.tier-badge {
+.hero-section__tier {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1.5rem;
-  border: 4px solid;
-  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.8);
-  min-width: 200px;
-  text-align: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--pp-line);
+  background: var(--pp-panel);
 }
 
-.tier-bronze { border-color: var(--pp-bronze); background: rgba(205, 127, 50, 0.2); }
-.tier-silver { border-color: var(--pp-silver); background: rgba(192, 192, 192, 0.2); }
-.tier-gold { border-color: var(--pp-gold); background: rgba(255, 215, 0, 0.2); }
-.tier-champion { border-color: var(--pp-champion); background: rgba(167, 139, 250, 0.2); }
-.tier-final {
-  border-color: var(--pp-gold);
-  background: rgba(255, 215, 0, 0.2);
-  animation: final-tier-glow 2s ease-in-out infinite;
+.hero-section__tier-icon {
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
-@keyframes final-tier-glow {
-  0%, 100% {
-    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 215, 0, 0.5);
-  }
-  50% {
-    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.8);
-  }
+.hero-section__tier-text {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
-.tier-icon {
-  font-size: 4rem;
+.hero-tier--bronze .hero-section__tier-text,
+.hero-tier--bronze .hero-section__tier-icon {
+  color: var(--pp-bronze);
 }
 
-.tier-text {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 1.25rem;
-  color: white;
-  text-shadow: 3px 3px 0 #000;
+.hero-tier--silver .hero-section__tier-text,
+.hero-tier--silver .hero-section__tier-icon {
+  color: var(--pp-silver);
+}
+
+.hero-tier--gold .hero-section__tier-text,
+.hero-tier--gold .hero-section__tier-icon {
+  color: var(--pp-amber);
+}
+
+.hero-tier--champion .hero-section__tier-text,
+.hero-tier--champion .hero-section__tier-icon {
+  color: var(--pp-champion);
+}
+
+.hero-tier--final .hero-section__tier-text,
+.hero-tier--final .hero-section__tier-icon {
+  color: var(--pp-cyan);
 }
 
 .hero-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .hero-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 </style>

@@ -1,75 +1,69 @@
 <template>
-  <!-- Fixed gradient depth background -->
-  <div class="background-depth" aria-hidden="true"></div>
-  <!-- Ambient particles across whole viewport -->
-  <BackgroundParticles :count="120" :link-distance="150" :link-opacity="0.12" />
+  <!--
+    V2 Combat Deck background (contract §3, §7).
+    Static `--pp-void` canvas + a dot-matrix + scanline overlay capped at
+    ≤ 4% opacity. CSS-only, no animation, no canvas. Pointer-events:
+    none so it never intercepts input.
+  -->
+  <div class="app-bg" aria-hidden="true">
+    <div class="app-bg__dots"></div>
+    <div class="app-bg__scan"></div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import BackgroundParticles from "../BackgroundParticles.vue";
-// Background lives behind everything (z-index 0); pointer-events: none.
-// Counts and link distance were tuned by w3; keep them stable.
+// Presentational; no props. The two overlays are static CSS — no
+// particle field, no animation, no canvas — so the page idle frame
+// count is exactly 0 (down from the W4a BackgroundParticles canvas).
 </script>
 
-<style lang="scss">
-.background-depth {
+<style scoped>
+.app-bg {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(
-      circle at 65% 50%,
-      rgba(60, 95, 150, 0.35) 0%,
-      rgba(10, 18, 32, 0.05) 55%,
-      rgba(4, 8, 16, 0.9) 85%
-    ),
+  background: var(--pp-void);
+  /* W4a: a soft cyan radial wash on the centre so the panels "glow"
+     without any animation. Kept tiny (≤ 4 % luma) so it never blurs
+     the content above. */
+  background-image:
     radial-gradient(
-      circle at 25% 70%,
-      rgba(120, 150, 200, 0.18) 0%,
-      rgba(10, 18, 32, 0) 60%
-    ),
-    linear-gradient(
-      140deg,
-      var(--pp-bg-mid) 0%,
-      var(--pp-bg-up) 40%,
-      var(--pp-bg-deep) 70%,
-      var(--pp-bg-deepest) 100%
+      circle at 50% 35%,
+      rgba(0, 240, 255, 0.04) 0%,
+      transparent 55%
     );
-  background-repeat: no-repeat;
-  background-attachment: fixed, fixed, fixed;
-  animation: bg-slow-shift 34s ease-in-out infinite alternate;
-  /* subtle star speckle overlay */
-  mask-image: radial-gradient(
-    circle at 50% 50%,
-    var(--pp-black) 0%,
-    var(--pp-black) 75%,
-    rgba(0, 0, 0, 0.85) 100%
+}
+
+.app-bg__dots {
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    var(--pp-cyan) 1px,
+    transparent 1px
+  );
+  background-size: 16px 16px;
+}
+
+.app-bg__scan {
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.5) 0,
+    rgba(255, 255, 255, 0.5) 1px,
+    transparent 1px,
+    transparent 3px
   );
 }
 
-@keyframes bg-slow-shift {
-  0% {
-    filter: brightness(1) contrast(1);
-  }
-  45% {
-    filter: brightness(1.05) contrast(1.04);
-  }
-  100% {
-    filter: brightness(1) contrast(1.02);
-  }
-}
-
-/* W5 perf: static background below desktop. */
-@media (max-width: 1023.98px) {
-  .background-depth {
-    animation: none;
-  }
-}
-
-/* UB-56: static background for reduced-motion users. */
 @media (prefers-reduced-motion: reduce) {
-  .background-depth {
-    animation: none;
+  .app-bg__dots,
+  .app-bg__scan {
+    /* already static, but the rule documents intent */
   }
 }
 </style>

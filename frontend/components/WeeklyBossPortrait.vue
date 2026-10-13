@@ -1,21 +1,19 @@
 <!--
-  WeeklyBossPortrait.vue (W4 split, UB-55).
+  WeeklyBossPortrait.vue (V2 A10 restyle, W3 owner).
 
-  Thin orchestrator. Three heavy subtrees are extracted:
-  - `components/boss/BossHolographicOverlay.vue` (active-week HUD)
-  - `components/boss/BossRankBadge.vue`          (rank-tier overlay)
-  - `components/boss/BossProgressBar.vue`       (RPG-style progress bar)
-  Same DOM hierarchy for everything else: header + boss image shell + week
-  label. SCSS for the shell + active-glow stays here.
+  V2 restyle: sharp 1px line border, static scanline overlay, no
+  animated glows/floats/pulses. Legacy read-only month view still uses
+  this component (props unchanged). The cockpit mounts the same SFC
+  with `compact` so it doesn't repeat the header + progress bar.
 -->
 <template>
   <div
     class="weekly-boss-container"
-    :class="{ active: isActive }"
+    :class="[{ active: isActive, compact: compact }]"
     :data-progress="Math.round(progress / 10) * 10"
     @click="emit('set-current-week', weekUuid)"
   >
-    <div class="boss-header" :class="{ 'has-rank': hasRank }">
+    <div v-if="!compact" class="boss-header" :class="{ 'has-rank': hasRank }">
       <div v-if="hasRank" class="rank-banner" :data-rank="rankInfo.rank">
         RANK {{ rankInfo.rank }}
       </div>
@@ -37,12 +35,16 @@
         <source :src="computedVideoSrc" type="video/mp4" />
       </video>
 
-      <BossHolographicOverlay v-if="isActive" />
+      <!-- Static scanline overlay (V2) — purely visual, no animation. -->
+      <div v-if="!compact" class="boss-scanlines" aria-hidden="true" />
+
+      <BossHolographicOverlay v-if="isActive && !compact" />
       <BossRankBadge v-if="hasRank" :rank="rankInfo" :progress="progress" />
     </div>
-    <div class="week-label">{{ weekName }}</div>
+    <div v-if="!compact" class="week-label">{{ weekName }}</div>
 
     <BossProgressBar
+      v-if="!compact"
       :progress="progress"
       :conquered="conquered"
       :hasRank="hasRank"
@@ -86,6 +88,12 @@ const props = defineProps({
   weekIndex: {
     type: [Number, String],
     required: false,
+  },
+  /** V2 A10: when true, hide the header / week-label / progress bar so the
+   *  cockpit can mount just the portrait + rank badge in a single card. */
+  compact: {
+    type: Boolean,
+    default: false,
   },
   isActive: {
     type: Boolean,
@@ -172,188 +180,137 @@ const computedVideoSrc = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+/* V2 A10 restyle: sharp 1px line border, static scanlines, no glow/float
+ * animations. Reads the V2 design tokens (`--pp-cyan`, `--pp-line`, …) and
+ * falls back to a small rank chip in the top corner. The header / label /
+ * progress bar stay hidden when `compact` is set (cockpit mount). */
 .weekly-boss-container {
   text-align: center;
   position: relative;
+  background: var(--pp-card);
+  border: 1px solid var(--pp-line);
+  padding: 0.5rem;
+
+  /* Legacy (V0/V1) read-only month view keeps using this without `compact`;
+   * for that path the "active" gold background + 2px black border is preserved
+   * to avoid visual regression in the existing shell. */
+  &.active:not(.compact) {
+    background: var(--pp-card-active);
+    border-color: var(--pp-amber);
+  }
+
+  &.compact {
+    padding: 0;
+    background: transparent;
+  }
+
+  /* Cockpit below lg sits under the task list: a wide banner crop keeps
+     the boss from filling the whole phone screen. */
+  @media (max-width: 1023.98px) {
+    &.compact .weekly-boss-image {
+      aspect-ratio: 16 / 9;
+
+      img,
+      video {
+        object-position: center 25%;
+      }
+    }
+  }
 
   .boss-header {
-    height: 0.25rem;
-    background-color: var(--pp-emerald);
+    height: 2px;
+    background: var(--pp-green);
     margin-bottom: 0.5rem;
-    border: 2px solid black;
+    border: 0;
     position: relative;
     overflow: visible;
 
     &.has-rank {
-      background-color: var(--pp-gold-acc);
-      height: 0.5rem;
+      background: var(--pp-amber);
+      height: 2px;
     }
 
     .rank-banner {
       position: absolute;
-      top: -1.5rem;
-      left: 50%;
-      transform: translateX(-50%);
-      color: white;
-      font-family: "Press Start 2P", cursive;
-      font-size: 0.7rem;
-      padding: 0.25rem 1rem;
-      border: 3px solid black;
+      top: -0.875rem;
+      left: 0.5rem;
+      color: var(--pp-text);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.125rem 0.375rem;
+      border: 1px solid var(--pp-line);
+      background: var(--pp-card);
       z-index: 10;
-      text-shadow: 2px 2px 0 black;
-      animation: rank-float 3s ease-in-out infinite, rank-pulse 2s ease-in-out infinite;
 
-      &[data-rank="S"] {
-        /* S — purple/pink stops have no token; the gold endpoint swaps. */
-        background: linear-gradient(135deg, #a855f7, #ec4899, var(--pp-gold-dk));
-        box-shadow: 0 0 20px rgba(168, 85, 247, 0.8), 0 0 40px rgba(236, 72, 153, 0.5);
-        animation: rank-float 3s ease-in-out infinite, rank-pulse 2s ease-in-out infinite, rainbow-shift 3s linear infinite;
-      }
-      &[data-rank="A"] {
-        background: linear-gradient(135deg, var(--pp-gold-acc), var(--pp-gold-dk));
-        box-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
-      }
-      &[data-rank="B"] {
-        background: linear-gradient(135deg, var(--pp-blue-light), var(--pp-blue-mid));
-        box-shadow: 0 0 20px rgba(96, 165, 250, 0.8);
-      }
-      &[data-rank="C"] {
-        /* C — orange-darker endpoint (#ea580c) has no token; keep literal. */
-        background: linear-gradient(135deg, var(--pp-orange), #ea580c);
-        box-shadow: 0 0 20px rgba(249, 115, 22, 0.8);
-      }
-      &[data-rank="D"] {
-        background: linear-gradient(135deg, var(--pp-text-muted), #6b7280);
-        box-shadow: 0 0 20px rgba(156, 163, 175, 0.6);
-      }
+      &[data-rank="S"] { color: var(--pp-magenta); border-color: var(--pp-magenta); }
+      &[data-rank="A"] { color: var(--pp-amber); border-color: var(--pp-amber); }
+      &[data-rank="B"] { color: var(--pp-cyan); border-color: var(--pp-cyan); }
+      &[data-rank="C"] { color: var(--pp-amber); border-color: var(--pp-amber); }
+      &[data-rank="D"] { color: var(--pp-muted); border-color: var(--pp-muted); }
     }
   }
 
-  &.active {
-    background-color: var(--pp-gold-dk);
-    border-bottom-right-radius: 20px;
-    border-bottom-left-radius: 20px;
-  }
-
   .weekly-boss-image {
-    /* B-T3: scale the portrait into whatever cell the shell gives us.
-     * The fixed `height: 30rem` made narrower cells (phones 2×2, tablet
-     * row-of-4) render either too tall or with bad cropping. Now the
-     * image area follows container width with a 4:5 portrait aspect
-     * ratio, and falls back to a sensible max-height at very wide cells.
-     */
     width: 100%;
     height: auto;
     aspect-ratio: 4 / 5;
     margin: 0 auto;
-    border: 2px solid black;
-    background-color: var(--pp-gray);
+    border: 1px solid var(--pp-line);
+    background: var(--pp-void);
     position: relative;
     overflow: hidden;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: center;
 
-    img {
-      width: 100%;
-      height: 100%;
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: cover;
-    }
+    img,
     video {
       width: 100%;
       height: 100%;
-      max-width: 100%;
-      max-height: 100%;
       object-fit: cover;
+    }
+    video {
       position: absolute;
       inset: 0;
+    }
+
+    /* V2 static scanline overlay: 2px repeat, 30% opacity, no animation. */
+    .boss-scanlines {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 240, 255, 0.05) 0,
+        rgba(0, 240, 255, 0.05) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      pointer-events: none;
+      z-index: 3;
     }
   }
 
   .week-label {
-    color: white;
-    font-family: "Press Start 2P", cursive;
+    color: var(--pp-text);
+    font-family: "Space Grotesk", sans-serif;
     font-size: 0.75rem;
-    margin-bottom: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
   }
 }
 
-/* Banner / active-glow animations only — bar / overlay animations live
- * in their respective subcomponents' co-located styles. */
-@keyframes rank-float {
-  0% {
-    transform: translateX(-50%) translateY(0);
-  }
-  50% {
-    transform: translateX(-50%) translateY(-8px);
-  }
-  100% {
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-@keyframes rank-pulse {
-  0%, 100% {
-    transform: translateX(-50%) scale(1);
-  }
-  50% {
-    transform: translateX(-50%) scale(1.05);
-  }
-}
-
-@keyframes rainbow-shift {
-  0% {
-    filter: hue-rotate(0deg) brightness(1.1);
-  }
-  50% {
-    filter: hue-rotate(20deg) brightness(1.2);
-  }
-  100% {
-    filter: hue-rotate(0deg) brightness(1.1);
-  }
-}
-
-/* Enhanced active state with holographic glow */
-.weekly-boss-container.active .weekly-boss-image {
-  box-shadow:
-    0 0 20px rgba(0, 255, 255, 0.4),
-    0 0 40px rgba(0, 255, 255, 0.2),
-    inset 0 0 20px rgba(0, 255, 255, 0.1);
-  border-color: rgba(0, 255, 255, 0.5);
-  animation: holo-glow 2s ease-in-out infinite;
-}
-
-@keyframes holo-glow {
-  0%, 100% {
-    box-shadow:
-      0 0 20px rgba(0, 255, 255, 0.4),
-      0 0 40px rgba(0, 255, 255, 0.2),
-      inset 0 0 20px rgba(0, 255, 255, 0.1);
-  }
-  50% {
-    box-shadow:
-      0 0 30px rgba(0, 255, 255, 0.6),
-      0 0 60px rgba(0, 255, 255, 0.3),
-      inset 0 0 30px rgba(0, 255, 255, 0.15);
-  }
-}
-
-/* B-T5 — honor `prefers-reduced-motion` for all boss animations. The
- * banner and active glow become static; the rainbow shift, pulse, and
- * float stop entirely so users who opted out don't get motion-stacked
- * overlays on top of their (already motion-heavy) screen. */
+/* V2 honors `prefers-reduced-motion` even though most animations are gone. */
 @media (prefers-reduced-motion: reduce) {
-  .weekly-boss-container.active .weekly-boss-image,
-  .boss-header .rank-banner {
+  .weekly-boss-container,
+  .weekly-boss-container * {
     animation: none !important;
-  }
-  .boss-header .rank-banner,
-  .boss-header .rank-banner[data-rank] {
-    transform: translateX(-50%) !important;
-    filter: none !important;
+    transition: none !important;
   }
 }
 </style>

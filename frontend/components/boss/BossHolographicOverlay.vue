@@ -1,46 +1,26 @@
 <!--
-  BossHolographicOverlay.vue (W4 split, UB-55).
+  BossHolographicOverlay.vue (V2 A10 restyle, W3 owner).
 
-  Active-week HUD: scanlines, glitch, frame, signal/battery HUD, corner
-  brackets, grid lines, data streams, parallax layers. Templates only;
-  styles co-located in `BossHolographicOverlay.styles.scss` and pulled
-  in via `<style scoped src>`.
+  Static HUD chrome overlaid on the active boss portrait. No animations
+  (V2 contract). Just four corner brackets + a top-bar signal indicator.
+  Co-located SCSS in `BossHolographicOverlay.styles.scss`.
 -->
 <template>
-  <div class="holo-overlay">
-    <div class="holo-scanlines"></div>
-    <div class="holo-glitch"></div>
-
+  <div class="holo-overlay" aria-hidden="true">
     <div class="holo-frame">
       <div class="holo-top-bar">
         <div class="holo-signal">
-          <span class="signal-dot"></span>
-          <span class="signal-dot"></span>
-          <span class="signal-dot"></span>
+          <span class="signal-dot" />
+          <span class="signal-dot" />
+          <span class="signal-dot" />
           <span class="holo-text">SIGNAL</span>
         </div>
-        <div class="holo-battery">
-          <div class="battery-level"></div>
-          <span class="holo-text">85%</span>
-        </div>
       </div>
-
-      <div class="holo-corner top-left"></div>
-      <div class="holo-corner top-right"></div>
-      <div class="holo-corner bottom-left"></div>
-      <div class="holo-corner bottom-right"></div>
-
-      <div class="holo-grid-lines"></div>
-
-      <div class="holo-data-stream">
-        <div class="data-line"></div>
-        <div class="data-line"></div>
-        <div class="data-line"></div>
-      </div>
+      <div class="holo-corner top-left" />
+      <div class="holo-corner top-right" />
+      <div class="holo-corner bottom-left" />
+      <div class="holo-corner bottom-right" />
     </div>
-
-    <div class="holo-parallax-layer layer-1"></div>
-    <div class="holo-parallax-layer layer-2"></div>
   </div>
 </template>
 
@@ -48,4 +28,4 @@
 // No props — the parent decides whether to render this component (v-if="isActive").
 </script>
 
-<style scoped src="./BossHolographicOverlay.styles.scss"></style>
+<style scoped src="./BossHolographicOverlay.styles.scss" />

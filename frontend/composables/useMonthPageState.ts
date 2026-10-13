@@ -12,8 +12,21 @@
  *   - `todayWeekdayName` — so `DayPicker` can pick the default day on
  *     first mount (matches today's weekday if it lives in the current
  *     week, otherwise the first day).
+ *
+ * Wave B / page-state-sharing (2026-10-13):
+ *   `useMonthPageState()` previously created a fresh ref graph each call,
+ *   so a child that destructured `useMonthPageState()` itself got a
+ *   second, independent copy of `currentWeek` / `currentDayUuid` /
+ *   `currentMonth`, and the action callbacks that needed `useTaskModal()`
+ *   were silently `undefined` (M-1).
+ *   Fix: `app.vue` is the SINGLE owner. It calls `providePageState(...)`
+ *   with the merged state (page-state refs + task-modal openers).
+ *   Descendants — most importantly `CampaignView.vue` — call
+ *   `injectPageState()` to read the same singleton. The original
+ *   `useMonthPageState()` factory is preserved (still used by app.vue)
+ *   so the watch + computed graph lives there exactly as before.
  */
-import { ref, computed, watch } from "vue";
+import { inject, provide, ref, computed, watch, type Ref, type InjectionKey } from "vue";
 import { storeToRefs } from "pinia";
 import { useMonthStore } from "../stores/monthStore";
 
@@ -26,6 +39,70 @@ const WEEKDAY_NAMES = [
   "Friday",
   "Saturday",
 ];
+
+/**
+ * Shape of the shared page state. Mirrors `useMonthPageState()`'s return
+ * value plus the modal openers so descendants have a single dependency.
+ * Modal-only entries are optional to keep backwards compatibility with
+ * any caller that only wants the page-state half (there are none today,
+ * but the type stays explicit).
+ */
+export interface SharedPageState {
+  // Page selection
+  currentWeek: Ref<any>;
+  currentDay: any;
+  currentDayUuid: Ref<string | null>;
+  weeks: any;
+  currentMonth: any;
+  weekIndex: any;
+  hasPrevWeek: any;
+  hasNextWeek: any;
+  // Page mutations
+  setCurrentWeek: (weekOrUuid: any) => void;
+  setCurrentDay: (dayUuid: string) => void;
+  nextWeek: () => void;
+  prevWeek: () => void;
+  refreshDataFromStore: () => void;
+  // Task mutations
+  toggleTask: (taskUuid: string) => void;
+  moveTask: (payload: { taskUuid: string; toDayUuid: string }) => void;
+  deleteSingleTask: (taskUuid: string) => void;
+  // Modal openers (optional — only present when the owner provided them)
+  openCreateTask?: () => void;
+  openCreateTaskForDay?: (dayUuid: string) => void;
+  openEditTask?: (taskUuid: string) => void;
+  closeTaskModal?: () => void;
+  taskModalOpen?: Ref<boolean>;
+  selectedDayUuid?: Ref<string | null>;
+  editingTaskUuid?: Ref<string | null>;
+}
+
+export const PAGE_STATE_KEY: InjectionKey<SharedPageState> = Symbol("pp-page-state");
+
+/**
+ * Provide the page state. Call exactly ONCE from `app.vue` (or any other
+ * top-level owner). Components that need this state call `injectPageState()`
+ * rather than calling `useMonthPageState()` themselves.
+ */
+export function providePageState(state: SharedPageState): void {
+  provide(PAGE_STATE_KEY, state);
+}
+
+/**
+ * Inject the shared page state. Throws a clear error when the
+ * provider is missing so a missing `provide` call surfaces immediately
+ * (instead of silently rendering undefined callbacks like M-1).
+ */
+export function injectPageState(): SharedPageState {
+  const state = inject(PAGE_STATE_KEY, null as unknown as SharedPageState);
+  if (!state) {
+    throw new Error(
+      "[page-state] injectPageState() called outside a providePageState() owner. " +
+        "Add providePageState(...) in app.vue (or the top-level owner).",
+    );
+  }
+  return state;
+}
 
 export function useMonthPageState() {
   const monthStore = useMonthStore();

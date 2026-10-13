@@ -1,23 +1,17 @@
+<!--
+  FinishedViewToggle.vue (W1 restyle, V2 stub).
+
+  Legacy toggle button used by older `StatsOrReadonly` switches. Not
+  mounted by the V2 sidebar — `AppShell` uses the section state to
+  pick Campaign vs Stats. Restyled to V2 tokens for the global sweep.
+-->
 <template>
-  <!-- Toggle Button for Finished Months -->
-  <div v-if="isFinished && hasMonth" style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
+  <div v-if="isFinished && hasMonth" class="fvt">
     <button
+      type="button"
+      class="fvt__btn"
       @click="toggleView"
-      style="
-        font-family: 'Press Start 2P', cursive;
-        color: var(--pp-text);
-        border: 3px solid var(--pp-gold-acc);
-        background-color: var(--pp-blue);
-        font-size: 0.75rem;
-        padding: 0.75rem 1.5rem;
-        box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.8);
-        transition: transform 0.1s, box-shadow 0.1s;
-        cursor: pointer;
-      "
-      class="hover:transform hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_rgba(0,0,0,0.8)]"
-    >
-      {{ viewMode === 'stats' ? '📋 VIEW FULL MONTH' : '📊 VIEW STATISTICS' }}
-    </button>
+    >{{ viewMode === 'stats' ? 'VIEW FULL MONTH' : 'VIEW STATISTICS' }}</button>
   </div>
 </template>
 
@@ -31,3 +25,31 @@ defineProps<{
   toggleView: () => void;
 }>();
 </script>
+
+<style scoped>
+.fvt {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.fvt__btn {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-text);
+  background: var(--pp-cyan);
+  border: 1px solid var(--pp-amber);
+  padding: 0.65rem 1.2rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.fvt__btn:hover,
+.fvt__btn:focus-visible {
+  color: var(--pp-amber);
+  outline: none;
+}
+</style>

@@ -13,7 +13,9 @@ const TaskSchema = new mongoose.Schema({
   // W5: lighter renditions of the same Klipy GIF, picked at selection time.
   // The UI plays the MP4 (with the JPG as poster) and falls back to gifUrl.
   gifVideoUrl: String,
-  gifStillUrl: String
+  gifStillUrl: String,
+  // V2: optional free-form note (≤ 280 chars). `null` clears the field.
+  notes: String
 });
 
 const DaySchema = new mongoose.Schema({

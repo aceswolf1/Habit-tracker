@@ -9,7 +9,7 @@ same-origin (no CORS, no leaked backend IP).
 ```
 frontend/
 ├── app.vue                        # root page (month/week/day grid + gamification)
-├── components/                    # Day.vue, Task.vue, TaskModal.vue, …
+├── components/                    # app/ (shell), campaign/ (Spotlight, Grid, cockpit), ui/ (primitives), task/, stats/, …
 ├── stores/                        # Pinia: monthStore.ts, settingsStore.ts
 ├── services/cycleApi.ts           # ONLY module that fetches /api/cycles*
 ├── types/index.ts                 # Cycle / Week / Day / Task / envelope types
@@ -18,7 +18,7 @@ frontend/
 ├── server/
 │   ├── middleware/backend-proxy.ts   # /api/cycles → Express, others fall through
 │   └── api/                           # /api/klipy/*, /api/health (Nitro-owned)
-├── assets/, css/                  # pixel-art styling, Tailwind, SCSS animations
+├── assets/, css/                  # V2 tokens, Tailwind, SCSS animations
 ├── context/                       # Nuxt context modules
 ├── public/                        # static assets
 └── nuxt.config.ts                 # #shared alias, font wiring, devtools gate

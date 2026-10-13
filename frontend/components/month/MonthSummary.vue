@@ -1,43 +1,42 @@
-<template>
-  <div class="month-summary">
-    <h1 class="text-2xl font-bold mb-4">
-      {{ month.name }} - {{ month.subtitle }}
-    </h1>
-    <div class="progress-bar mb-6">
-      <div class="bg-gray-200 rounded-full h-4 w-full">
-        <div
-          class="bg-green-500 h-4 rounded-full"
-          :style="{ width: `${month.progress}%` }"
-        ></div>
-      </div>
-      <p class="text-sm mt-1">{{ month.progress }}% Complete</p>
-    </div>
+<!--
+  MonthSummary.vue (W1 restyle, V2 Combat Deck).
 
-    <div class="weeks-grid">
-      <div
+  Sidebar Stats roll-up of the active cycle: month title + progress +
+  per-week summary cards. Sharp borders, mono body, cyan accent rule.
+-->
+<template>
+  <section v-if="month" class="month-summary">
+    <header class="ms-header">
+      <h1 class="ms-title font-display">{{ month.name }} — {{ month.subtitle }}</h1>
+      <div class="ms-progress-row font-mono">
+        <span class="ms-progress-bar">
+          <span class="ms-progress-fill" :style="{ width: `${month.progress || 0}%` }"></span>
+        </span>
+        <span class="ms-progress-pct">{{ month.progress || 0 }}%</span>
+      </div>
+    </header>
+
+    <div class="ms-weeks">
+      <article
         v-for="week in month.weeks"
         :key="week.uuid"
-        class="week-card mb-6 p-4 bg-gray-100 rounded-lg"
+        class="ms-week"
       >
-        <h2 class="text-lg font-bold">{{ week.name }} - {{ week.subtitle }}</h2>
-        <div class="progress-bar my-2">
-          <div class="bg-gray-300 rounded-full h-3 w-full">
-            <div
-              class="bg-blue-500 h-3 rounded-full"
-              :style="{ width: `${week.progress}%` }"
-            ></div>
-          </div>
-          <p class="text-xs mt-1">{{ week.progress }}% Complete</p>
+        <header class="ms-week__head">
+          <h2 class="ms-week__name font-display">{{ week.name }} — {{ week.subtitle }}</h2>
+        </header>
+        <div class="ms-week__bar font-mono">
+          <span class="ms-week__bar-track">
+            <span class="ms-week__bar-fill" :style="{ width: `${week.progress || 0}%` }"></span>
+          </span>
+          <span class="ms-week__bar-pct">{{ week.progress || 0 }}%</span>
         </div>
-
-        <!-- Days summary - just showing counts to keep it simple -->
-        <p class="text-sm mt-2">
-          {{ week.days.length }} days, {{ getTotalTasksInWeek(week) }} total
-          tasks, {{ getCompletedTasksInWeek(week) }} completed
+        <p class="ms-week__meta font-mono">
+          {{ week.days.length }} DAYS · {{ getTotalTasksInWeek(week) }} TOTAL · {{ getCompletedTasksInWeek(week) }} COMPLETED
         </p>
-      </div>
+      </article>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -48,12 +47,10 @@ import { Week } from "../../types";
 const monthStore = useMonthStore();
 const { currentMonth: month } = storeToRefs(monthStore);
 
-// Helper function to count total tasks in a week
 const getTotalTasksInWeek = (week: Week): number => {
   return week.days.reduce((total, day) => total + day.tasks.length, 0);
 };
 
-// Helper function to count completed tasks in a week
 const getCompletedTasksInWeek = (week: Week): number => {
   return week.days.reduce((total, day) => {
     return total + day.tasks.filter((task) => task.completed).length;
@@ -63,22 +60,124 @@ const getCompletedTasksInWeek = (week: Week): number => {
 
 <style scoped>
 .month-summary {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.weeks-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
+  max-width: 1000px;
 }
 
-.week-card {
-  transition: transform 0.2s ease;
+.ms-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--pp-line);
 }
 
-.week-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.ms-title {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-cyan);
+}
+
+.ms-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ms-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--pp-panel);
+  border: 1px solid var(--pp-line);
+  overflow: hidden;
+}
+
+.ms-progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--pp-cyan);
+}
+
+.ms-progress-pct {
+  color: var(--pp-text);
+  font-weight: 700;
+}
+
+.ms-weeks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.ms-week {
+  background: var(--pp-card);
+  border: 1px solid var(--pp-line);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.ms-week:hover {
+  background: var(--pp-card-active);
+  border-color: var(--pp-cyan);
+}
+
+.ms-week__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.ms-week__name {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-text);
+}
+
+.ms-week__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+}
+
+.ms-week__bar-track {
+  flex: 1;
+  height: 4px;
+  background: var(--pp-panel);
+  border: 1px solid var(--pp-line);
+  overflow: hidden;
+}
+
+.ms-week__bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--pp-cyan);
+}
+
+.ms-week__bar-pct {
+  color: var(--pp-muted);
+  font-weight: 700;
+}
+
+.ms-week__meta {
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-muted);
 }
 </style>

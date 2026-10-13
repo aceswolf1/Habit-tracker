@@ -1,26 +1,32 @@
+<!--
+  DayOfWeekAnalysis.vue (W1 restyle, V2 Combat Deck).
+
+  7-column grid of day-of-week averages. Each tile shows the day name,
+  a 4px progress bar, the completion %, and a perfect-days badge.
+  Best/Worst day tiles get amber / danger borders.
+-->
 <template>
-  <div>
-    <div class="section-header">
-      <h2>📅 DAY OF WEEK ANALYSIS</h2>
-    </div>
-    <div class="day-grid">
+  <section class="dow">
+    <h2 class="dow__header font-display">DAY OF WEEK ANALYSIS</h2>
+    <div class="dow__grid">
       <div
         v-for="day in statistics?.dayOfWeekStats || []"
         :key="day.dayName"
-        class="day-stat"
-        :class="{ 'best-day': isBestDay(day.dayName), 'worst-day': isWorstDay(day.dayName) }"
+        class="dow__tile"
+        :class="{
+          'dow__tile--best': isBestDay(day.dayName),
+          'dow__tile--worst': isWorstDay(day.dayName),
+        }"
       >
-        <div class="day-name">{{ day.dayName.substring(0, 3).toUpperCase() }}</div>
-        <div class="day-progress-bar">
-          <div class="day-progress-fill" :style="{ width: day.averageCompletion + '%' }"></div>
+        <div class="dow__name font-mono">{{ day.dayName.substring(0, 3).toUpperCase() }}</div>
+        <div class="dow__bar">
+          <div class="dow__fill" :style="{ width: day.averageCompletion + '%' }"></div>
         </div>
-        <div class="day-value">{{ day.averageCompletion }}%</div>
-        <div class="day-perfect" v-if="day.perfectDays > 0">
-          ✨ {{ day.perfectDays }}
-        </div>
+        <div class="dow__value font-display">{{ day.averageCompletion }}%</div>
+        <div v-if="day.perfectDays > 0" class="dow__perfect font-mono">✦ {{ day.perfectDays }}</div>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -36,77 +42,86 @@ function isWorstDay(dayName: string) {
 }
 </script>
 
-<style scoped lang="scss">
-.section-header {
-  margin-top: 1rem;
+<style scoped>
+.dow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.section-header h2 {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 1rem;
-  color: var(--pp-gold-acc);
-  text-shadow: 2px 2px 0 #000;
+.dow__header {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-cyan);
   padding-bottom: 0.5rem;
-  border-bottom: 3px solid var(--pp-gold-acc);
+  border-bottom: 1px solid var(--pp-line);
 }
 
-.day-grid {
+.dow__grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
-.day-stat {
-  background-color: rgba(26, 32, 44, 0.9);
-  border: 3px solid var(--pp-gray);
-  padding: 1rem 0.5rem;
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.8);
+@media (max-width: 639.98px) {
+  .dow__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.dow__tile {
+  background: var(--pp-card);
+  border: 1px solid var(--pp-line);
+  padding: 0.6rem 0.4rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  min-width: 0;
 }
 
-.best-day {
-  border-color: var(--pp-gold);
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.8), 0 0 15px rgba(255, 215, 0, 0.3);
+.dow__tile--best {
+  border-color: var(--pp-amber);
 }
-
-.worst-day {
+.dow__tile--worst {
   border-color: var(--pp-danger);
 }
 
-.day-name {
-  font-family: 'Press Start 2P', cursive;
+.dow__name {
   font-size: 0.6rem;
-  color: var(--pp-gold-acc);
-  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 0.12em;
+  color: var(--pp-amber);
+  text-transform: uppercase;
+  font-weight: 700;
 }
 
-.day-progress-bar {
+.dow__bar {
   width: 100%;
-  height: 1rem;
-  background-color: var(--pp-gray);
-  border: 2px solid #000;
-  position: relative;
+  height: 4px;
+  background: var(--pp-void);
+  border: 1px solid var(--pp-line);
   overflow: hidden;
 }
 
-.day-progress-fill {
+.dow__fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--pp-blue-mid), var(--pp-purple));
-  transition: width 0.3s ease;
+  background: var(--pp-cyan);
 }
 
-.day-value {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 0.7rem;
-  color: white;
-  text-shadow: 1px 1px 0 #000;
+.dow__value {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--pp-text);
 }
 
-.day-perfect {
-  font-size: 0.6rem;
-  color: var(--pp-gold-acc);
+.dow__perfect {
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pp-amber);
 }
 </style>

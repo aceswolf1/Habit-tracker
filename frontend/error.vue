@@ -1,26 +1,27 @@
 <!--
-  error.vue (W4b, B-T4).
+  error.vue (W1 restyle, V2 Combat Deck).
+
   Catch-all page rendered by Nuxt for any error status (404 by default
-  on `/does-not-exist` etc.). UI is in the same pixel-arcade style as
-  the rest of the app. Reuses the `bg-pixel-*` Tailwind tokens that
-  themselves map to the `--pp-*` CSS variables in
-  `assets/css/tokens.css`.
+  on `/does-not-exist` etc.). Sharp 1 px `--pp-line` border, mono body,
+  cyan title. No legacy arcade fonts.
+
   API 404s are unaffected: the catch-all is a Nuxt route rule, it
   matches only HTML page navigations. `/api/**` paths still get the
   JSON envelope from Nitro.
 -->
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-pixel-deepest p-6">
-    <div class="bg-pixel-panel border-4 border-black p-8 max-w-md w-full shadow-pixel">
-      <h1 class="font-press text-white text-base text-center mb-6 border-b-4 border-black pb-4">
+  <div class="error-shell">
+    <div class="error-panel">
+      <h1 class="error-title">
         ERROR {{ error?.statusCode || 404 }}
       </h1>
-      <p class="font-press text-white text-xs text-center mb-6 leading-relaxed">
+      <p class="error-message">
         {{ message }}
       </p>
-      <div class="flex justify-center">
+      <div class="error-actions">
         <button
-          class="font-press text-xs px-6 py-3 bg-blue-600 border-2 border-black text-white hover:bg-blue-500 hover:scale-105 transition-all shadow-[4px_4px_0_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+          type="button"
+          class="error-btn"
           @click="goHome"
         >
           BACK TO QUESTS
@@ -52,16 +53,76 @@ function goHome() {
 </script>
 
 <style scoped>
-.bg-pixel-deepest {
-  background-color: var(--pp-bg-deepest, #05080e);
+.error-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pp-void);
+  padding: 1.5rem;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  color: var(--pp-text);
 }
-.bg-pixel-panel {
-  background-color: var(--pp-bg-panel, #1f2937);
+
+.error-panel {
+  background: var(--pp-panel);
+  border: 1px solid var(--pp-line);
+  padding: 2rem;
+  max-width: 32rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
 }
-.font-press {
-  font-family: "Press Start 2P", cursive;
+
+.error-title {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-cyan);
+  text-align: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--pp-line);
+  margin: 0;
 }
-.shadow-pixel {
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.8);
+
+.error-message {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--pp-muted);
+  text-align: center;
+  margin: 0;
+}
+
+.error-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.error-btn {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--pp-cyan);
+  color: var(--pp-void);
+  border: 1px solid var(--pp-cyan);
+  padding: 0.7rem 1.2rem;
+  cursor: pointer;
+  min-height: 40px;
+  min-width: 12rem;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.error-btn:hover,
+.error-btn:focus-visible {
+  background: rgb(var(--pp-cyan-rgb) / 0.85);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--pp-cyan);
 }
 </style>

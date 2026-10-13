@@ -103,6 +103,8 @@ ws.addEventListener('message', (evt) => {
           const looksLoaded = !looksLoading && (
             up.includes('WEEK 1') ||
             up.includes('OVERALL PROGRESS') ||
+            up.includes('PROTOCOLS') ||
+            up.includes('ZONE:') ||
             !!document.querySelector('[data-task-uuid], .task, button[aria-label*="oggle" i]')
           );
           return JSON.stringify({ looksLoaded, looksLoading, len: el.length });

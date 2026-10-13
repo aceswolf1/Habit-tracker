@@ -1,28 +1,43 @@
+<!--
+  FloatingPoints.vue (W1 restyle, V2 Combat Deck).
+
+  Floating "+N XP" popup that anchors on the toggled task's DOM rect
+  (queried via `[data-task-uuid]`) when a `pointsEarned` event fires.
+  Single shared event-bus subscriber; elements auto-dismiss after a
+  static duration.
+
+  V2 styling:
+    - Mono font, no legacy arcade font, no animated text glows.
+    - Tier-colored text (cyan / amber / green / magenta).
+    - Static `transform: translate(...)` for the float, no CSS
+      `text-shadow` rainbow / no animated `filter: hue-rotate`.
+    - Honors `prefers-reduced-motion: reduce` — fade in/out only.
+-->
 <template>
   <Teleport to="body">
-    <div class="floating-points-container">
+    <div class="floating-points-container" aria-hidden="true">
       <TransitionGroup name="float">
         <div
           v-for="point in activePoints"
           :key="point.id"
-          class="floating-point"
+          class="floating-point font-mono"
           :style="{
             left: point.x + 'px',
             top: point.y + 'px',
-            '--float-offset-x': point.offsetX + 'px'
+            '--float-offset-x': point.offsetX + 'px',
           }"
           :class="[
-            point.points > 0 ? 'positive' : 'negative',
-            point.tier?.toLowerCase(),
-            { 'legendary': point.isLegendary }
+            point.points > 0 ? 'floating-point--positive' : 'floating-point--negative',
+            point.isLegendary ? 'floating-point--legendary' : '',
+            point.tier ? `floating-point--${point.tier.toLowerCase()}` : '',
           ]"
         >
-          <span class="point-icon" v-if="point.isLegendary">👑</span>
-          <span class="point-value">
+          <span v-if="point.isLegendary" class="floating-point__icon" aria-hidden="true">★</span>
+          <span class="floating-point__value">
             {{ point.points > 0 ? '+' : '' }}{{ point.points }}
           </span>
-          <span class="point-label">XP</span>
-          <span class="multiplier-badge" v-if="point.isLegendary">3x</span>
+          <span class="floating-point__label">XP</span>
+          <span v-if="point.isLegendary" class="floating-point__mult">3×</span>
         </div>
       </TransitionGroup>
     </div>
@@ -111,109 +126,79 @@ onBeforeUnmount(() => {
 
 .floating-point {
   position: absolute;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 20px;
-  font-weight: bold;
-  text-shadow:
-    2px 2px 0 rgba(0, 0, 0, 0.8),
-    -1px -1px 0 rgba(0, 0, 0, 0.5);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.25rem;
   white-space: nowrap;
   transform: translate(-50%, -50%);
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
+}
 
-  &.positive {
-    color: #ffd700; /* Gold color for points */
+.floating-point--positive {
+  color: var(--pp-cyan);
 
-    &.bronze {
-      color: #cd7f32;
-      text-shadow:
-        2px 2px 0 rgba(0, 0, 0, 0.8),
-        0 0 8px rgba(205, 127, 50, 0.6);
-    }
-
-    &.silver {
-      color: #c0c0c0;
-      text-shadow:
-        2px 2px 0 rgba(0, 0, 0, 0.8),
-        0 0 8px rgba(192, 192, 192, 0.6);
-    }
-
-    &.gold {
-      color: #ffd700;
-      text-shadow:
-        2px 2px 0 rgba(0, 0, 0, 0.8),
-        0 0 10px rgba(255, 215, 0, 0.8);
-    }
-
-    &.champion {
-      color: #a78bfa;
-      text-shadow:
-        2px 2px 0 rgba(0, 0, 0, 0.8),
-        0 0 12px rgba(167, 139, 250, 0.8);
-    }
-
-    &.final {
-      color: #ffd700;
-      text-shadow:
-        2px 2px 0 rgba(0, 0, 0, 0.8),
-        0 0 15px rgba(255, 215, 0, 1),
-        0 0 25px rgba(255, 215, 0, 0.6);
-      animation: rainbow-text 2s linear infinite;
-    }
+  &.floating-point--bronze {
+    color: var(--pp-bronze);
   }
-
-  &.legendary {
-    font-size: 26px;
-    text-shadow:
-      3px 3px 0 rgba(0, 0, 0, 0.9),
-      0 0 20px rgba(255, 215, 0, 1),
-      0 0 30px rgba(255, 215, 0, 0.7);
-    animation: legendary-pulse 0.5s ease-in-out infinite alternate;
+  &.floating-point--silver {
+    color: var(--pp-silver);
   }
-
-  &.negative {
-    color: #ff4444;
+  &.floating-point--gold {
+    color: var(--pp-amber);
+  }
+  &.floating-point--champion {
+    color: var(--pp-champion);
+  }
+  &.floating-point--final {
+    color: var(--pp-cyan);
   }
 }
 
-.point-icon {
-  font-size: 20px;
-  animation: spin-icon 2s linear infinite;
+.floating-point--negative {
+  color: var(--pp-danger);
 }
 
-.point-value {
-  font-size: 24px;
+.floating-point--legendary {
+  font-size: 1.25rem;
+  color: var(--pp-magenta);
 }
 
-.point-label {
-  font-size: 14px;
+.floating-point__icon {
+  font-size: 1rem;
+  color: var(--pp-magenta);
+}
+
+.floating-point__value {
+  font-size: 1.1rem;
+}
+
+.floating-point__label {
+  font-size: 0.75rem;
   opacity: 0.9;
 }
 
-.multiplier-badge {
-  font-size: 12px;
-  background: linear-gradient(135deg, #ffd700, #ffed4e);
-  color: #000;
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 2px solid #000;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.8);
-  animation: badge-bounce 0.5s ease-in-out infinite alternate;
+.floating-point__mult {
+  font-size: 0.7rem;
+  background: var(--pp-magenta);
+  color: var(--pp-void);
+  padding: 0 0.4rem;
+  border: 1px solid var(--pp-magenta);
 }
 
-/* Floating animation */
+/* Float-in / fade-out (static transitions only). */
 .float-enter-active {
-  animation: floatUp 2s ease-out;
-
-  &.legendary {
-    animation: floatUpLegendary 2.5s ease-out;
-  }
+  animation: floatUp 2000ms ease-out;
+}
+.float-leave-active {
+  animation: fadeOut 400ms ease-out forwards;
 }
 
-.float-leave-active {
-  animation: fadeOut 0.5s ease-out;
+.floating-point--legendary.float-enter-active {
+  animation-duration: 2500ms;
 }
 
 /*
@@ -222,7 +207,6 @@ onBeforeUnmount(() => {
 */
 @media (prefers-reduced-motion: reduce) {
   .float-enter-active,
-  .float-enter-active.legendary,
   .float-leave-active {
     animation: none !important;
   }
@@ -230,39 +214,18 @@ onBeforeUnmount(() => {
 
 @keyframes floatUp {
   0% {
-    transform: translate(calc(-50% + var(--float-offset-x, 0px)), -50%) scale(0.5);
+    transform: translate(calc(-50% + var(--float-offset-x, 0px)), -50%) scale(0.7);
     opacity: 0;
   }
-  10% {
-    transform: translate(calc(-50% + var(--float-offset-x, 0px)), -50%) scale(1.3);
+  12% {
+    transform: translate(calc(-50% + var(--float-offset-x, 0px)), -50%) scale(1.1);
     opacity: 1;
   }
   20% {
     transform: translate(calc(-50% + var(--float-offset-x, 0px)), -50%) scale(1);
   }
   100% {
-    transform: translate(calc(-50% + var(--float-offset-x, 0px)), calc(-50% - 100px)) scale(1);
-    opacity: 0;
-  }
-}
-
-@keyframes floatUpLegendary {
-  0% {
-    transform: translate(calc(-50% + var(--float-offset-x, 0px)), -50%) scale(0.3) rotate(-10deg);
-    opacity: 0;
-  }
-  10% {
-    transform: translate(calc(-50% + var(--float-offset-x, 0px)), -50%) scale(1.5) rotate(5deg);
-    opacity: 1;
-  }
-  20% {
-    transform: translate(calc(-50% + var(--float-offset-x, 0px)), -50%) scale(1.2) rotate(-3deg);
-  }
-  30% {
-    transform: translate(calc(-50% + var(--float-offset-x, 0px)), -50%) scale(1.3) rotate(2deg);
-  }
-  100% {
-    transform: translate(calc(-50% + var(--float-offset-x, 0px)), calc(-50% - 120px)) scale(1.2) rotate(0deg);
+    transform: translate(calc(-50% + var(--float-offset-x, 0px)), calc(-50% - 60px)) scale(1);
     opacity: 0;
   }
 }
@@ -271,48 +234,5 @@ onBeforeUnmount(() => {
   to {
     opacity: 0;
   }
-}
-
-@keyframes legendary-pulse {
-  from {
-    transform: translate(-50%, -50%) scale(1);
-  }
-  to {
-    transform: translate(-50%, -50%) scale(1.05);
-  }
-}
-
-@keyframes spin-icon {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes badge-bounce {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-2px);
-  }
-}
-
-@keyframes rainbow-text {
-  0% {
-    filter: hue-rotate(0deg);
-  }
-  100% {
-    filter: hue-rotate(360deg);
-  }
-}
-
-/* Add pixel-art style pixelation effect */
-.floating-point {
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
 }
 </style>

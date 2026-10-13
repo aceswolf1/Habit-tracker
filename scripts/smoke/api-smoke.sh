@@ -298,6 +298,41 @@ if [[ "${HTTP_CODE}" != "400" ]]; then
 fi
 assert_envelope_err VALIDATION_ERROR "invalid-patch"
 
+# ---- V2 A8: Task `notes` set + clear (mirrors FIX-01 gifUrl clear step) ---
+echo
+echo "==> smoke: [10b] V2 notes — set + clear via PATCH (V2 A8)"
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-1","notes":"morning routine memo"}]}'
+assert_envelope_ok "notes-set"
+req GET "/api/cycles/${NEW_UUID}"
+assert_envelope_ok "notes-get"
+NOTES_RAW="$(jq -r '
+  def find:
+    [.data.weeks[].days[].tasks[] | select(.uuid=="t-smoke-1")][0].notes
+    // "<<missing>>";
+  find
+' "${RESP_BODY}")"
+echo "    notes after set: ${NOTES_RAW}"
+if [[ "${NOTES_RAW}" != "morning routine memo" ]]; then
+  echo "FATAL: notes set failed (got '${NOTES_RAW}')"; cat "${RESP_BODY}"; exit 29
+fi
+echo "    notes set OK"
+# Now clear with null
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-1","notes":null}]}'
+assert_envelope_ok "notes-clear"
+req GET "/api/cycles/${NEW_UUID}"
+assert_envelope_ok "notes-get-after-clear"
+NOTES_RAW="$(jq -r '
+  def find:
+    [.data.weeks[].days[].tasks[] | select(.uuid=="t-smoke-1")][0].notes
+    // "<<missing>>";
+  find
+' "${RESP_BODY}")"
+echo "    notes after clear: ${NOTES_RAW}"
+if [[ "${NOTES_RAW}" != "null" && "${NOTES_RAW}" != "<<missing>>" ]]; then
+  echo "FATAL: notes was not cleared (got '${NOTES_RAW}')"; cat "${RESP_BODY}"; exit 30
+fi
+echo "    notes clear OK (notes cleared via null)"
+
 echo "==> smoke: [11] POST /api/cycles/${NEW_UUID}/finish"
 req POST "/api/cycles/${NEW_UUID}/finish"
 assert_envelope_ok "finish"

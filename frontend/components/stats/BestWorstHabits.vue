@@ -1,29 +1,42 @@
-<template>
-  <div class="habits-grid">
-    <div class="habit-card best-habit" v-if="statistics?.bestHabit">
-      <div class="habit-header">
-        <span class="habit-badge">BEST HABIT</span>
-      </div>
-      <div class="habit-icon">{{ statistics.bestHabit.icon || '⭐' }}</div>
-      <div class="habit-name">{{ statistics.bestHabit.description }}</div>
-      <div class="habit-stat">
-        <span class="habit-rate">{{ statistics.bestHabit.completionRate }}%</span>
-        <span class="habit-count">{{ statistics.bestHabit.timesCompleted }}/{{ statistics.bestHabit.timesAppeared }}</span>
-      </div>
-    </div>
+<!--
+  BestWorstHabits.vue (W1 restyle, V2 Combat Deck).
 
-    <div class="habit-card worst-habit" v-if="statistics?.worstHabit">
-      <div class="habit-header">
-        <span class="habit-badge">NEEDS WORK</span>
-      </div>
-      <div class="habit-icon">{{ statistics.worstHabit.icon || '💪' }}</div>
-      <div class="habit-name">{{ statistics.worstHabit.description }}</div>
-      <div class="habit-stat">
-        <span class="habit-rate">{{ statistics.worstHabit.completionRate }}%</span>
-        <span class="habit-count">{{ statistics.worstHabit.timesCompleted }}/{{ statistics.worstHabit.timesAppeared }}</span>
-      </div>
+  Two-tile summary of the best-performing and worst-performing habit.
+  Sharp 1px borders, amber / danger accents for best / worst.
+-->
+<template>
+  <section class="bwh">
+    <h2 class="bwh__header font-display">BEST / WORST HABITS</h2>
+    <div class="bwh__grid">
+      <article v-if="statistics?.bestHabit" class="bwh__tile bwh__tile--best">
+        <header class="bwh__tile-head">
+          <span class="bwh__badge font-mono bwh__badge--best">BEST HABIT</span>
+        </header>
+        <span class="bwh__icon" aria-hidden="true">{{ statistics.bestHabit.icon || '◆' }}</span>
+        <h3 class="bwh__name font-display">{{ statistics.bestHabit.description }}</h3>
+        <div class="bwh__stat">
+          <span class="bwh__rate font-display">{{ statistics.bestHabit.completionRate }}%</span>
+          <span class="bwh__count font-mono">
+            {{ statistics.bestHabit.timesCompleted }}/{{ statistics.bestHabit.timesAppeared }}
+          </span>
+        </div>
+      </article>
+
+      <article v-if="statistics?.worstHabit" class="bwh__tile bwh__tile--worst">
+        <header class="bwh__tile-head">
+          <span class="bwh__badge font-mono bwh__badge--worst">NEEDS WORK</span>
+        </header>
+        <span class="bwh__icon" aria-hidden="true">{{ statistics.worstHabit.icon || '◇' }}</span>
+        <h3 class="bwh__name font-display">{{ statistics.worstHabit.description }}</h3>
+        <div class="bwh__stat">
+          <span class="bwh__rate font-display">{{ statistics.worstHabit.completionRate }}%</span>
+          <span class="bwh__count font-mono">
+            {{ statistics.worstHabit.timesCompleted }}/{{ statistics.worstHabit.timesAppeared }}
+          </span>
+        </div>
+      </article>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -32,82 +45,106 @@ defineProps<{
 }>();
 </script>
 
-<style scoped lang="scss">
-.habits-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1rem;
+<style scoped>
+.bwh {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.habit-card {
-  background-color: rgba(26, 32, 44, 0.9);
-  border: 3px solid;
-  padding: 1.5rem;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.8);
+.bwh__header {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-cyan);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--pp-line);
+}
+
+.bwh__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.bwh__tile {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
   text-align: center;
+  gap: 0.6rem;
+  padding: 1rem;
+  background: var(--pp-card);
+  border: 1px solid var(--pp-line);
 }
 
-.best-habit {
-  border-color: var(--pp-gold);
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 215, 0, 0.3);
+.bwh__tile--best {
+  border-color: var(--pp-amber);
 }
-
-.worst-habit {
+.bwh__tile--worst {
   border-color: var(--pp-danger);
 }
 
-.habit-header {
+.bwh__tile-head {
   width: 100%;
 }
 
-.habit-badge {
-  font-family: 'Press Start 2P', cursive;
+.bwh__badge {
   font-size: 0.6rem;
-  background-color: var(--pp-gold);
-  color: #000;
-  padding: 0.5rem 1rem;
-  border: 2px solid #000;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--pp-line);
+  display: inline-block;
 }
 
-.worst-habit .habit-badge {
-  background-color: var(--pp-danger);
-  color: white;
+.bwh__badge--best {
+  background: var(--pp-amber);
+  color: var(--pp-void);
+  border-color: var(--pp-amber);
 }
 
-.habit-icon {
-  font-size: 3rem;
+.bwh__badge--worst {
+  background: var(--pp-danger);
+  color: var(--pp-text);
+  border-color: var(--pp-danger);
 }
 
-.habit-name {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 0.75rem;
-  color: white;
-  text-shadow: 2px 2px 0 #000;
-  line-height: 1.4;
+.bwh__icon {
+  font-size: 2rem;
+  line-height: 1;
 }
 
-.habit-stat {
+.bwh__name {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pp-text);
+  line-height: 1.3;
+}
+
+.bwh__stat {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.15rem;
 }
 
-.habit-rate {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 1.5rem;
-  color: var(--pp-gold-acc);
-  text-shadow: 2px 2px 0 #000;
+.bwh__rate {
+  font-size: 1.4rem;
+  color: var(--pp-amber);
 }
 
-.habit-count {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 0.6rem;
-  color: var(--pp-text-muted);
-  text-shadow: 1px 1px 0 #000;
+.bwh__tile--worst .bwh__rate {
+  color: var(--pp-danger);
+}
+
+.bwh__count {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  color: var(--pp-muted);
 }
 </style>

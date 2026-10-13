@@ -82,6 +82,7 @@ function applyUpdates(cycle, updates) {
         if (update.gifUrl !== undefined) task.gifUrl = update.gifUrl; // null clears
         if (update.gifVideoUrl !== undefined) task.gifVideoUrl = update.gifVideoUrl; // null clears
         if (update.gifStillUrl !== undefined) task.gifStillUrl = update.gifStillUrl; // null clears
+        if (update.notes !== undefined) task.notes = update.notes; // null clears
         if (update.order !== undefined) task.order = update.order;
 
         if (update.completed !== undefined && wasCompleted !== update.completed) {
