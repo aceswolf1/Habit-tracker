@@ -1,11 +1,12 @@
 <!--
-  DayStrip.vue (W2 contract §4 / §5).
+  DayStrip.vue (W2 contract §4 / §5, v2.1 dated strip).
 
   7 day buttons for the current week. Each card:
-    - Header: "MON // W2" (or weekday short) + status badge:
+    - Header: "MON // 17" when the cycle has a `startDate`
+              (or "MON // W1" for legacy undated cycles) + status badge:
         * ACTIVE  — when this card is the current day
-        * TODAY   — when this weekday matches today (only on the
-                    week that contains today; `todayIndex !== null`)
+        * TODAY   — when this day is `findToday(cycle)` (only on the
+                    week that contains today)
         * STDBY   — default
     - Subline: "n / m DONE" + "p%"
     - 2px progress bar
@@ -14,6 +15,13 @@
 
   Below lg: scroll-snap horizontal strip; selected scrolled into view.
   ≥ lg: 7 equal columns.
+
+  v2.1:
+    - Real date (`MON // 17`) when `cycle.startDate` is set, derived
+      via `dayDate(startDate, weekIndex, dayIndex)` from `shared/dates.js`.
+    - TODAY badge driven by `findToday(cycle)` rather than the
+      weekday heuristic — re-renders automatically when the cycle
+      changes.
 
   States:
     - selected  → ACTIVE badge + cyan glow
@@ -40,7 +48,7 @@
           class="font-display text-headline-sm uppercase tracking-wider truncate"
           :class="day.uuid === currentDayUuid ? 'text-pp-cyan' : (idx === todayIndex ? 'text-pp-amber' : 'text-pp-text')"
         >
-          {{ shortName(day.name) }} <span class="text-pp-muted">//</span> W{{ weekIndex + 1 }}
+          {{ shortName(day.name) }} <span class="text-pp-muted">//</span> <span class="day-date-label">{{ dayDateLabel(weekIndex, idx) }}</span>
         </span>
         <span
           v-if="day.uuid === currentDayUuid"
@@ -100,13 +108,21 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
-import type { Day, Week } from "../../types/index";
+import type { Cycle, Day, Week } from "../../types/index";
 import { calculateDayProgress } from "../../utils/sharedProgress";
+import { dayDate, findToday as findTodayFn } from "../../utils/sharedDates";
 
 const props = defineProps<{
   week: Week;
   weekIndex: number;
   currentDayUuid: string | null;
+  /** v2.1: the parent passes the full cycle so we can resolve TODAY
+   *  from `findToday(cycle)` (date-based, not weekday-based). */
+  cycle: Cycle | null;
+  /** Keep the prop so existing parent code keeps compiling. The strip
+   *  itself derives `todayIndex` from `cycle` + `findToday`; this prop
+   *  is used as a tie-breaker fallback for the rare case where the
+   *  cycle has no startDate (legacy undated months). */
   todayIndex: number | null;
   setCurrentDay: (dayUuid: string) => void;
 }>();
@@ -132,6 +148,36 @@ function pipsForDay(day: Day): unknown[] {
   return new Array(Math.min(10, day.tasks.length));
 }
 
+/**
+ * v2.1 header label:
+ *   - cycle has a `startDate`  → `MON // 17` (real day-of-month)
+ *   - legacy / no startDate    → `MON // W1` (week label)
+ */
+function dayDateLabel(weekIndex: number, dayIndex: number): string {
+  const startDate = (props.cycle as { startDate?: string | null } | null)?.startDate;
+  const iso = dayDate(startDate || null, weekIndex, dayIndex);
+  if (!iso) return `W${weekIndex + 1}`;
+  const d = Number(iso.slice(8, 10));
+  return `${d}`;
+}
+
+/**
+ * v2.1: todayIndex from `findToday(cycle)`. Returns the dayIndex
+ * inside the currently displayed week, or `null` for undated cycles
+ * or out-of-range days.
+ */
+const todayIndexFromCycle = computed<number | null>(() => {
+  if (!props.cycle) return null;
+  const today = findTodayFn(props.cycle as { startDate?: string | null });
+  if (!today) return null;
+  if (today.weekIndex !== props.weekIndex) return null;
+  return today.dayIndex;
+});
+
+const todayIndex = computed<number | null>(
+  () => todayIndexFromCycle.value ?? props.todayIndex,
+);
+
 function cardClasses(day: Day, idx: number): string {
   const base = [
     "group flex flex-col text-left p-2 sm:p-3 border transition-colors min-w-[140px] sm:min-w-0 snap-start",
@@ -141,7 +187,7 @@ function cardClasses(day: Day, idx: number): string {
       "bg-pp-card-active text-pp-cyan border-pp-cyan",
       "shadow-[0_0_12px_rgba(0,240,255,0.4)]",
     );
-  } else if (idx === props.todayIndex) {
+  } else if (idx === todayIndex.value) {
     base.push(
       "bg-pp-card text-pp-amber border-pp-amber",
       "shadow-[0_0_8px_rgba(255,190,11,0.35)]",
@@ -176,3 +222,11 @@ watch(
   },
 );
 </script>
+
+<style scoped>
+/* Date label sits flush against the weekday short name without extra
+ * weight so the strip header stays compact. */
+.day-date-label {
+  letter-spacing: 0;
+}
+</style>

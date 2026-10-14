@@ -9,7 +9,7 @@
  * we don't introduce a separate client-side UUID space.
  */
 
-import type { Task } from "../types/index";
+import type { Task, TaskTag, TaskTimeOfDay } from "../types/index";
 
 /** Generate an optimistic task UUID. Format: `t-<base36>`. */
 export function generateTaskUuid(): string {
@@ -37,6 +37,16 @@ export interface TaskDraftInput {
   gifStillUrl?: string;
   /** V2: optional free-form memo (≤ 280 chars). */
   notes?: string;
+  /** v2.1: shared cluster id. Server assigns one if absent. */
+  habitId?: string;
+  /** v2.1 (D4): one of TASK_TAGS. */
+  tag?: TaskTag;
+  /** v2.1: integer 1..1440 minutes. */
+  durationMin?: number;
+  /** v2.1: one of TASK_TIMES_OF_DAY. */
+  timeOfDay?: TaskTimeOfDay;
+  /** v2.1: 'HH:MM' 24h string. */
+  dueTime?: string;
   /** Required for grouping recurring habits. */
   recurrenceId: string;
   /** Position within the day — pass the current tasks length for append. */
@@ -61,6 +71,11 @@ export function createTaskDraft(input: TaskDraftInput): Task {
     gifVideoUrl: input.gifVideoUrl,
     gifStillUrl: input.gifStillUrl,
     notes: input.notes,
+    habitId: input.habitId,
+    tag: input.tag,
+    durationMin: input.durationMin,
+    timeOfDay: input.timeOfDay,
+    dueTime: input.dueTime,
   };
 }
 
@@ -70,6 +85,10 @@ export interface AddPayload {
   legendary: boolean;
   icon?: string;
   gifUrl?: string;
+  // v2.1 metadata fields intentionally NOT part of the dedup key — they're
+  // either independent of identity (duration/dueTime/timeOfDay) or they're
+  // tag *color*, which the FE controls per add and won't equal across
+  // reasonable repeat additions.
 }
 
 /**

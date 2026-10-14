@@ -110,6 +110,18 @@
         <PpIcon name="notes" :size="16" />
       </span>
     </div>
+
+    <!-- v2.1: duration overlay (contract §5). Bottom-right corner of
+         the thumb/tile, only when a `durationLabel` is provided. The
+         caller (TaskRow / TaskTile) renders the formatted time string
+         via the contract display rule: < 60 min → `MM:00`; ≥ 60 →
+         `H:MM:00`. The overlay sits above the media but below any
+         absolute-positioned control in the parent. -->
+    <span
+      v-if="durationLabel"
+      class="duration-overlay font-mono"
+      aria-hidden="true"
+    >{{ durationLabel }}</span>
   </div>
   <!-- Spacer when hidden on phone: keeps alignment neutral but costs
        nothing visually since `<div></div>` has no box. -->
@@ -137,8 +149,14 @@ const props = withDefaults(
      * keeps a uniform left-hand column (visual rhythm of the list).
      */
     hideOnEmpty?: boolean;
+    /**
+     * v2.1: pre-formatted duration label rendered as a bottom-right
+     * overlay (contract §5). The parent (TaskRow / TaskTile) decides
+     * the format: < 60 min → `MM:00`; ≥ 60 → `H:MM:00`.
+     */
+    durationLabel?: string | null;
   }>(),
-  { hideOnEmpty: false },
+  { hideOnEmpty: false, durationLabel: null },
 );
 
 const settings = useSettingsStore();
@@ -190,5 +208,34 @@ const shouldHide = computed(() => {
 /* Tile variant — fills the card top, scales with the card. */
 .task-media-tile {
   width: 100%;
+}
+
+/*
+ * v2.1 duration overlay — bottom-right corner of the thumb/tile.
+ * Sharp 1px line border with a 60% opaque panel background so it
+ * reads against any media. Mono body, very small, uppercase.
+ * Sits above the media and any scanline overlay (z-index 2 vs 1).
+ */
+.duration-overlay {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  z-index: 2;
+  padding: 1px 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--pp-cyan);
+  background: rgba(15, 20, 31, 0.78);
+  border: 1px solid var(--pp-cyan);
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+@media (min-width: 640px) {
+  .duration-overlay {
+    font-size: 10px;
+    padding: 1px 5px;
+  }
 }
 </style>

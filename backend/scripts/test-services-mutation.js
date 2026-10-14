@@ -705,5 +705,267 @@ check('V2: updateTasks without notes leaves the existing value untouched', async
   assert.strictEqual(task.notes, 'preserved', 'notes preserved on unrelated edit');
 });
 
+// =========================================================================
+// v2.1 — completedAt maintenance (set on flip false→true, cleared on reverse)
+// =========================================================================
+
+check('v2.1: completing a task (false → true) stamps completedAt to a Date', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.cycleWithRequiredTasks(4);
+  const saved = await cycleRepo.create(cycle);
+  const taskUuid = saved.weeks[0].days[0].tasks[0].uuid;
+  await svc.patchCycle(saved.uuid, {
+    type: 'updateTasks',
+    updates: [{ uuid: taskUuid, completed: true }],
+  });
+  const task = findTask(cycleRepo._raw(saved.uuid), taskUuid).task;
+  assert.strictEqual(task.completed, true);
+  assert.ok(task.completedAt, 'completedAt must be set on a complete flip');
+  assert.ok(task.completedAt instanceof Date, 'completedAt must be a Date');
+});
+
+check('v2.1: un-completing a task (true → false) clears completedAt to null', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.cycleWithRequiredTasks(4);
+  cycle.weeks[0].days[0].tasks[0].completed = true;
+  cycle.weeks[0].days[0].tasks[0].completedAt = new Date('2026-10-14T10:00:00Z');
+  const saved = await cycleRepo.create(cycle);
+  const taskUuid = saved.weeks[0].days[0].tasks[0].uuid;
+  await svc.patchCycle(saved.uuid, {
+    type: 'updateTasks',
+    updates: [{ uuid: taskUuid, completed: false }],
+  });
+  const task = findTask(cycleRepo._raw(saved.uuid), taskUuid).task;
+  assert.strictEqual(task.completed, false);
+  assert.strictEqual(task.completedAt, null, 'completedAt must be cleared on uncomplete');
+});
+
+check('v2.1: a completed:true addTasks addition lands with completedAt set', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  const saved = await cycleRepo.create(cycle);
+  const week = saved.weeks[0];
+  const day = week.days[0];
+  await svc.patchCycle(saved.uuid, {
+    type: 'addTasks',
+    additions: [{
+      weekUuid: week.uuid, dayUuid: day.uuid,
+      task: { description: 'seed', optional: false, completed: true },
+    }],
+  });
+  const raw = cycleRepo._raw(saved.uuid);
+  const added = raw.weeks[0].days[0].tasks[0];
+  assert.strictEqual(added.completed, true);
+  assert.ok(added.completedAt instanceof Date, 'completedAt stamped on a completed-add');
+});
+
+check('v2.1: a completed:false addTasks addition lands with completedAt null', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  const saved = await cycleRepo.create(cycle);
+  const week = saved.weeks[0];
+  await svc.patchCycle(saved.uuid, {
+    type: 'addTasks',
+    additions: [{
+      weekUuid: week.uuid, dayUuid: week.days[0].uuid,
+      task: { description: 'unseed', optional: false, completed: false },
+    }],
+  });
+  const raw = cycleRepo._raw(saved.uuid);
+  const added = raw.weeks[0].days[0].tasks[0];
+  assert.strictEqual(added.completed, false);
+  assert.strictEqual(added.completedAt, null, 'completedAt absent on a non-completed add');
+});
+
+// =========================================================================
+// v2.1 — habitId assignment on addTasks + persist-on-save (D3)
+// =========================================================================
+
+check('v2.1: addTasks auto-assigns habitId when missing (h- prefix)', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  const saved = await cycleRepo.create(cycle);
+  await svc.patchCycle(saved.uuid, {
+    type: 'addTasks',
+    additions: [{
+      weekUuid: saved.weeks[0].uuid,
+      dayUuid: saved.weeks[0].days[0].uuid,
+      task: { description: 'Read', optional: false },
+    }],
+  });
+  const raw = cycleRepo._raw(saved.uuid);
+  const added = raw.weeks[0].days[0].tasks[0];
+  assert.ok(added.habitId, 'habitId auto-assigned');
+  assert.ok(added.habitId.startsWith('h-'), `expected h- prefix; got ${added.habitId}`);
+});
+
+check('v2.1: addTasks preserves a client-supplied habitId', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  const saved = await cycleRepo.create(cycle);
+  await svc.patchCycle(saved.uuid, {
+    type: 'addTasks',
+    additions: [{
+      weekUuid: saved.weeks[0].uuid,
+      dayUuid: saved.weeks[0].days[0].uuid,
+      task: { description: 'Read', optional: false, habitId: 'h-supplied' },
+    }],
+  });
+  const raw = cycleRepo._raw(saved.uuid);
+  const added = raw.weeks[0].days[0].tasks[0];
+  assert.strictEqual(added.habitId, 'h-supplied');
+});
+
+check('v2.1: additions sharing a recurrenceId in one call get one shared habitId', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  const saved = await cycleRepo.create(cycle);
+  await svc.patchCycle(saved.uuid, {
+    type: 'addTasks',
+    additions: [
+      // Three entries, all `recurrenceId: 'r-shared'`, no habitId
+      { weekUuid: saved.weeks[0].uuid, dayUuid: saved.weeks[0].days[0].uuid,
+        task: { description: 'A', optional: false, recurrenceId: 'r-shared' } },
+      { weekUuid: saved.weeks[0].uuid, dayUuid: saved.weeks[0].days[2].uuid,
+        task: { description: 'A', optional: false, recurrenceId: 'r-shared' } },
+      { weekUuid: saved.weeks[1].uuid, dayUuid: saved.weeks[1].days[0].uuid,
+        task: { description: 'A', optional: false, recurrenceId: 'r-shared' } },
+    ],
+  });
+  const raw = cycleRepo._raw(saved.uuid);
+  const ids = [];
+  for (const w of raw.weeks) for (const d of w.days) for (const t of d.tasks) ids.push(t.habitId);
+  assert.strictEqual(ids.length, 3);
+  assert.deepStrictEqual([...new Set(ids)], [ids[0]], 'all three share one habitId');
+});
+
+check('v2.1: updateTasks persists a habitId when a task is missing one (D3 next-save rule)', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  fixtures.addTask(cycle, 0, 0, { uuid: 't-legacy', description: 'A', optional: false });
+  // Make sure the saved task is missing a habitId.
+  delete cycle.weeks[0].days[0].tasks[0].habitId;
+  const saved = await cycleRepo.create(cycle);
+  await svc.patchCycle(saved.uuid, {
+    type: 'updateTasks',
+    updates: [{ uuid: 't-legacy', description: 'renamed' }],
+  });
+  const task = findTask(cycleRepo._raw(saved.uuid), 't-legacy').task;
+  assert.ok(task.habitId && task.habitId.startsWith('h-'), `habitId should be persisted; got ${task.habitId}`);
+});
+
+check('v2.1: updateTasks accepts a client-supplied habitId and trims to 64 chars', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  fixtures.addTask(cycle, 0, 0, { uuid: 't-trim', description: 'A', optional: false });
+  const saved = await cycleRepo.create(cycle);
+  await svc.patchCycle(saved.uuid, {
+    type: 'updateTasks',
+    updates: [{ uuid: 't-trim', habitId: 'x'.repeat(80) }],
+  });
+  const task = findTask(cycleRepo._raw(saved.uuid), 't-trim').task;
+  assert.strictEqual(task.habitId.length, 64, 'habitId trimmed to 64 chars');
+});
+
+// =========================================================================
+// v2.1 — task meta update (tag / durationMin / timeOfDay / dueTime)
+// =========================================================================
+
+check('v2.1: updateTasks sets tag / durationMin / timeOfDay / dueTime', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  fixtures.addTask(cycle, 0, 0, { uuid: 't-meta', description: 'A', optional: false });
+  const saved = await cycleRepo.create(cycle);
+  await svc.patchCycle(saved.uuid, {
+    type: 'updateTasks',
+    updates: [{
+      uuid: 't-meta',
+      tag: 'rare', durationMin: 30, timeOfDay: 'evening', dueTime: '18:30',
+    }],
+  });
+  const task = findTask(cycleRepo._raw(saved.uuid), 't-meta').task;
+  assert.strictEqual(task.tag, 'rare');
+  assert.strictEqual(task.durationMin, 30);
+  assert.strictEqual(task.timeOfDay, 'evening');
+  assert.strictEqual(task.dueTime, '18:30');
+});
+
+check('v2.1: updateTasks null on tag / durationMin / timeOfDay / dueTime clears the field', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('Test');
+  fixtures.addTask(cycle, 0, 0, {
+    uuid: 't-clearmeta',
+    description: 'A', optional: false,
+    tag: 'rare', durationMin: 30, timeOfDay: 'evening', dueTime: '18:30',
+  });
+  const saved = await cycleRepo.create(cycle);
+  await svc.patchCycle(saved.uuid, {
+    type: 'updateTasks',
+    updates: [{
+      uuid: 't-clearmeta',
+      tag: null, durationMin: null, timeOfDay: null, dueTime: null,
+    }],
+  });
+  const task = findTask(cycleRepo._raw(saved.uuid), 't-clearmeta').task;
+  assert.strictEqual(task.tag, null);
+  assert.strictEqual(task.durationMin, null);
+  assert.strictEqual(task.timeOfDay, null);
+  assert.strictEqual(task.dueTime, null);
+});
+
+// =========================================================================
+// v2.1 — updateCycle branch (PATCH {type:"updateCycle", …})
+// =========================================================================
+
+check('v2.1: updateCycle branch sets name on a cycle', async () => {
+  const { svc, cycleRepo } = makeService();
+  const saved = await cycleRepo.create(fixtures.emptyCycle('Old name'));
+  const out = await svc.patchCycle(saved.uuid, { type: 'updateCycle', name: 'New name' });
+  assert.strictEqual(out.cycle.name, 'New name');
+  assert.strictEqual(out.pointsEarned, 0);
+  assert.strictEqual(out.isLegendary, false);
+  assert.strictEqual(out.currentTier, 'Bronze');
+  // Side-effect: persisted.
+  assert.strictEqual(cycleRepo._raw(saved.uuid).name, 'New name');
+});
+
+check('v2.1: updateCycle branch sets startDate on an undated cycle', async () => {
+  const { svc, cycleRepo } = makeService();
+  const saved = await cycleRepo.create(fixtures.emptyCycle('X'));
+  assert.strictEqual(cycleRepo._raw(saved.uuid).startDate, undefined);
+  const out = await svc.patchCycle(saved.uuid, { type: 'updateCycle', startDate: '2026-10-12' });
+  assert.strictEqual(out.cycle.startDate, '2026-10-12');
+});
+
+check('v2.1: updateCycle branch null startDate clears the date', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.emptyCycle('X');
+  cycle.startDate = '2026-10-12';
+  const saved = await cycleRepo.create(cycle);
+  const out = await svc.patchCycle(saved.uuid, { type: 'updateCycle', startDate: null });
+  assert.strictEqual(out.cycle.startDate, null);
+});
+
+check('v2.1: updateCycle branch returns 409 CYCLE_FINISHED on a finished cycle', async () => {
+  const { svc, cycleRepo } = makeService();
+  const saved = await cycleRepo.create(fixtures.emptyCycle('Done'));
+  saved.finished = true;
+  await cycleRepo.save(saved);
+  let thrown = null;
+  try {
+    await svc.patchCycle(saved.uuid, { type: 'updateCycle', name: 'try' });
+  } catch (err) { thrown = err; }
+  assert.ok(thrown && thrown.code === 'CYCLE_FINISHED');
+});
+
+check('v2.1: updateCycle branch returns NOT_FOUND on a missing cycle', async () => {
+  const { svc } = makeService();
+  let thrown = null;
+  try {
+    await svc.patchCycle('nope', { type: 'updateCycle', name: 'x' });
+  } catch (err) { thrown = err; }
+  assert.ok(thrown && thrown.code === 'NOT_FOUND');
+});
+
 console.log(`\n${passed} checks passed`);
 process.exit(0);

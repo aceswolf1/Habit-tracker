@@ -29,7 +29,9 @@ const buildDir = process.env.NUXT_BUILD_DIR || '.nuxt'
 // is not a function") and the current month never loads. This dev-only
 // client transform wraps the CJS body and re-exports the keys listed in its
 // `module.exports = { … }` literal. Prod builds and SSR are untouched.
-const sharedFile = /[\\/]shared[\\/](progress|scoring)\.js$/
+// v2.1: widened from `(progress|scoring)` to `[a-z]+\.js` to cover the
+// new shared modules (dates, habits, levels, bosses, taskMeta).
+const sharedFile = /[\\/]shared[\\/][a-z]+\.js$/
 const sharedCjsDevPlugin = {
   name: 'pp-shared-cjs-dev',
   apply: 'serve' as const,

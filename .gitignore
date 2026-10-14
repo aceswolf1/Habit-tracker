@@ -17,3 +17,4 @@ backend/node_modules/*
 .nuxt/
 .output/
 /frontend/.nuxt-preview/
+/frontend/.nuxt-*/

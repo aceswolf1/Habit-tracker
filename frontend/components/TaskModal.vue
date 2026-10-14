@@ -1,15 +1,16 @@
 <!--
-  TaskModal.vue (W1 restyle, V2 Combat Deck).
+  TaskModal.vue (W1 restyle + v2.1 task details).
 
   Thin orchestrator for the create/edit quest dialog. Form fields are
-  extracted into `TaskModalFields.vue`. The visual picker (emoji + GIF),
-  the week/day/recurrence selectors, and the edit-mode Move-to control
-  each live in their own subcomponent. The form state, submit, and the
-  create/edit decision stay here.
+  extracted into `TaskModalFields.vue` (description + notes + flags) and
+  `TaskModalDetails.vue` (v2.1 tag / duration / time of day / due time).
+  The visual picker, day/week/recurrence selectors, and the edit-mode
+  Move-to control each live in their own subcomponent. The form state,
+  submit, and the create/edit decision stay here.
 
   V2 styling: cyan title, sharp 1px `--pp-line` borders, JetBrains Mono
-  body, Space Grotesk title, no legacy arcade fonts. Static
-  transitions only (no animated glows). Honors reduced motion.
+  body, Space Grotesk title. Static transitions only. Honors reduced
+  motion.
 -->
 <template>
   <Transition name="modal-bounce">
@@ -36,6 +37,15 @@
             v-model:optional="form.optional"
             v-model:legendary="form.legendary"
             :autofocus="true"
+          />
+
+          <!-- v2.1 task details (contract §5). -->
+          <TaskModalDetails
+            v-model:tag="form.tag"
+            v-model:durationMin="form.durationMin"
+            v-model:timeOfDay="form.timeOfDay"
+            v-model:dueTime="form.dueTime"
+            :showDueTime="showDueTime"
           />
 
           <!-- Visual type + emoji/gif picker subcomponent -->
@@ -102,7 +112,9 @@ import { computed, reactive, ref, watch } from "vue";
 import { useMonthStore } from "../stores/monthStore";
 import { emitAppEvent } from "../composables/useAppEvents";
 import { buildDaySelection, type WeekScope } from "../utils/cycleRecurrence";
+import type { TaskTag, TaskTimeOfDay } from "../types/index";
 import TaskModalFields from "./task/TaskModalFields.vue";
+import TaskModalDetails from "./task/TaskModalDetails.vue";
 import TaskModalVisualPicker from "./task/TaskModalVisualPicker.vue";
 import TaskModalDayScope from "./task/TaskModalDayScope.vue";
 import TaskModalMoveTo from "./task/TaskModalMoveTo.vue";
@@ -117,29 +129,32 @@ const emit = defineEmits(["close", "created", "updated", "deleted"]);
 
 const store = useMonthStore();
 
-// UB-40: surface synchronous task-mutation failures via `emitAppEvent('toast', …)`
-// and keep the modal open so the user can retry instead of silently losing the form.
+// UB-40: surface synchronous task-mutation failures via a toast and keep the modal open.
 function notifyError(title: string, message: string) {
   emitAppEvent("toast", { type: "error", title, message });
 }
 
-// Base form state
+// Form state (notes/visual come from V2 A8; tag/durationMin/timeOfDay/dueTime from v2.1 contract §5).
 const form = reactive({
   description: "",
   optional: false,
   legendary: false,
   weekScope: "single" as WeekScope,
   repeatAcrossWeeks: false,
-  icon: "" as string,
+  icon: "",
   visualType: "emoji" as "emoji" | "gif",
-  gifUrl: "" as string,
-  gifVideoUrl: "" as string,
-  gifStillUrl: "" as string,
-  // V2 A8: optional free-form memo (≤ 280 chars). Empty string means
-  // "no notes" — `submit()` translates that to `null` on edit PATCHes
-  // so the server clears the field.
+  gifUrl: "",
+  gifVideoUrl: "",
+  gifStillUrl: "",
   notes: "",
+  tag: null as TaskTag | null,
+  durationMin: null as number | null,
+  timeOfDay: null as TaskTimeOfDay | null,
+  dueTime: null as string | null,
 });
+
+// Hide due-time when the cycle has no startDate (contract §5).
+const showDueTime = computed(() => !!store.currentMonth?.startDate);
 
 const isSubmitting = ref(false);
 
@@ -159,20 +174,19 @@ const baseWeek = computed(() =>
   store.currentMonth?.weeks.find((w) => w.uuid === props.weekUuid),
 );
 
-/** Currently-edited task lives on this day (B-T2: Move-to preselect). */
+// Day uuid that currently holds the edited task (B-T2 Move-to preselect).
 const currentDayUuid = computed<string | null>(() => {
   if (!isEdit.value || !editingTask.value || !store.currentMonth) return null;
+  const target = editingTask.value.uuid;
   for (const week of store.currentMonth.weeks) {
     for (const day of week.days) {
-      if (day.tasks.some((t) => t.uuid === editingTask.value!.uuid)) {
-        return day.uuid;
-      }
+      if (day.tasks.some((t) => t.uuid === target)) return day.uuid;
     }
   }
   return null;
 });
 
-/** Cycle-finished flag drives the W4b "hide Move-to on finished months" rule. */
+// Hide Move-to on finished months (W4b).
 const isCycleFinished = computed(() => !!store.currentMonth?.finished);
 
 const showDaySelector = computed(() => {
@@ -194,42 +208,52 @@ watch(
 watch(
   () => props.open,
   (o) => {
-    if (o) {
-      isSubmitting.value = false;
-      if (isEdit.value && editingTask.value) {
-        form.description = (editingTask.value as any).description;
-        form.optional = (editingTask.value as any).optional;
-        form.legendary = (editingTask.value as any).legendary || false;
-        form.icon = (editingTask.value as any).icon || "";
-        form.gifUrl = (editingTask.value as any).gifUrl || "";
-        form.gifVideoUrl = (editingTask.value as any).gifVideoUrl || "";
-        form.gifStillUrl = (editingTask.value as any).gifStillUrl || "";
-        form.visualType = (editingTask.value as any).gifUrl ? "gif" : "emoji";
-        // V2 A8: load the saved notes (may be undefined for older tasks).
-        form.notes = (editingTask.value as any).notes || "";
-      } else {
-        resetForm();
-        if (props.prefillDayUuid) {
-          form.weekScope = "single";
-          selectedDayUuids.value = [props.prefillDayUuid];
-        }
+    if (!o) return;
+    isSubmitting.value = false;
+    if (isEdit.value && editingTask.value) {
+      const t = editingTask.value;
+      form.description = t.description;
+      form.optional = t.optional;
+      form.legendary = t.legendary || false;
+      form.icon = t.icon || "";
+      form.gifUrl = t.gifUrl || "";
+      form.gifVideoUrl = t.gifVideoUrl || "";
+      form.gifStillUrl = t.gifStillUrl || "";
+      form.visualType = t.gifUrl ? "gif" : "emoji";
+      form.notes = t.notes || "";
+      // v2.1: coerce missing fields to null so pickers show "NONE".
+      form.tag = t.tag ?? null;
+      form.durationMin = t.durationMin ?? null;
+      form.timeOfDay = t.timeOfDay ?? null;
+      form.dueTime = t.dueTime ?? null;
+    } else {
+      resetForm();
+      if (props.prefillDayUuid) {
+        form.weekScope = "single";
+        selectedDayUuids.value = [props.prefillDayUuid];
       }
     }
   },
 );
 
 function resetForm() {
-  form.description = "";
-  form.optional = false;
-  form.legendary = false;
-  form.weekScope = "single";
-  form.repeatAcrossWeeks = false;
-  form.icon = "";
-  form.visualType = "emoji";
-  form.gifUrl = "";
-  form.gifVideoUrl = "";
-  form.gifStillUrl = "";
-  form.notes = "";
+  Object.assign(form, {
+    description: "",
+    optional: false,
+    legendary: false,
+    weekScope: "single" as WeekScope,
+    repeatAcrossWeeks: false,
+    icon: "",
+    visualType: "emoji" as "emoji" | "gif",
+    gifUrl: "",
+    gifVideoUrl: "",
+    gifStillUrl: "",
+    notes: "",
+    tag: null as TaskTag | null,
+    durationMin: null as number | null,
+    timeOfDay: null as TaskTimeOfDay | null,
+    dueTime: null as string | null,
+  });
   selectedDayUuids.value = [];
   selectedWeekUuids.value = [];
   editScope.value = "single";
@@ -237,23 +261,24 @@ function resetForm() {
 }
 
 function submit() {
-  if (isSubmitting.value) return; // guard double clicks / enter
+  if (isSubmitting.value) return;
   if (!form.description) return;
   if (!props.weekUuid) return;
 
-  // Auto-select first day if 'single' scope and no day selected (collect from store)
-  if (form.weekScope === "single" && selectedDayUuids.value.length === 0 && baseWeek.value && baseWeek.value.days.length > 0) {
+  // Auto-pick first day if 'single' and nothing selected.
+  if (
+    form.weekScope === "single" &&
+    selectedDayUuids.value.length === 0 &&
+    baseWeek.value &&
+    baseWeek.value.days.length > 0
+  ) {
     selectedDayUuids.value = [baseWeek.value.days[0].uuid];
   }
 
-  let valid = false;
-  if (form.weekScope === "all") {
-    valid = !!(baseWeek.value && baseWeek.value.days.length > 0);
-  } else if (form.weekScope === "multiple") {
-    valid = selectedDayUuids.value.length > 0;
-  } else {
-    valid = selectedDayUuids.value.length > 0;
-  }
+  const valid =
+    form.weekScope === "all"
+      ? !!(baseWeek.value && baseWeek.value.days.length > 0)
+      : selectedDayUuids.value.length > 0;
   if (!valid) return;
 
   isSubmitting.value = true;
@@ -268,6 +293,7 @@ function submit() {
         baseWeek: baseWeek.value,
         weeks: store.currentMonth?.weeks ?? [],
       });
+      // Create: only forward fields when set; omit keeps the server default.
       store.bulkAddTasks({
         description: form.description,
         optional: form.optional,
@@ -278,36 +304,34 @@ function submit() {
         gifUrl: form.gifUrl || undefined,
         gifVideoUrl: form.gifUrl ? form.gifVideoUrl || undefined : undefined,
         gifStillUrl: form.gifUrl ? form.gifStillUrl || undefined : undefined,
-        // V2 A8: only attach notes when the user typed something;
-        // omitting keeps addTasks tasks notes-less by default.
         notes: form.notes || undefined,
+        tag: form.tag ?? undefined,
+        durationMin: form.durationMin ?? undefined,
+        timeOfDay: form.timeOfDay ?? undefined,
+        dueTime: form.dueTime ?? undefined,
       });
       emit("created");
     } else if (editingTask.value) {
-      // FIX-01: in edit mode, an empty visual field means "clear it
-      // server-side" → send `null`. `undefined` would mean "leave it",
-      // which is wrong when the user has just toggled visualType.
-      // V2 A8 extends the same null-clear semantics to `notes`.
-      const iconPayload = form.icon ? form.icon : null;
-      const gifUrlPayload = form.gifUrl ? form.gifUrl : null;
-      const notesPayload = form.notes ? form.notes : null;
-      store.updateTask((editingTask.value as any).uuid, {
+      // Edit: send `null` to clear, never `undefined` (FIX-01 / V2 A8 / v2.1 §3).
+      store.updateTask(editingTask.value.uuid, {
         description: form.description,
         optional: form.optional,
         legendary: form.legendary,
-        icon: iconPayload,
-        gifUrl: gifUrlPayload,
-        // W5: renditions follow gifUrl; cleared together when the GIF is.
+        icon: form.icon || null,
+        gifUrl: form.gifUrl || null,
         gifVideoUrl: form.gifUrl && form.gifVideoUrl ? form.gifVideoUrl : null,
         gifStillUrl: form.gifUrl && form.gifStillUrl ? form.gifStillUrl : null,
-        notes: notesPayload,
+        notes: form.notes || null,
+        tag: form.tag,
+        durationMin: form.durationMin,
+        timeOfDay: form.timeOfDay,
+        dueTime: form.dueTime,
       });
       emit("updated");
     }
     close();
   } catch (e) {
     console.error(e);
-    // Keep modal open and surface the failure to the user via appToast
     notifyError(
       isEdit.value ? "UPDATE FAILED" : "CREATE FAILED",
       isEdit.value

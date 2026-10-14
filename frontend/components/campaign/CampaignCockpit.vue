@@ -18,8 +18,11 @@
         <div class="flex items-center justify-between w-full">
           <div class="flex items-center gap-space-xs">
             <UiPpIcon name="security" :size="18" />
-            <span class="text-headline-sm text-pp-magenta uppercase tracking-wider">
-              {{ weekName }} // Chrono Archon
+            <span
+              class="text-headline-sm text-pp-magenta uppercase tracking-wider"
+              data-pp-boss-title
+            >
+              {{ weekName }} // {{ boss.name }} // {{ boss.codename }}
             </span>
           </div>
           <UiPpBadge :kind="weekConquered ? 'done' : 'boss'">
@@ -143,6 +146,10 @@
 import { computed } from "vue";
 import WeeklyBossPortrait from "../WeeklyBossPortrait.vue";
 import { getDayStats, getWeekDayXp } from "../../composables/useCampaignStats";
+// v2.1 (W3): boss roster / week picker. W1 ships `sharedBosses.ts`
+// alongside the cockpit's TODO; we import the canonical helper now so
+// the title stays in sync with WeekTabs's pick when W2 wires that.
+import { bossForWeek } from "../../utils/sharedBosses";
 import type { Week } from "../../types/index";
 
 interface Props {
@@ -158,6 +165,8 @@ void props.isFinished; // kept for parity with contract; week.conquered is the v
 
 const weekName = computed(() => (props.week.name || `WEEK ${props.weekIndex + 1}`).toUpperCase());
 const weekConquered = computed(() => !!props.week.conquered);
+
+const boss = computed(() => bossForWeek(props.weekIndex));
 
 // Weekly XP totals (earned vs potential) — sums of `getDayStats` over the
 // 7 days. Approximate (uses current month tier per the contract).
@@ -192,7 +201,8 @@ const bossImageSrc = computed(
 const chartWidth = 280;
 const chartHeight = 56;
 const chartPaddingX = 18; // horizontal inset for first/last labels
-const chartPaddingY = 6;  // vertical inset for top/bottom of the polyline
+const chartPaddingY = 6;  // vertical inset for the top of the polyline
+const chartLabelBand = 14; // bottom band reserved for the day labels
 
 const weekXpValues = computed(() => getWeekDayXp(props.week, 0));
 const hasAnyXp = computed(() => weekXpValues.value.some((v) => v > 0));
@@ -203,7 +213,9 @@ const chartPoints = computed(() => {
   const step = (chartWidth - chartPaddingX * 2) / 6;
   return values.map((xp, i) => {
     const x = chartPaddingX + step * i;
-    const y = chartHeight - chartPaddingY - (xp / max) * (chartHeight - chartPaddingY * 2);
+    // Plot above a reserved label band so a zero-XP day never sits on its label.
+    const plotBottom = chartHeight - chartLabelBand;
+    const y = plotBottom - (xp / max) * (plotBottom - chartPaddingY);
     const day = props.week.days[i];
     const isHighlight = !!day && day.uuid === props.currentDayUuid;
     return { x, y, isHighlight };

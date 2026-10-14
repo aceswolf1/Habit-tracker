@@ -1,5 +1,5 @@
 <!--
-  TaskRow.vue (W2 contract §4 / §5 / Wave B / B3).
+  TaskRow.vue (W2 contract §4 / §5 / Wave B / B3, v2.1 details).
 
   Spotlight row. Layout differs between phone (< 640) and ≥ 640:
 
@@ -11,6 +11,17 @@
       - thumb is hidden when the task has no media AND no icon
       - the two action buttons collapse into one TaskRowMenu (more_horiz)
       - drag is hidden (no native drag affordance on touch)
+
+  v2.1 display rules (contract §5):
+    - Tag badge (`PpBadge` `common | rare | essential | defense`) sits
+      next to the title.
+    - Duration overlay (`05:00` / `1:30:00`) on the thumb bottom-right
+      via `TaskMedia.durationLabel`.
+    - `• EVENING` in the meta line when `timeOfDay` is set.
+    - `• DUE IN 2H 40M` (amber) when today's day and due time ahead;
+      `• OVERDUE` (danger) when past and not completed. The line
+      re-renders every 60 s via a local `now` ref so the "DUE IN"
+      count ticks down without an explicit refresh.
 
   Check button (Wave B fixup):
     Unchecked: 1px cyan border (1px magenta for legendary), transparent
@@ -60,15 +71,14 @@
       <span v-else-if="isPhone" class="text-pp-cyan text-[10px] font-mono" aria-hidden="true">—</span>
     </button>
 
-    <!-- 2. Media thumb. `hideOnEmpty` lets the row stretch the title
-         into 2 lines when the task has neither media nor icon (phone). -->
+    <!-- 2. Media thumb with v2.1 duration overlay. -->
     <div class="shrink-0 self-center">
-      <TaskMedia :task="task" variant="thumb" :hide-on-empty="isPhone" />
+      <TaskMedia :task="task" variant="thumb" :hide-on-empty="isPhone" :duration-label="durationLabel" />
     </div>
 
     <!-- 3-5. Title + meta. 2 lines on phone, 1 line ellipsis on ≥ sm. -->
     <div class="flex-1 min-w-0 flex flex-col gap-1 justify-center">
-      <div class="flex items-center gap-2 min-w-0">
+      <div class="flex items-center gap-2 min-w-0 flex-wrap">
         <h3
           class="font-display text-headline-sm uppercase text-pp-text min-w-0"
           :class="isPhone ? 'line-clamp-2' : 'truncate'"
@@ -76,6 +86,10 @@
         >
           {{ task.description }}
         </h3>
+        <PpBadge
+          v-if="tagKind"
+          :kind="tagKind"
+        >{{ tagLabel }}</PpBadge>
         <span
           v-if="task.legendary"
           class="badge shrink-0 inline-flex items-center gap-1 px-1.5 sm:px-2 py-[2px] font-mono text-label-sm uppercase border text-pp-magenta border-pp-magenta"
@@ -93,13 +107,22 @@
       </div>
       <div
         v-if="!isPhone"
-        class="flex items-center gap-2 font-mono text-body-sm text-pp-muted min-w-0"
+        class="flex items-center gap-2 font-mono text-body-sm text-pp-muted min-w-0 flex-wrap"
       >
         <span class="shrink-0" :class="xpClasses">{{ xpLabel }}</span>
         <span v-if="task.notes" class="shrink-0 text-pp-muted" aria-hidden="true">•</span>
         <span v-if="task.notes" class="truncate min-w-0" :title="task.notes">{{ task.notes }}</span>
         <span v-if="replicatedLabel" class="shrink-0 text-pp-muted" aria-hidden="true">•</span>
         <span v-if="replicatedLabel" class="shrink-0 text-pp-muted">REPLICATED: {{ replicatedLabel }}</span>
+        <span v-if="todLabel" class="shrink-0 text-pp-muted" aria-hidden="true">•</span>
+        <span v-if="todLabel" class="shrink-0 text-pp-cyan">{{ todLabel }}</span>
+        <span v-if="dueLine" class="shrink-0 text-pp-muted" aria-hidden="true">•</span>
+        <span
+          v-if="dueLine"
+          class="shrink-0 font-bold"
+          :class="dueLine.tone === 'danger' ? 'text-pp-danger' : 'text-pp-amber'"
+          :title="dueLine.text"
+        >{{ dueLine.text }}</span>
       </div>
       <!-- Phone: only show the xp line (no notes / replicated to keep
            the row short and avoid 3+ lines). Notes & replicated labels
@@ -155,13 +178,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import TaskMedia from "../task/TaskMedia.vue";
 import TaskRowMenu from "./TaskRowMenu.vue";
 import PpIcon from "../ui/PpIcon.vue";
-import { getReplicatedLabel, getTaskXp } from "../../composables/useCampaignStats";
+import PpBadge from "../ui/PpBadge.vue";
+import {
+  formatDurationLabel,
+  getDueTimeLine,
+  getReplicatedLabel,
+  getTaskXp,
+  tagBadgeKind,
+  tagBadgeLabel,
+  timeOfDayLabel,
+} from "../../composables/useCampaignStats";
 import { injectCampaignBreakpoints } from "../../composables/campaignBreakpoints";
 import type { Task, Week } from "../../types/index";
+import type { TaskTag, TaskTimeOfDay } from "../../types/index";
 
 const props = defineProps<{
   task: Task;
@@ -170,6 +203,8 @@ const props = defineProps<{
   monthProgress: number;
   index: number;
   isFinished: boolean;
+  /** v2.1: whether the row's day is today. Drives the DUE IN / OVERDUE line. */
+  isToday: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -197,6 +232,36 @@ const xpClasses = computed(() => {
   }
   return props.task.legendary ? "text-pp-magenta font-bold" : "text-pp-cyan";
 });
+
+// v2.1 display helpers.
+const durationLabel = computed(() => formatDurationLabel(props.task.durationMin));
+const tagKind = computed(() => tagBadgeKind(props.task.tag));
+const tagLabel = computed(() => tagBadgeLabel(props.task.tag) || "");
+const todLabel = computed(() => timeOfDayLabel(props.task.timeOfDay));
+
+// `now` ticks once a minute so DUE IN counts down live. The interval
+// is only registered while the row is mounted; cleanup on unmount.
+const now = ref(new Date());
+let nowTimer: ReturnType<typeof setInterval> | null = null;
+onMounted(() => {
+  nowTimer = setInterval(() => {
+    now.value = new Date();
+  }, 60_000);
+});
+onBeforeUnmount(() => {
+  if (nowTimer !== null) {
+    clearInterval(nowTimer);
+    nowTimer = null;
+  }
+});
+
+const dueLine = computed(() =>
+  getDueTimeLine(
+    props.task,
+    { isToday: props.isToday, now: now.value },
+    props.task.dueTime ?? null,
+  ),
+);
 
 /**
  * Check button classes (Wave B fixup):

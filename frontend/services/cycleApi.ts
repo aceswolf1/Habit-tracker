@@ -10,7 +10,8 @@
  *      rollout window (per contract §5: "also accepts a legacy un-enveloped
  *      body — tolerance for image skew").
  *
- * Contract: `development/remediation-w2/orchestration-ctx/decisions/api-contract-v2.md`.
+ * Contract: `development/remediation-w2/orchestration-ctx/decisions/api-contract-v2.md`
+ * + `development/v2-features/orchestration-ctx/decisions/contract-v2.1.md`.
  *
  * IMPORTANT: do NOT add direct `fetch("/api/cycles…")` calls elsewhere.
  */
@@ -23,6 +24,7 @@ import type {
   PatchResult,
   FinishResult,
   Profile,
+  ProfilePatch,
 } from "../types/index";
 
 // ---------- Errors ----------
@@ -173,18 +175,28 @@ export async function getProfile(): Promise<Profile> {
   }
   throwIfFailed(res, body);
   const payload = extractPayload(body);
-  // Legacy un-enveloped: `{ lifetimeScore: number, uuid?: string }`.
-  return {
+  const profile: Profile = {
     uuid: payload?.uuid || "",
     lifetimeScore: Number(payload?.lifetimeScore) || 0,
-  } as Profile;
+  };
+  // v2.1: include `displayName` when present. The backend may omit it on
+  // very old payloads; missing → undefined (consumer turns it into null).
+  if (payload && Object.prototype.hasOwnProperty.call(payload, "displayName")) {
+    profile.displayName = payload.displayName ?? null;
+  }
+  return profile;
 }
 
-export async function createCycle(name?: string): Promise<Cycle> {
-  const res = await fetch("/api/cycles", {
-    method: "POST",
+/**
+ * v2.1: PATCH `/api/cycles/profile`. `null` clears the display name;
+ * an empty string is rejected by the backend (1..24 chars). Returns the
+ * updated profile so callers can keep `state.profile` in sync.
+ */
+export async function updateProfile(patch: ProfilePatch): Promise<Profile> {
+  const res = await fetch("/api/cycles/profile", {
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(name ? { name } : {}),
+    body: JSON.stringify(patch),
   });
   let body: any = null;
   try {
@@ -194,6 +206,40 @@ export async function createCycle(name?: string): Promise<Cycle> {
   }
   throwIfFailed(res, body);
   const payload = extractPayload(body);
+  return {
+    uuid: payload?.uuid || "",
+    lifetimeScore: Number(payload?.lifetimeScore) || 0,
+    displayName: payload?.displayName ?? null,
+  } as Profile;
+}
+
+/**
+ * v2.1: create a cycle, optionally with a Monday `startDate`. Both args
+ * are forwarded straight into the POST body. The backend rejects a non-
+ * Monday `startDate` with 400 `VALIDATION_ERROR`.
+ */
+export async function createCycle(
+  name?: string,
+  startDate?: string,
+): Promise<Cycle> {
+  const body: Record<string, unknown> = {};
+  if (name !== undefined && name !== null && name !== "") body.name = name;
+  if (startDate !== undefined && startDate !== null && startDate !== "") {
+    body.startDate = startDate;
+  }
+  const res = await fetch("/api/cycles", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  let raw: any = null;
+  try {
+    raw = await res.json();
+  } catch {
+    /* empty */
+  }
+  throwIfFailed(res, raw);
+  const payload = extractPayload(raw);
   // Legacy: `{success:true, cycle}` or `{success:true, month}`.
   return (
     (payload && (payload.cycle || payload.month)) || payload

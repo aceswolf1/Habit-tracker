@@ -13,6 +13,7 @@ const {
   createCycleSchema,
   listQuerySchema,
   patchSchema,
+  patchProfileSchema,
   zodDetails,
 } = require('../validation/cycleSchemas');
 
@@ -359,6 +360,114 @@ check('V2: updateTasks accepts notes (set) and null (clear); rejects ""', () => 
   ok('set notes', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', notes: 'updated memo' }] });
   ok('null clears notes', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', notes: null }] });
   bad('empty string', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', notes: '' }] });
+});
+
+// =========================================================================
+// v2.1 — createCycleSchema.startDate, updateCycle PATCH branch, profile PATCH
+// =========================================================================
+
+check('v2.1: createCycleSchema accepts a valid Monday startDate', () => {
+  ok('monday', createCycleSchema, { name: 'Dated', startDate: '2026-10-12' });
+  ok('monday-leap', createCycleSchema, { startDate: '2026-10-12' });
+  ok('only startDate', createCycleSchema, { startDate: '2026-10-12' });
+});
+
+check('v2.1: createCycleSchema rejects a non-Monday startDate with VALIDATION_ERROR', () => {
+  const err = bad('tuesday', createCycleSchema, { name: 'x', startDate: '2026-10-13' });
+  const details = zodDetails(err);
+  assert.ok(details.length >= 1);
+  assert.ok(
+    details.some((d) => /startDate/i.test(d.path) && /Monday/i.test(d.message)),
+    `expected Monday error, got ${JSON.stringify(details)}`
+  );
+});
+
+check('v2.1: createCycleSchema rejects an invalid (Feb 30 / 13-01) startDate', () => {
+  bad('feb30', createCycleSchema, { startDate: '2026-02-30' });
+  bad('bad-month', createCycleSchema, { startDate: '2026-13-01' });
+  bad('garbage', createCycleSchema, { startDate: 'nope' });
+});
+
+check('v2.1: createCycleSchema rejects unknown keys (strict)', () => {
+  bad('extra', createCycleSchema, { name: 'x', startDate: '2026-10-12', evil: true });
+});
+
+check('v2.1: updateCycle accepts { startDate } with a Monday', () => {
+  ok('updateCycle monday', patchSchema, { type: 'updateCycle', startDate: '2026-10-12' });
+  ok('updateCycle name', patchSchema, { type: 'updateCycle', name: 'Renamed' });
+  ok('updateCycle both', patchSchema, { type: 'updateCycle', name: 'Renamed', startDate: '2026-10-12' });
+});
+
+check('v2.1: updateCycle accepts { startDate: null } (clears the date)', () => {
+  ok('updateCycle clear', patchSchema, { type: 'updateCycle', startDate: null });
+});
+
+check('v2.1: updateCycle rejects empty body (must have at least one key)', () => {
+  const err = bad('updateCycle empty', patchSchema, { type: 'updateCycle' });
+  const details = zodDetails(err);
+  assert.ok(details.some((d) => /one of|name|startDate/.test(d.message)));
+});
+
+check('v2.1: updateCycle rejects a non-Monday startDate with VALIDATION_ERROR', () => {
+  bad('updateCycle tuesday', patchSchema, { type: 'updateCycle', startDate: '2026-10-13' });
+});
+
+check('v2.1: updateTasks accepts v2.1 task metadata (habitId / tag / durationMin / timeOfDay / dueTime)', () => {
+  ok('all meta', patchSchema, {
+    type: 'updateTasks',
+    updates: [{
+      uuid: 't-1',
+      habitId: 'h-abc',
+      tag: 'rare',
+      durationMin: 25,
+      timeOfDay: 'evening',
+      dueTime: '18:30',
+    }],
+  });
+});
+
+check('v2.1: updateTasks accepts null on tag / durationMin / timeOfDay / dueTime (clear)', () => {
+  ok('null meta', patchSchema, {
+    type: 'updateTasks',
+    updates: [{
+      uuid: 't-1', tag: null, durationMin: null, timeOfDay: null, dueTime: null,
+    }],
+  });
+});
+
+check('v2.1: updateTasks rejects unknown task-meta values', () => {
+  bad('bad tag', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', tag: 'mythic' }] });
+  bad('bad timeOfDay', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', timeOfDay: 'dawn' }] });
+  bad('durationMin zero', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', durationMin: 0 }] });
+  bad('durationMin too big', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', durationMin: 9999 }] });
+  bad('dueTime wrong shape', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', dueTime: '9:00' }] });
+  bad('habitId too long', patchSchema, { type: 'updateTasks', updates: [{ uuid: 't-1', habitId: 'x'.repeat(65) }] });
+});
+
+check('v2.1: addTasks accepts v2.1 task metadata', () => {
+  ok('addTasks meta', patchSchema, {
+    type: 'addTasks',
+    additions: [{
+      weekUuid: 'w-1', dayUuid: 'd-1',
+      task: {
+        description: 'Read', optional: false,
+        habitId: 'h-9', tag: 'essential', durationMin: 30,
+        timeOfDay: 'morning', dueTime: '07:00',
+      },
+    }],
+  });
+});
+
+check('v2.1: patchProfileSchema accepts displayName; rejects empty body', () => {
+  ok('displayName set', patchProfileSchema, { displayName: 'Alice' });
+  ok('displayName clear', patchProfileSchema, { displayName: null });
+  bad('empty body', patchProfileSchema, {});
+});
+
+check('v2.1: patchProfileSchema rejects displayName out of range', () => {
+  bad('too long', patchProfileSchema, { displayName: 'x'.repeat(25) });
+  bad('empty string', patchProfileSchema, { displayName: '' });
+  bad('extra key', patchProfileSchema, { displayName: 'X', evil: true });
 });
 
 console.log(`\n${passed} checks passed`);

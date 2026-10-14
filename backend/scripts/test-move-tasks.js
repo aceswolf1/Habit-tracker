@@ -188,5 +188,63 @@ check('controllers/cycleController.js does not loop over weeks/days/tasks', () =
   assert.ok(!/tasks\.find/.test(src), 'no task lookup in controller');
 });
 
+// =========================================================================
+// v2.1 — moveTasks preserves ALL task fields (contract §3 guarantee)
+// =========================================================================
+
+check('v2.1: PATCH /:id/moveTasks keeps ALL task fields (per v2.1 contract §3)', async () => {
+  const { createFakeCycleRepository } = require('./fakes/cycleRepo');
+  const fixtures = require('./fakes/fixtures');
+  const svcMod = require('../services/taskMutationService');
+  const { createTaskMutationService } = svcMod;
+  const svc = createTaskMutationService({
+    cycleRepo: createFakeCycleRepository(),
+    profileRepo: { applyLifetimeDelta: async () => null },
+    scoreService: { scoreCompletionFlips: () => ({ pointsEarned: 0 }), tierFor: () => 'Bronze' },
+  });
+  const cycle = fixtures.emptyCycle('Test');
+  fixtures.addTask(cycle, 0, 0, {
+    uuid: 't-keep',
+    description: 'A', optional: false, completed: true,
+    completedAt: new Date('2026-10-14T10:00:00Z'),
+    habitId: 'h-abc', tag: 'rare', durationMin: 25,
+    timeOfDay: 'evening', dueTime: '18:30',
+    recurrenceId: 'rec-1', icon: '📚',
+    gifUrl: 'https://example.com/x.gif',
+    gifVideoUrl: 'https://example.com/x.mp4',
+    gifStillUrl: 'https://example.com/x.jpg',
+    notes: 'memo',
+  });
+  const cycleRepo = createFakeCycleRepository();
+  const saved = await cycleRepo.create(cycle);
+  // Wire the right repos into the service (above used fake repos, but the
+  // cycleRepo is the same one we created `saved` in — re-instantiate with
+  // this repo so applyMove/save round-trips correctly).
+  const realSvc = createTaskMutationService({
+    cycleRepo,
+    profileRepo: { applyLifetimeDelta: async () => null },
+    scoreService: { scoreCompletionFlips: () => ({ pointsEarned: 0 }), tierFor: () => 'Bronze' },
+  });
+  await realSvc.patchCycle(saved.uuid, {
+    type: 'moveTasks', taskUuid: 't-keep', targetDayUuid: saved.weeks[0].days[1].uuid, targetIndex: 0,
+  });
+  const raw = cycleRepo._raw(saved.uuid);
+  const moved = raw.weeks[0].days[1].tasks[0];
+  assert.strictEqual(moved.uuid, 't-keep');
+  assert.strictEqual(moved.description, 'A');
+  assert.strictEqual(moved.optional, false);
+  assert.strictEqual(moved.completed, true);
+  assert.ok(moved.completedAt instanceof Date, 'completedAt preserved');
+  assert.strictEqual(moved.habitId, 'h-abc');
+  assert.strictEqual(moved.tag, 'rare');
+  assert.strictEqual(moved.durationMin, 25);
+  assert.strictEqual(moved.timeOfDay, 'evening');
+  assert.strictEqual(moved.dueTime, '18:30');
+  assert.strictEqual(moved.recurrenceId, 'rec-1');
+  assert.strictEqual(moved.icon, '📚');
+  assert.strictEqual(moved.gifUrl, 'https://example.com/x.gif');
+  assert.strictEqual(moved.notes, 'memo');
+});
+
 console.log(`\n${passed} checks passed`);
 process.exit(0);

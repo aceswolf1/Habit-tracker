@@ -79,7 +79,7 @@
         </div>
       </div>
 
-      <!-- Cycle actions: New month + Finish month -->
+      <!-- Cycle actions: New month / Set dates / Finish month -->
       <div class="app-sidebar__actions">
         <PpButton
           variant="primary"
@@ -88,6 +88,22 @@
           @click="onNewMonth"
         >
           NEW MONTH
+        </PpButton>
+        <!--
+          v2.1 (W3): "Set dates" surfaces only when there's an active,
+          un-dated month. The same dialog handles New / Set / Clear;
+          click is forwarded to the parent (app.vue) which opens the
+          dialog in the correct mode.
+        -->
+        <PpButton
+          v-if="hasMonth && !isFinished && !hasStartDate"
+          variant="ghost"
+          icon="event"
+          :title="'Set dates'"
+          data-pp-set-dates
+          @click="onSetDates"
+        >
+          SET DATES
         </PpButton>
         <PpButton
           v-if="hasMonth && !isFinished"
@@ -141,11 +157,15 @@ const props = defineProps<{
   isDesktop: boolean;
   hasMonth: boolean;
   isFinished: boolean;
+  /** v2.1 (W3): `hasStartDate` toggles the SET DATES button. */
+  hasStartDate?: boolean;
   months: Array<{ uuid: string; name: string; finished: boolean }>;
   currentMonthUuid: string | null;
   refreshData: () => void;
   openSettings: () => void;
   newMonth: () => void;
+  /** v2.1 (W3): opens NewMonthDialog in "setDates" mode. */
+  setDates?: () => void;
   finishMonth: () => void;
 }>();
 
@@ -168,6 +188,11 @@ function onSelectMonth(uuid: string) {
 
 function onNewMonth() {
   props.newMonth();
+  if (!props.isDesktop) emit("update:open", false);
+}
+
+function onSetDates() {
+  props.setDates?.();
   if (!props.isDesktop) emit("update:open", false);
 }
 

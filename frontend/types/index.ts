@@ -3,9 +3,10 @@
  *
  * These shapes mirror the authoritative W2b API contract
  * (`development/remediation-w2/orchestration-ctx/decisions/api-contract-v2.md`
- * §2 / §3 / §5). Code that touches cycle data — the store, services, and
- * components — must import from this module rather than redeclaring its own
- * interfaces.
+ * §2 / §3 / §5) extended with the v2.1 contract (`development/v2-features/
+ * orchestration-ctx/decisions/contract-v2.1.md`). Code that touches cycle
+ * data — the store, services, and components — must import from this module
+ * rather than redeclaring its own interfaces.
  *
  * Naming: the API speaks **cycle** everywhere. The exported `Month = Cycle`
  * alias is preserved only so existing component code that hasn't been renamed
@@ -13,6 +14,11 @@
  */
 
 // ---------- Domain model ----------
+
+export type TaskTag = "common" | "rare" | "essential" | "defense";
+export type TaskTimeOfDay = "morning" | "afternoon" | "evening" | "night";
+export const TASK_TAGS = ["common", "rare", "essential", "defense"] as const;
+export const TASK_TIMES_OF_DAY = ["morning", "afternoon", "evening", "night"] as const;
 
 export interface Task {
   uuid: string;
@@ -35,6 +41,18 @@ export interface Task {
   gifStillUrl?: string;
   /** V2: optional free-form memo (≤ 280 chars) attached to the task. */
   notes?: string;
+  /** v2.1: server-stamped completion timestamp (set on false→true, cleared on reverse). */
+  completedAt?: string | null;
+  /** v2.1 (D3): shared cluster id for the same recurring habit. */
+  habitId?: string;
+  /** v2.1 (D4): one of 'common' | 'rare' | 'essential' | 'defense'. */
+  tag?: TaskTag;
+  /** v2.1: estimated duration in minutes (1..1440). */
+  durationMin?: number;
+  /** v2.1: one of 'morning' | 'afternoon' | 'evening' | 'night'. */
+  timeOfDay?: TaskTimeOfDay;
+  /** v2.1: 24-hour HH:MM string; only meaningful on dated days. */
+  dueTime?: string;
 }
 
 export interface Day {
@@ -101,6 +119,8 @@ export interface CycleSummary {
   finished: boolean;
   createdAt: string;
   finishedAt?: string | null;
+  /** v2.1: 'YYYY-MM-DD' Monday that the cycle starts on. Undated months get `null`. */
+  startDate?: string | null;
 }
 
 /**
@@ -119,6 +139,20 @@ export type Month = Cycle;
 export interface Profile {
   uuid: string;
   lifetimeScore: number;
+  /** v2.1: optional player display name (1..24 chars). `null` when unset. */
+  displayName?: string | null;
+}
+
+/**
+ * v2.1: level curve info returned by `shared/levels.levelInfo(lifetimeXp)`.
+ * `xpForNext: null` + `progress: 100` once the player hits the ARCHON band.
+ */
+export interface LevelInfo {
+  level: number;
+  title: string;
+  xpIntoLevel: number;
+  xpForNext: number | null;
+  progress: number;
 }
 
 // ---------- Envelope (contract §1) ----------
@@ -177,7 +211,23 @@ export interface PatchAddTasks {
     dayUuid: string;
     task: Pick<
       Task,
-      "description" | "optional" | "completed" | "legendary" | "uuid" | "recurrenceId" | "order" | "icon" | "gifUrl" | "gifVideoUrl" | "gifStillUrl" | "notes"
+      | "description"
+      | "optional"
+      | "completed"
+      | "legendary"
+      | "uuid"
+      | "recurrenceId"
+      | "order"
+      | "icon"
+      | "gifUrl"
+      | "gifVideoUrl"
+      | "gifStillUrl"
+      | "notes"
+      | "habitId"
+      | "tag"
+      | "durationMin"
+      | "timeOfDay"
+      | "dueTime"
     >;
   }>;
 }
@@ -197,6 +247,13 @@ export interface PatchUpdateTasks {
     /** V2: pass `null` to clear the notes field, omit to leave it alone. */
     notes?: string | null;
     order?: number;
+    /** v2.1: pass a string to set; omit to leave alone. */
+    habitId?: string;
+    /** v2.1: pass null to clear, omit to leave alone. */
+    tag?: TaskTag | null;
+    durationMin?: number | null;
+    timeOfDay?: TaskTimeOfDay | null;
+    dueTime?: string | null;
   }>;
 }
 
@@ -213,8 +270,25 @@ export interface PatchMoveTasks {
   targetIndex?: number;
 }
 
+/**
+ * v2.1: edit a cycle's `name` and/or `startDate` without touching its
+ * weeks. `startDate: null` clears the date. At least one key is required.
+ */
+export interface PatchUpdateCycle {
+  type: "updateCycle";
+  name?: string;
+  startDate?: string | null;
+}
+
 export type PatchBody =
   | PatchAddTasks
   | PatchUpdateTasks
   | PatchDeleteTasks
-  | PatchMoveTasks;
+  | PatchMoveTasks
+  | PatchUpdateCycle;
+
+// ---------- Profile PATCH body (v2.1) ----------
+
+export interface ProfilePatch {
+  displayName?: string | null;
+}

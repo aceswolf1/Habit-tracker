@@ -41,6 +41,12 @@ export type AppEvents = {
     tier: string | null;
     isLegendary: boolean;
   };
+  /** v2.1: lifetime XP crossed a level boundary; UI shows the burst/toast
+   *  and may play a sound cue. Fires at most once per crossing. */
+  levelUp: {
+    level: number;
+    title: string;
+  };
 };
 
 export type AppEventName = keyof AppEvents;
@@ -55,6 +61,7 @@ const handlers: { [K in AppEventName]: Set<AppEventHandler<K>> } = {
   toast: new Set(),
   pointsEarned: new Set(),
   taskCompleted: new Set(),
+  levelUp: new Set(),
 };
 
 /**
@@ -103,4 +110,5 @@ export function _resetAppEventHandlers(): void {
   handlers.toast.clear();
   handlers.pointsEarned.clear();
   handlers.taskCompleted.clear();
+  handlers.levelUp.clear();
 }

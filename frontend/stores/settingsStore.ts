@@ -36,6 +36,11 @@ export const useSettingsStore = defineStore("settings", {
       localStorage.getItem("campaignView") === "grid"
         ? "grid"
         : "spotlight",
+    // v2.1 (W3): Sound FX master toggle. Persisted to localStorage.
+    // Default OFF per the contract — we never surprise the user with audio.
+    soundFx:
+      typeof window !== "undefined" &&
+      localStorage.getItem("soundFx") === "true",
   }),
   actions: {
     setUseWeekVideos(val: boolean) {
@@ -60,5 +65,46 @@ export const useSettingsStore = defineStore("settings", {
         localStorage.setItem("campaignView", view);
       }
     },
+    setSoundFx(val: boolean) {
+      this.soundFx = val;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("soundFx", val ? "true" : "false");
+      }
+    },
   },
 });
+
+/**
+ * Re-read the persisted settings from `localStorage` and apply them to
+ * the store. Pinia's SSR-deserialized state can't see `window`, so the
+ * `state()` factory's `localStorage.getItem(...)` branch never fires
+ * for the initial client hydration (the server always returned `false`).
+ *
+ * Call this from `app.vue#onMounted` (or any client-only hook) after
+ * Pinia has hydrated. Each key is overwritten only when localStorage
+ * has a recognisable value; missing keys keep their hydrated value.
+ */
+export function hydrateSettingsFromLocalStorage(): void {
+  if (typeof window === "undefined") return;
+  const store = useSettingsStore();
+  const ls = window.localStorage;
+  const readBool = (key: string): boolean | null => {
+    const v = ls.getItem(key);
+    if (v === "true") return true;
+    if (v === "false") return false;
+    return null;
+  };
+  const readStr = <T extends string>(key: string, allowed: readonly T[]): T | null => {
+    const v = ls.getItem(key);
+    if (v && (allowed as readonly string[]).includes(v)) return v as T;
+    return null;
+  };
+  const v = readBool("useWeekVideos");
+  if (v !== null) store.useWeekVideos = v;
+  const a = readBool("animateGifs");
+  if (a !== null) store.animateGifs = a;
+  const c = readStr("campaignView", ["spotlight", "grid"] as const);
+  if (c !== null) store.campaignView = c;
+  const s = readBool("soundFx");
+  if (s !== null) store.soundFx = s;
+}

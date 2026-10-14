@@ -6,10 +6,12 @@
       :isDesktop="isDesktop"
       :hasMonth="hasMonth"
       :isFinished="isFinished"
+      :hasStartDate="hasStartDate"
       :months="months"
       :currentMonthUuid="currentMonthUuid"
       :openSettings="openSettings"
       :newMonth="newMonth"
+      :setDates="setDates"
       :finishMonth="finishMonth"
       :refreshData="refreshData"
       @update:section="(v) => emit('update:section', v)"
@@ -22,6 +24,7 @@
       <AppHeader
         :currentMonth="currentMonth"
         :lifetimeScore="lifetimeScore"
+        :profile="profile"
         :hasMonth="hasMonth"
         :isFinished="isFinished"
         :compact="!isDesktop"
@@ -41,21 +44,13 @@
 
 <script setup lang="ts">
 /*
- * V2 Combat Deck app shell (contract §3).
+ * V2 Combat Deck app shell (contract §3) + v2.1 (W3) plumbing.
  *
- * Owns three pieces of local state:
- *   - `section`  ('campaign' | 'stats') — which sidebar nav is active.
- *   - `sidebarOpen` — only meaningful below lg.
- *   - `isDesktop`  — true at ≥ lg, drives the fixed-column vs drawer
- *                    behaviour of the sidebar.
- *
- * The shell renders AppSidebar + AppHeader + <main> with the page
- * content as a slot. The page content (provided by app.vue) is what
- * switches on `section` and `isFinished` to show Campaign / Stats /
- * finished-month views.
- *
- * The shell also mounts the static `AppBackground` (CSS-only) and the
- * `ToastNotification` host.
+ * v2.0: owns `section`, `sidebarOpen`, `isDesktop`. Forwards them to
+ *       AppSidebar + AppHeader + the page-state slot.
+ * v2.1: forwards the optional `profile` object (lifetime display name)
+ *       into the header, and a `setDates` callback that opens the
+ *       shared NewMonthDialog in "setDates" mode for an un-dated cycle.
  */
 
 import { computed, onMounted, onBeforeUnmount, ref } from "vue";
@@ -68,10 +63,17 @@ const props = defineProps<{
   months: Array<{ uuid: string; name: string; finished: boolean }>;
   currentMonthUuid: string | null;
   lifetimeScore: number;
+  /** v2.1 (W3) profile slice — used by AppHeader for the identity line. */
+  profile?: { displayName?: string | null; lifetimeScore?: number } | null;
   hasMonth: boolean;
   isFinished: boolean;
   openSettings: () => void;
   newMonth: () => void;
+  /** v2.1 (W3): open the New Month dialog in "Set dates" mode. */
+  setDates?: () => void;
+  /** v2.1 (W3): whether the active cycle has a startDate. Drives the
+   *  SET DATES button visibility in the sidebar. */
+  hasStartDate?: boolean;
   finishMonth: () => void;
   refreshData: () => void;
   openCreateTask: () => void;

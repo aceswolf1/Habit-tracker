@@ -61,6 +61,27 @@ function createFakeUserProfileRepository({ defaultUuid = 'default-user' } = {}) 
   return {
     getOrCreate,
     applyLifetimeDelta,
+    // v2.1: partial profile PATCH (displayName). Mirrors the real repo.
+    async updateProfile(uuid, updates) {
+      const key = uuid || defaultUuid;
+      let profile = store.get(key);
+      if (!profile) {
+        profile = {
+          uuid: key,
+          lifetimeScore: 0,
+          displayName: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        store.set(key, profile);
+      }
+      if (!updates || typeof updates !== 'object') {
+        return clone(profile);
+      }
+      if (updates.displayName !== undefined) profile.displayName = updates.displayName;
+      profile.updatedAt = new Date();
+      return clone(profile);
+    },
     _reset,
     _raw,
   };

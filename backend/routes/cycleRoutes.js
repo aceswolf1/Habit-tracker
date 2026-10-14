@@ -22,6 +22,7 @@ const c = createCycleController({
 });
 
 router.get('/profile', c.getProfile);
+router.patch('/profile', c.patchProfile);
 router.get('/current', c.getCurrent);
 router.get('/', c.list);
 router.post('/', c.create);

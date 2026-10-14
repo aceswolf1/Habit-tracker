@@ -1,0 +1,275 @@
+/* NewMonthDialog scoped styles (v2.1, W3).
+ *
+ * Pulled in via `<style scoped src>` from `NewMonthDialog.vue` so the
+ * .vue file stays under the 400-line cap. Mirrors TaskModal chrome
+ * so the combat-deck language stays consistent.
+ *
+ * Sections:
+ *   1. Scrim + sheet container
+ *   2. Header + title + close
+ *   3. Form + inputs + date row
+ *   4. Footer + buttons
+ *   5. Bounce transition
+ *   6. Responsive + reduced-motion overrides
+ */
+
+.nm-root {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nm-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 11, 16, 0.78);
+  pointer-events: auto;
+}
+
+.nm-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 28rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  background: var(--pp-panel);
+  border: 1px solid var(--pp-line);
+  box-shadow:
+    0 0 0 1px var(--pp-void),
+    0 24px 48px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px var(--pp-line);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  color: var(--pp-text);
+}
+
+.nm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--pp-line);
+  background: var(--pp-card);
+}
+
+.nm-title {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-cyan);
+}
+
+.nm-close {
+  background: transparent;
+  border: 1px solid var(--pp-line);
+  width: 32px;
+  height: 32px;
+  color: var(--pp-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.nm-close:hover,
+.nm-close:focus-visible {
+  color: var(--pp-cyan);
+  border-color: var(--pp-cyan);
+  outline: none;
+}
+
+.nm-form {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.nm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.nm-label {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pp-muted);
+}
+
+.nm-help {
+  color: var(--pp-muted);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: none;
+}
+
+.nm-input {
+  width: 100%;
+  background: var(--pp-card);
+  color: var(--pp-text);
+  border: 1px solid var(--pp-line);
+  padding: 0.55rem 0.6rem;
+  font: inherit;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  outline: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.nm-input:focus,
+.nm-input:focus-visible {
+  border-color: var(--pp-cyan);
+  background: var(--pp-card-active);
+}
+.nm-input--err {
+  border-color: var(--pp-danger);
+  color: var(--pp-danger);
+}
+.nm-input--date {
+  font-variant-numeric: tabular-nums;
+  color-scheme: dark;
+}
+
+.nm-date-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.nm-fix-btn {
+  background: transparent;
+  border: 1px solid var(--pp-amber);
+  color: var(--pp-amber);
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  min-height: 40px;
+}
+.nm-fix-btn:hover,
+.nm-fix-btn:focus-visible {
+  background: rgba(255, 190, 11, 0.12);
+  outline: none;
+}
+
+.nm-error {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.75rem;
+  margin: 0;
+  color: var(--pp-danger);
+}
+
+.nm-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--pp-line);
+}
+
+.nm-footer__right {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.nm-btn {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--pp-line);
+  padding: 0.55rem 0.85rem;
+  cursor: pointer;
+  background: var(--pp-card);
+  color: var(--pp-text);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+  min-height: 40px;
+}
+.nm-btn:focus-visible {
+  outline: none;
+  border-color: var(--pp-cyan);
+}
+.nm-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.nm-btn--primary {
+  background: var(--pp-cyan);
+  border-color: var(--pp-cyan);
+  color: var(--pp-void);
+}
+.nm-btn--primary:hover:not(:disabled),
+.nm-btn--primary:focus-visible:not(:disabled) {
+  box-shadow: var(--pp-glow-cyan);
+}
+.nm-btn--ghost:hover:not(:disabled) {
+  background: var(--pp-card-active);
+  border-color: var(--pp-cyan);
+  color: var(--pp-cyan);
+}
+.nm-btn--danger {
+  background: transparent;
+  border-color: var(--pp-danger);
+  color: var(--pp-danger);
+}
+.nm-btn--danger:hover:not(:disabled),
+.nm-btn--danger:focus-visible:not(:disabled) {
+  background: rgba(255, 77, 109, 0.12);
+  color: var(--pp-danger);
+}
+
+.nm-bounce-enter-from,
+.nm-bounce-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.nm-bounce-enter-active,
+.nm-bounce-leave-active {
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+@media (max-width: 639.98px) {
+  .nm-root {
+    align-items: flex-end;
+  }
+  .nm-sheet {
+    max-width: 100%;
+    height: auto;
+    max-height: 92vh;
+    border-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nm-bounce-enter-from,
+  .nm-bounce-leave-to {
+    transform: none;
+  }
+  .nm-bounce-enter-active,
+  .nm-bounce-leave-active {
+    transition: opacity 80ms ease;
+  }
+}

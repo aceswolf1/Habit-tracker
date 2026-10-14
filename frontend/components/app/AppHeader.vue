@@ -1,14 +1,18 @@
 <!--
-  V2 Combat Deck header (contract §3).
+  V2 Combat Deck header (contract §3) + v2.1 (W3) player identity.
+
+  v2.0 chrome: month title, tier label, XP, tier icons, NEW HABIT button.
+  v2.1 (W3):
+    - Player identity line `DISPLAYNAME · LVL n TITLE` (PALADIN fallback).
+    - Level progress bar fed by `lifetimeScore` via the shared curve
+      (`frontend/utils/sharedLevels.ts#levelInfo`, which re-exports
+      `shared/levels.js#levelInfo`).
+    - Two stacked meters on ≥ sm (level + month), one compact bar on phone.
 
   Two rows:
-    1. Month title + tier/XP block + compact inline tier icon strip +
-       NEW HABIT button + hamburger (phone) / settings (≥lg).
-    2. Tier-ladder progress bar (the segmented track).
-
-  Inline tier icons are next to the tier/XP block — see
-  `.claude/v2/screen.png`. On phone the title row stacks tighter and
-  the action cluster collapses to a hamburger + primary NEW HABIT.
+    1. Month title + identity + tier/XP block + compact inline tier
+       icon strip + NEW HABIT button + hamburger (phone) / settings (≥lg).
+    2. Stacked LVL + MONTH progress bars.
 
   Below lg the header lives at the top edge of `<main>`'s column (no
   sidebar), so its horizontal padding matches the main content.
@@ -45,6 +49,18 @@
           <UiPpBadge v-if="isFinished" kind="boss">LOCKED</UiPpBadge>
         </div>
 
+        <!-- v2.1 (W3): player identity. -->
+        <div
+          class="app-header__identity font-mono"
+          :title="identityTitle"
+          aria-label="Player identity"
+        >
+          <span class="app-header__identity-name" data-pp-player-name>{{ displayName }}</span>
+          <span class="app-header__identity-sep">·</span>
+          <span class="app-header__identity-level">LVL {{ levelInfo.level }}</span>
+          <span class="app-header__identity-title">{{ levelInfo.title }}</span>
+        </div>
+
         <div
           v-if="hasMonth && !compact"
           class="app-header__tier font-mono"
@@ -59,14 +75,6 @@
             TOTAL: {{ lifetimeScore }} XP
           </span>
 
-          <!--
-            Compact inline tier icon strip. Each icon mirrors the
-            TierBadge colourway but stripped to a single glyph so it
-            fits next to the tier/XP block instead of sitting on a
-            separate row. Order = Bronze → Final.
-            The colour is applied via the `--tier-color` custom property
-            on the wrapper; unearned = muted slate, earned = tier colour.
-          -->
           <span class="app-header__tier-icons" aria-hidden="true">
             <UiPpIcon
               v-for="badge in tierBadges"
@@ -102,40 +110,45 @@
       </div>
     </div>
 
-    <div v-if="hasMonth" class="app-header__progress">
-      <UiPpSegmentedProgress
-        :value="monthProgress"
-        :color="progressColor"
-        :height="6"
-      />
+    <!-- v2.1 (W3): LVL + MONTH meter rail. -->
+    <div
+      v-if="hasMonth || levelInfo.xpForNext !== null"
+      class="app-header__bars"
+      :class="{ 'app-header__bars--compact': compact }"
+    >
+      <div class="app-header__bar-row" :title="levelBarTitle">
+        <span class="app-header__bar-label">LVL</span>
+        <UiPpSegmentedProgress
+          :value="levelInfo.progress"
+          color="amber"
+          :height="compact ? 4 : 5"
+        />
+      </div>
+      <div v-if="hasMonth" class="app-header__bar-row">
+        <span class="app-header__bar-label">MONTH</span>
+        <UiPpSegmentedProgress
+          :value="monthProgress"
+          :color="progressColor"
+          :height="compact ? 4 : 5"
+        />
+      </div>
     </div>
 
-    <!--
-      Hidden marker so headless screenshot tools (and devtools) can confirm
-      the cycle data is loaded even when visual chrome hasn't settled yet.
-    -->
+    <!-- Hidden marker so headless screenshot tools (and devtools) can
+         confirm the cycle data is loaded even when visual chrome
+         hasn't settled yet. -->
     <span hidden data-pp-week-name>{{ weekName }}</span>
   </header>
 </template>
 
 <script setup lang="ts">
-/*
- * V2 Combat Deck header (contract §3).
- *
- * The header is a thin chrome strip. It owns the month title, the
- * current tier label, the month-vs-lifetime XP readout, the XP
- * progress bar, the inline tier icon strip, and the primary NEW HABIT
- * button. The standalone tier-ladder row (Wave A) was removed in Wave
- * B to satisfy the lead review (W4 feedback: tier ladder was a tall
- * separate row; the mockup places the icons next to the tier/XP block).
- */
-
 import { computed } from "vue";
 import UiPpIcon from "../ui/PpIcon.vue";
 import UiPpBadge from "../ui/PpBadge.vue";
 import PpButton from "../ui/PpButton.vue";
 import UiPpSegmentedProgress from "../ui/PpSegmentedProgress.vue";
 import type { IconName } from "../ui/iconNames";
+import { levelInfo as computeLevelInfo } from "../../utils/sharedLevels";
 
 const props = defineProps<{
   currentMonth: any;
@@ -144,6 +157,8 @@ const props = defineProps<{
   isFinished: boolean;
   compact: boolean;
   showHamburger: boolean;
+  /** v2.1: optional profile object. `displayName` falls back to PALADIN. */
+  profile?: { displayName?: string | null; lifetimeScore?: number } | null;
   openCreateTask: () => void;
   openSettings: () => void;
 }>();
@@ -197,154 +212,30 @@ const tierBadges: { key: string; label: string; threshold: number; icon: IconNam
   { key: "final", label: "Final", threshold: 100, icon: "shield", colorVar: "var(--pp-cyan)" },
 ];
 
+// --- v2.1 (W3) player identity -----------------------------------------
+
+const displayName = computed(() => {
+  const dn = props.profile?.displayName;
+  if (dn && typeof dn === "string" && dn.trim()) return dn.trim().toUpperCase();
+  return "PALADIN";
+});
+
+const levelInfo = computed(() => computeLevelInfo(props.lifetimeScore || 0));
+
+const identityTitle = computed(
+  () =>
+    `${levelInfo.value.xpIntoLevel} XP into this level · ${levelInfo.value.level} ${levelInfo.value.title}`,
+);
+
+const levelBarTitle = computed(() =>
+  levelInfo.value.xpForNext
+    ? `${levelInfo.value.xpIntoLevel} / ${levelInfo.value.xpForNext} XP to next level`
+    : "MAX LEVEL — ARCHON",
+);
+
 function onNewHabit() {
   props.openCreateTask();
 }
 </script>
 
-<style scoped>
-.app-header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.5rem 0.5rem 0.5rem 0.5rem;
-  border-bottom: 1px solid var(--pp-line);
-  position: relative;
-  z-index: 5;
-}
-
-@media (min-width: 1024px) {
-  /*
-    Lead fix: header content had no left padding next to the sidebar
-    (title touched x = 256). Match the main content padding (2rem at lg)
-    so the header and main align horizontally.
-  */
-  .app-header {
-    padding: 0.5rem 2rem;
-  }
-}
-
-.app-header__row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.app-header__menu {
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.app-header__title {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-
-.app-header__month {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.app-header__month-name {
-  font-family: "Space Grotesk", system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 1.125rem;
-  line-height: 1.2;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--pp-cyan);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.app-header__month-protocol {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--pp-muted);
-}
-
-.app-header__tier {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.app-header__tier-label {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--pp-gold-acc);
-}
-
-.app-header__tier-xp {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-weight: 500;
-  font-size: 0.625rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--pp-muted);
-}
-
-.app-header__tier-xp-sep {
-  color: var(--pp-line);
-  margin: 0 0.25rem;
-}
-
-/*
-  Inline tier icon strip — the compact, mockup-aligned replacement for
-  the standalone TierBadge row. Each icon's `color` is bound in the
-  template (earned = tier colour, unearned = --pp-muted).
-*/
-.app-header__tier-icons {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-}
-
-.app-header__actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-.app-header__progress {
-  margin-top: 0.125rem;
-  /* Pinned width to keep the segmented track feeling like a terminal
-     level meter; on wide screens it stretches to the column width. */
-  max-width: 640px;
-}
-
-@media (max-width: 639.98px) {
-  .app-header__month-name {
-    font-size: 0.95rem;
-  }
-  .app-header__month-protocol {
-    font-size: 0.65rem;
-  }
-  .app-header__tier-label,
-  .app-header__tier-xp {
-    font-size: 0.6rem;
-  }
-  /* Compact tier icon strip on phone — keep visible, tighter gap. */
-  .app-header__tier-icons {
-    gap: 0.15rem;
-  }
-}
-</style>
+<style scoped src="./AppHeader.styles.scss"></style>

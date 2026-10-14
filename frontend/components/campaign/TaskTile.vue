@@ -1,11 +1,12 @@
 <!--
-  TaskTile.vue (W2 contract §4 / §5 / §7).
+  TaskTile.vue (W2 contract §4 / §5 / §7, v2.1 details).
 
   Compact card for the 7D grid. Shows:
-    - TaskMedia tile (16:9, full column width)
+    - TaskMedia tile (16:9, full column width) with v2.1 duration overlay
     - Title (1 line, ellipsis)
     - Check button (same check rules as TaskRow)
-    - Badges (LEGENDARY / OPTIONAL)
+    - v2.1: Tag badge (`PpBadge`) when the task has a tag
+    - LEGENDARY / OPTIONAL badges
   No meta line (no XP, no notes, no replicated label) — the column
   header already shows the day-level XP; per-task meta lives in the
   spotlight.
@@ -30,7 +31,7 @@
     @dragend="onDragEnd"
   >
     <div class="relative">
-      <TaskMedia :task="task" variant="tile" />
+      <TaskMedia :task="task" variant="tile" :duration-label="durationLabel" />
       <button
         type="button"
         class="absolute top-1 right-1 w-7 h-7 flex items-center justify-center font-mono font-bold text-pp-void"
@@ -49,6 +50,10 @@
       >{{ task.description }}</span>
     </div>
     <div class="flex items-center gap-1 flex-wrap">
+      <PpBadge
+        v-if="tagKind"
+        :kind="tagKind"
+      >{{ tagLabel }}</PpBadge>
       <span
         v-if="task.legendary"
         class="inline-flex items-center gap-1 px-1.5 py-0.5 font-mono text-label-sm uppercase border text-pp-magenta border-pp-magenta"
@@ -70,6 +75,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import TaskMedia from "../task/TaskMedia.vue";
+import PpBadge from "../ui/PpBadge.vue";
+import {
+  formatDurationLabel,
+  tagBadgeKind,
+  tagBadgeLabel,
+} from "../../composables/useCampaignStats";
 import type { Task } from "../../types/index";
 
 const props = defineProps<{
@@ -85,6 +96,11 @@ const emit = defineEmits<{
   dragStart: [payload: { uuid: string; fromDayUuid: string; fromIndex: number }];
   dragEnd: [];
 }>();
+
+// v2.1 helpers.
+const durationLabel = computed(() => formatDurationLabel(props.task.durationMin));
+const tagKind = computed(() => tagBadgeKind(props.task.tag));
+const tagLabel = computed(() => tagBadgeLabel(props.task.tag) || "");
 
 /**
  * Check button classes (Wave B fixup):

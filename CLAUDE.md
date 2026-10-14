@@ -325,6 +325,16 @@ Component files stay ≤ 400 lines.
 - **Moving tasks on touch:** **Move to…** in the edit dialog; desktop also has drag-and-drop (reorder in Spotlight, between days in Grid).
 - **404:** `app.vue` raises a fatal 404 for any path other than `/`; `error.vue` renders it.
 
+### v2.1 additions (dates, task details, player)
+Contract: `development/v2-features/orchestration-ctx/decisions/contract-v2.1.md`; roadmap (v2.1–v2.4): `development/v2-features/v2-features-roadmap.md`.
+- **Shared helpers** (`shared/`, re-exported via `frontend/utils/shared*.ts`): `dates.js` (`isIsoDate`, `isMonday`, `mondayOf`, `dayDate`, `dayOfMonth`, `todayIso`, `findToday`), `habits.js` (`habitKey`, `normalizeDescription`, `newHabitId`), `levels.js` (`levelInfo` — level = floor(sqrt(xp/25))+1, titles RECRUIT…ARCHON), `bosses.js` (`bossForWeek`), `taskMeta.js` (`TAGS`, `TIMES_OF_DAY`, `isHHMM`). The dev plugin `pp-shared-cjs-dev` matches `shared/[a-z]+.js`.
+- **Dates:** `Cycle.startDate` (`YYYY-MM-DD`, must be a Monday); day dates are derived, never stored. `POST /api/cycles {name?, startDate?}`; `PATCH {type:'updateCycle', name?, startDate?|null}`. Undated (old) months keep `MON // W1` and the weekday TODAY heuristic. UI: `components/app/NewMonthDialog.vue` (new month / set dates / clear dates).
+- **Task fields:** server-maintained `completedAt` (set on check, cleared on un-check; never accepted from clients) and `habitId` (assigned on add; recurrence copies in one request share it; persisted on the next save for old tasks; habit key falls back to the normalized name). Optional `tag` (`common|rare|essential|defense`), `durationMin` (1–1440), `timeOfDay` (`morning|afternoon|evening|night`), `dueTime` (`HH:MM`; only editable on dated months) — `updateTasks` accepts `null` to clear. DUE IN / OVERDUE shows only on today's rows (`useCampaignStats.getDueTimeLine`).
+- **Profile:** `GET /api/cycles/profile` → `{uuid, lifetimeScore, displayName?}`; `PATCH /api/cycles/profile {displayName|null}` (registered before `PATCH /:id`). Header shows `NAME · LVL n TITLE`; the store emits a `levelUp` app event on level crossings.
+- **Settings persistence:** Pinia state comes from SSR, so `hydrateSettingsFromLocalStorage()` (called in `app.vue` on mount) reads `campaignView`, `animateGifs`, `useWeekVideos`, `soundFx` from localStorage.
+- **Sound FX:** `composables/useSoundFx.ts` (WebAudio synth, no files, volume ≤ 0.2, lazy AudioContext on first gesture, default off).
+- **Density rule:** 7 task rows must fit at 1440×900 — header, week tabs and strip changes must not add height on desktop.
+
 ### Performance
 Measured with `development/remediation-w5/measurements/bench.mjs` (V2 copy: `development/v2-redesign/tasks/W3-qa/bench-v2.mjs`). V2 vs v0.6.0: same 60 fps, far fewer running animations and media bytes; JS heap ~1 MB higher (accepted).
 - **Task GIFs:** a picked GIF stores `gifUrl` (fallback), `gifVideoUrl` (MP4) and `gifStillUrl` (still). `TaskMedia` renders `<video preload="none" :poster>` and `useInViewPlayback` plays it only while ≥ 25% visible and the tab is visible, never under reduced motion. Older tasks fall back to a lazy `<img>`.

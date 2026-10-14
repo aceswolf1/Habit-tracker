@@ -29,6 +29,7 @@ const {
   createCycleSchema,
   listQuerySchema,
   patchSchema,
+  patchProfileSchema,
   zodDetails,
 } = require('../validation/cycleSchemas');
 const { DomainError } = require('../services/errors');
@@ -64,9 +65,11 @@ function handleError(res, err, fallbackMessage = 'Internal server error') {
  *     getOrCreateCurrent(): Promise<object>,
  *     getByUuid(uuid:string): Promise<object>,
  *     list({limit,offset}): Promise<{items:object[], meta:{total:number, limit:number, offset:number}}>,
- *     create({name?:string}): Promise<object>,
+ *     create({name?:string, startDate?:string}): Promise<object>,
+ *     updateCycle(uuid:string, body:object): Promise<{cycle, pointsEarned, isLegendary, currentTier}>,
  *     finish(uuid:string): Promise<{cycle:object, statistics:object, alreadyFinished:boolean}>,
- *     getProfile(): Promise<{uuid:string, lifetimeScore:number}>,
+ *     getProfile(): Promise<{uuid, lifetimeScore, displayName?}>,
+ *     updateProfile(updates:object): Promise<{uuid, lifetimeScore, displayName?}>,
  *   },
  *   taskMutationService: {
  *     patchCycle(uuid:string, body:object): Promise<{cycle:object, pointsEarned:number, isLegendary:boolean, currentTier:string}>,
@@ -82,6 +85,20 @@ function createCycleController({ lifecycleService, taskMutationService }) {
   async function getProfile(req, res) {
     try {
       const data = await lifecycleService.getProfile();
+      return ok(res, data);
+    } catch (err) {
+      return handleError(res, err);
+    }
+  }
+
+  // ---- PATCH /profile -----------------------------------------------------
+  async function patchProfile(req, res) {
+    const parsed = patchProfileSchema.safeParse(req.body || {});
+    if (!parsed.success) {
+      return failValidation(res, zodDetails(parsed.error));
+    }
+    try {
+      const data = await lifecycleService.updateProfile(parsed.data);
       return ok(res, data);
     } catch (err) {
       return handleError(res, err);
@@ -163,6 +180,7 @@ function createCycleController({ lifecycleService, taskMutationService }) {
 
   return {
     getProfile,
+    patchProfile,
     getCurrent,
     list,
     create,

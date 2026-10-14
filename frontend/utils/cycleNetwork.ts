@@ -11,7 +11,7 @@
  * change for consumers.
  */
 
-import type { FinishResult } from "../types/index";
+import type { FinishResult, Profile } from "../types/index";
 import {
   createCycle as apiCreateCycle,
   finishCycle as apiFinishCycle,
@@ -19,6 +19,8 @@ import {
   getCurrent as apiGetCurrent,
   getProfile as apiGetProfile,
   listCycles as apiListCycles,
+  patchCycle as apiPatchCycle,
+  updateProfile as apiUpdateProfile,
 } from "../services/cycleApi";
 import { applyProgressToCopy } from "./cycleCloning";
 import type { useMonthStore } from "../stores/monthStore";
@@ -113,11 +115,12 @@ export async function setCurrentMonthAction(
 export async function createMonthAction(
   store: Store,
   name?: string,
+  startDate?: string,
 ): Promise<void> {
   store.isLoading = true;
   store.error = null;
   try {
-    const cycle = await apiCreateCycle(name);
+    const cycle = await apiCreateCycle(name, startDate);
     store.currentMonth = applyProgressToCopy(cycle);
     store.currentMonthUuid = cycle.uuid;
     const refresh = await apiListCycles();
@@ -159,4 +162,56 @@ export async function finishCurrentMonthAction(
 /** Reset by refetching everything — used by the settings drawer. */
 export async function resetToOriginalAction(store: Store): Promise<void> {
   await fetchMonthDataAction(store);
+}
+
+/**
+ * v2.1: set or clear the CURRENT cycle's `startDate` (a Monday
+ * 'YYYY-MM-DD' or `null`). Patches via `updateCycle`, refreshes the
+ * summaries list, and replaces `currentMonth` with the patched cycle.
+ *
+ * The backend rejects non-Mondays with 400 `VALIDATION_ERROR` and
+ * throws 409 `CYCLE_FINISHED` when the cycle is finished; the API
+ * client surfaces both as a thrown ApiError (caught by the store
+ * action's error path).
+ */
+export async function setCycleDatesAction(
+  store: Store,
+  startDate: string | null,
+): Promise<void> {
+  if (!store.currentMonth) return;
+  const prevUuid = store.currentMonth.uuid;
+  const result = await apiPatchCycle(store.currentMonth.uuid, {
+    type: "updateCycle",
+    startDate,
+  });
+  // Stale guard — user could have switched cycles mid-flight.
+  if (store.currentMonth?.uuid !== prevUuid) return;
+  store.currentMonth = result.cycle;
+  // Refresh summaries so the sidebar reflects the new startDate.
+  try {
+    const refresh = await apiListCycles();
+    store.months = refresh.summaries;
+  } catch {
+    /* keep prior list */
+  }
+}
+
+/**
+ * v2.1: PATCH the player `displayName` (or clear it with `null`).
+ * Trims + clamps to 24 chars server-side; mirrors the same here so
+ * the UI feels snappy. The local `profile` state is replaced by the
+ * response so consumers always see the canonical shape.
+ */
+export async function updateDisplayNameAction(
+  store: Store,
+  name: string | null,
+): Promise<Profile | undefined> {
+  const trimmed = typeof name === "string" ? name.trim() : "";
+  const payload = trimmed.length === 0 ? null : trimmed.slice(0, 24);
+  const profile = await apiUpdateProfile({ displayName: payload });
+  store.profile = {
+    ...(store.profile ?? { uuid: profile.uuid, lifetimeScore: 0 }),
+    ...profile,
+  };
+  return profile;
 }

@@ -1,9 +1,11 @@
 <!--
-  WeekTabs.vue (W2 contract §4 / §5).
+  WeekTabs.vue (W2 contract §4 / §5, v2.1 boss names).
 
   Horizontal tab strip for the 4 weeks of a cycle. Each tab:
     - "01" / "02" / ... numeric prefix in mono.
     - Week name (uppercase, display font).
+    - v2.1: boss name (`bossForWeek(i).name`) beside the week name at
+      ≥ lg; hidden on phone / tablet to keep the strip compact.
     - Mini progress bar (full week progress, cyan fill, dim track).
     - Active state: cyan glow + bright label.
     - Conquered state: green check + dim label.
@@ -32,6 +34,11 @@
         {{ week.name }}
       </span>
       <span
+        v-if="bossForWeek(idx)"
+        class="week-boss font-mono uppercase tracking-wider hidden lg:inline"
+        :class="week.uuid === currentWeekUuid ? 'text-pp-magenta' : 'text-pp-muted'"
+      >{{ bossForWeek(idx).name }}</span>
+      <span
         class="block w-10 h-1 bg-pp-void overflow-hidden"
         aria-hidden="true"
       >
@@ -52,6 +59,7 @@
 
 <script setup lang="ts">
 import type { Week } from "../../types/index";
+import { bossForWeek } from "../../utils/sharedBosses";
 
 const props = defineProps<{
   weeks: Week[];
@@ -61,7 +69,7 @@ const props = defineProps<{
 
 function tabClasses(week: Week, _idx: number): string {
   const base = [
-    "group inline-flex items-center gap-2 px-3 min-h-[40px] sm:min-h-0 sm:py-1.5 border transition-colors whitespace-nowrap shrink-0",
+    "group inline-flex items-center gap-2 px-3 min-h-[40px] sm:min-h-0 sm:py-1.5 border transition-colors whitespace-nowrap shrink-0 flex-wrap",
   ];
   if (week.uuid === props.currentWeekUuid) {
     base.push(
@@ -76,3 +84,16 @@ function tabClasses(week: Week, _idx: number): string {
   return base.join(" ");
 }
 </script>
+
+<style scoped>
+/* Boss label sits below the week name when the row wraps at ≥ lg; the
+ * default flex column keeps the prefix + name above and the boss +
+ * progress bar on the second line. */
+/* Boss name sits on the same line as the week name so the tabs keep their
+   v2.0 height (7 task rows must still fit at 1440×900). */
+.week-boss {
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+}
+</style>

@@ -108,6 +108,7 @@
         :monthProgress="monthProgress"
         :index="originalIndex(task)"
         :isFinished="isFinished"
+        :isToday="isTodayForDay"
         @toggle="onToggle"
         @edit="onEdit"
         @delete="onDelete"
@@ -167,8 +168,9 @@ import { computed, ref, shallowRef } from "vue";
 import TaskRow from "./TaskRow.vue";
 import TaskFilterBar, { type Filter } from "./TaskFilterBar.vue";
 import CloneDayPanel from "./CloneDayPanel.vue";
-import type { Day, Task, Week } from "../../types/index";
+import type { Day, Task, Week, Cycle } from "../../types/index";
 import { getDayStats } from "../../composables/useCampaignStats";
+import { findToday as findTodayFn } from "../../utils/sharedDates";
 
 const props = defineProps<{
   day: Day;
@@ -176,6 +178,9 @@ const props = defineProps<{
   weeks: Week[];
   monthProgress: number;
   isFinished: boolean;
+  /** v2.1: full cycle so DaySpotlight can resolve whether the
+   *  spotlight's day is today via `findToday(cycle)`. */
+  cycle: Cycle | null;
   toggleTask: (uuid: string) => void;
   openEditTask: (uuid: string) => void;
   openCreateTaskForDay: (dayUuid: string) => void;
@@ -190,6 +195,19 @@ const filter = ref<Filter>("all");
 const dayStats = computed(() => getDayStats(props.day, props.monthProgress));
 const totalCount = computed(() => props.day.tasks.length);
 const doneCount = computed(() => props.day.tasks.filter((t) => t.completed).length);
+
+// v2.1: whether the spotlight's day is today. Drives the DUE IN /
+// OVERDUE line on each row. Computed from `findToday(cycle)` against
+// the spotlight week's index.
+const isTodayForDay = computed<boolean>(() => {
+  if (!props.cycle) return false;
+  const today = findTodayFn(props.cycle as { startDate?: string | null });
+  if (!today) return false;
+  const weekIdx = props.weeks.findIndex((w) => w.uuid === props.week.uuid);
+  if (weekIdx < 0) return false;
+  const dayIdx = props.week.days.findIndex((d) => d.uuid === props.day.uuid);
+  return today.weekIndex === weekIdx && today.dayIndex === dayIdx;
+});
 
 const filteredTasks = computed(() => {
   const t = props.day.tasks;

@@ -42,5 +42,8 @@ defineProps<{
   refreshData?: () => void;
   openCreateTask?: () => void;
   finishMonth?: () => void;
+  /** v2.1 (W3): "Set dates" entry-point. The campaign spotlight also
+   *  surfaces this for an un-dated active month. */
+  onSetDates?: () => void;
 }>();
 </script>

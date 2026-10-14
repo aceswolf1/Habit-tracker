@@ -6,6 +6,21 @@ const TaskSchema = new mongoose.Schema({
   optional: { type: Boolean, default: false },
   legendary: { type: Boolean, default: false },
   completed: { type: Boolean, default: false },
+  // v2.1: server-maintained completion timestamp. Set on a false→true flip,
+  // cleared (unset) on a true→false flip. Clients never send it.
+  completedAt: Date,
+  // v2.1 (D3): cluster id shared by all tasks that name the same habit.
+  // Server-assigned on addTasks when missing; preserved through clone/move.
+  habitId: String,
+  // v2.1 (D4): one of 'common'|'rare'|'essential'|'defense'. Free-form.
+  tag: { type: String, enum: ['common', 'rare', 'essential', 'defense'] },
+  // v2.1: estimated duration in minutes (1..1440). UI uses this to render
+  // "MM:00" / "H:MM:00" overlays; nothing automatic depends on it.
+  durationMin: { type: Number, min: 1, max: 1440 },
+  // v2.1: one of 'morning'|'afternoon'|'evening'|'night'.
+  timeOfDay: { type: String, enum: ['morning', 'afternoon', 'evening', 'night'] },
+  // v2.1: 'HH:MM' in 24-hour local format. Only meaningful on dated days.
+  dueTime: String,
   recurrenceId: String,
   order: Number,
   icon: String,
@@ -42,6 +57,10 @@ const CycleSchema = new mongoose.Schema({
   score: { type: Number, default: 0 },
   weeks: [WeekSchema],
   finished: { type: Boolean, default: false },
+  // v2.1: 'YYYY-MM-DD' of the Monday the cycle starts on. Optional so
+  // legacy months render as undated (`shared/dates.dayDate` returns null).
+  // Day dates are always derived, never stored.
+  startDate: String,
   createdAt: { type: Date, default: Date.now },
   finishedAt: Date,
   statistics: { type: mongoose.Schema.Types.Mixed, default: null }

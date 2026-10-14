@@ -279,5 +279,82 @@ check('getProfile: reflects prior lifetimeScore (no reset on read)', async () =>
   assert.strictEqual(out.lifetimeScore, 42);
 });
 
+// =========================================================================
+// v2.1 — create(startDate), updateCycle, profile displayName
+// =========================================================================
+
+check('v2.1: create with startDate stamps the cycle with that Monday', async () => {
+  const { svc, cycleRepo } = makeService();
+  const out = await svc.create({ name: 'Dated', startDate: '2026-10-12' });
+  assert.strictEqual(out.startDate, '2026-10-12');
+  // Persisted.
+  assert.strictEqual(cycleRepo._raw(out.uuid).startDate, '2026-10-12');
+});
+
+check('v2.1: create without startDate leaves it absent (legacy undated)', async () => {
+  const { svc, cycleRepo } = makeService();
+  const out = await svc.create({ name: 'Undated' });
+  assert.strictEqual(out.startDate, undefined);
+});
+
+check('v2.1: updateCycle sets name + startDate + clears startDate', async () => {
+  const { svc, cycleRepo } = makeService();
+  const saved = await cycleRepo.create(fixtures.emptyCycle('Old'));
+  const a = await svc.updateCycle(saved.uuid, { type: 'updateCycle', name: 'Renamed', startDate: '2026-10-12' });
+  assert.strictEqual(a.cycle.name, 'Renamed');
+  assert.strictEqual(a.cycle.startDate, '2026-10-12');
+  assert.strictEqual(a.pointsEarned, 0);
+  assert.strictEqual(a.currentTier, 'Bronze');
+  // Persisted.
+  assert.strictEqual(cycleRepo._raw(saved.uuid).startDate, '2026-10-12');
+
+  const b = await svc.updateCycle(saved.uuid, { type: 'updateCycle', startDate: null });
+  assert.strictEqual(b.cycle.startDate, null);
+  assert.strictEqual(cycleRepo._raw(saved.uuid).startDate, null);
+});
+
+check('v2.1: updateCycle throws CYCLE_FINISHED when the cycle is finished', async () => {
+  const { svc, cycleRepo } = makeService();
+  const saved = await cycleRepo.create(fixtures.emptyCycle('Done'));
+  saved.finished = true;
+  await cycleRepo.save(saved);
+  let thrown = null;
+  try {
+    await svc.updateCycle(saved.uuid, { type: 'updateCycle', name: 'try' });
+  } catch (err) { thrown = err; }
+  assert.ok(thrown && thrown.code === 'CYCLE_FINISHED');
+});
+
+check('v2.1: updateCycle throws NOT_FOUND when the cycle is missing', async () => {
+  const { svc } = makeService();
+  let thrown = null;
+  try {
+    await svc.updateCycle('nope', { type: 'updateCycle', name: 'x' });
+  } catch (err) { thrown = err; }
+  assert.ok(thrown && thrown.code === 'NOT_FOUND');
+});
+
+check('v2.1: getProfile returns displayName (null on first call)', async () => {
+  const { svc } = makeService();
+  const out = await svc.getProfile();
+  assert.strictEqual(out.displayName, null);
+  assert.deepStrictEqual(Object.keys(out).sort(), ['displayName', 'lifetimeScore', 'uuid']);
+});
+
+check('v2.1: updateProfile sets displayName; subsequent getProfile reflects it', async () => {
+  const { svc } = makeService();
+  const updated = await svc.updateProfile({ displayName: 'Alice' });
+  assert.strictEqual(updated.displayName, 'Alice');
+  const out = await svc.getProfile();
+  assert.strictEqual(out.displayName, 'Alice');
+});
+
+check('v2.1: updateProfile null displayName clears the field', async () => {
+  const { svc } = makeService();
+  await svc.updateProfile({ displayName: 'Alice' });
+  const out = await svc.updateProfile({ displayName: null });
+  assert.strictEqual(out.displayName, null);
+});
+
 console.log(`\n${passed} checks passed`);
 process.exit(0);

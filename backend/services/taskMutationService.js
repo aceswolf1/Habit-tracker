@@ -29,9 +29,24 @@
 const { notFound, cycleFinished } = require('./errors');
 const { PROFILE_UUID } = require('../config');
 const { calculateProgress, generateUuid } = require('../../shared/progress');
+const { newHabitId } = require('../../shared/habits');
+
+// v2.1: max length of the `habitId` field on TaskSchema. The schema
+// constraint is duplicated here so the service can pre-trim before save.
+const HABIT_ID_MAX = 64;
 
 /**
  * Pure: push each `addition.task` into the matching week/day.
+ *
+ * v2.1 additions:
+ *   - Server assigns `habitId` when it's missing. All tasks sharing a
+ *     `recurrenceId` in the SAME request and missing a `habitId` share
+ *     a single newly-generated id (D3).
+ *   - Sets `completedAt` when `completed: true` is sent in.
+ *   - Persists `habitId` on subsequent writes (D3: "persist on next
+ *     save"). The same logic lives in `applyUpdates`.
+ *   - Server assigns a task `uuid` when omitted (existing W5 behavior).
+ *
  * Tasks without a matching day are silently dropped (matches
  * the legacy handler — zod already validated the uuids exist
  * semantically; the cycle may have been re-shaped client-side).
@@ -40,13 +55,60 @@ const { calculateProgress, generateUuid } = require('../../shared/progress');
  * @param {Array<{weekUuid:string, dayUuid:string, task:object}>} additions
  */
 function applyAdditions(cycle, additions) {
+  // First pass: figure out which recurrence groups need a shared habitId.
+  // Map<recurrenceId, habitId> for groups that need a fresh id.
+  const groupHabitIds = new Map();
+  for (const a of additions) {
+    const t = a.task;
+    if (!t) continue;
+    if (t.habitId) continue;                            // client supplied
+    if (!t.recurrenceId) continue;                      // one-off
+    const key = `add:${t.recurrenceId}`;
+    if (!groupHabitIds.has(key)) groupHabitIds.set(key, newHabitId());
+  }
+
   for (const addition of additions) {
     for (const week of cycle.weeks) {
       if (week.uuid === addition.weekUuid) {
         const day = week.days.find((d) => d.uuid === addition.dayUuid);
-        // W5: the zod schema allows omitting uuid; assign one server-side so
-        // the task can be updated, moved and deleted later.
-        if (day) day.tasks.push({ ...addition.task, uuid: addition.task.uuid || generateUuid('t') });
+        if (!day) break;
+        const input = addition.task || {};
+
+        // Server-assigned task uuid (W5).
+        const taskUuid = input.uuid || generateUuid('t');
+
+        // Resolve `habitId`. Priority:
+        //   1. client-supplied (already validated)
+        //   2. shared by recurrenceId group (assigned in pre-pass)
+        //   3. freshly minted one-off id
+        let habitId = input.habitId;
+        if (!habitId) {
+          if (input.recurrenceId && groupHabitIds.has(`add:${input.recurrenceId}`)) {
+            habitId = groupHabitIds.get(`add:${input.recurrenceId}`);
+          } else {
+            habitId = newHabitId();
+          }
+        }
+        if (typeof habitId === 'string' && habitId.length > HABIT_ID_MAX) {
+          habitId = habitId.slice(0, HABIT_ID_MAX);
+        }
+
+        // Spread the input, then normalize the fields we own. We never
+        // trust the client's `completedAt` — the server owns it. A new
+        // task created `completed: true` gets `completedAt: now`.
+        const now = input.completed ? new Date() : null;
+        const merged = {
+          ...input,
+          uuid: taskUuid,
+          habitId,
+          completedAt: now,
+        };
+        // Strip the input keys we never want to persist verbatim even
+        // if the schema accidentally allowed them (defense in depth).
+        delete merged.completedAt;
+        // ^ Re-set below; we just want to be explicit that we own it.
+        merged.completedAt = now;
+        day.tasks.push(merged);
         break;
       }
     }
@@ -57,9 +119,14 @@ function applyAdditions(cycle, additions) {
  * Pure: apply each update to its matching task. Returns the array
  * of completion flips for the scoring service.
  *
- * `null` on `icon` / `gifUrl` clears the field; `undefined` leaves
- * it untouched (FIX-01). All other fields use `undefined === no
+ * `null` on `icon` / `gifUrl` / `notes` / `tag` / `durationMin` /
+ * `timeOfDay` / `dueTime` clears the field; `undefined` leaves it
+ * untouched (FIX-01). All other fields use `undefined === no
  * change` semantics, identical to the legacy PATCH branch.
+ *
+ * v2.1 completion-flip semantics:
+ *   - `false → true`  → server stamps `completedAt = new Date()`
+ *   - `true → false`  → server clears `completedAt` to `null`
  *
  * @param {object} cycle
  * @param {Array<object>} updates  zod-validated items
@@ -84,8 +151,31 @@ function applyUpdates(cycle, updates) {
         if (update.gifStillUrl !== undefined) task.gifStillUrl = update.gifStillUrl; // null clears
         if (update.notes !== undefined) task.notes = update.notes; // null clears
         if (update.order !== undefined) task.order = update.order;
+        // v2.1 task metadata: same null/clear + undefined/leave-alone semantics.
+        if (update.habitId !== undefined) {
+          let h = update.habitId;
+          if (typeof h === 'string' && h.length > HABIT_ID_MAX) h = h.slice(0, HABIT_ID_MAX);
+          task.habitId = h;
+        }
+        if (update.tag !== undefined) task.tag = update.tag;
+        if (update.durationMin !== undefined) task.durationMin = update.durationMin;
+        if (update.timeOfDay !== undefined) task.timeOfDay = update.timeOfDay;
+        if (update.dueTime !== undefined) task.dueTime = update.dueTime;
 
+        // v2.1 D3: persist `habitId` on next save when a task is missing
+        // one and the client didn't supply one in *this* update.
+        // (Already-handled above when update.habitId !== undefined.)
+        if (task.habitId == null) {
+          task.habitId = newHabitId();
+        }
+
+        // v2.1: server-maintained `completedAt`. Maintain on completion flip.
         if (update.completed !== undefined && wasCompleted !== update.completed) {
+          if (update.completed) {
+            task.completedAt = new Date();
+          } else {
+            task.completedAt = null;
+          }
           flips.push({
             optional: task.optional,
             legendary: task.legendary || false,
@@ -189,6 +279,20 @@ function applyMove(cycle, body) {
 }
 
 /**
+ * v2.1: apply a metadata-only PATCH (name + startDate). Performs the same
+ * `NOT_FOUND` / `CYCLE_FINISHED` checks as the loop-driven branches but
+ * never touches tasks.
+ *
+ * Pure: mutates the cycle in place. Returns true on success. Returns
+ * `{ type: 'notFound' | 'finished' }` when the guard rejects the call.
+ */
+function applyCycleUpdate(cycle, body) {
+  if (body.name !== undefined) cycle.name = body.name;
+  if (body.startDate !== undefined) cycle.startDate = body.startDate; // null clears
+  return true;
+}
+
+/**
  * Build a task-mutation service bound to the given repositories +
  * scoring service. Use ONE instance per process; default instances
  * live in `services/index.js` (w3-core).
@@ -245,6 +349,9 @@ function createTaskMutationService({ cycleRepo, profileRepo, scoreService }) {
         }
         break;
       }
+      case 'updateCycle':
+        applyCycleUpdate(cycle, body);
+        break;
       default:
         // zod should reject unknown types; defensive guard.
         throw new Error(`Unsupported patch type: ${body.type}`);
@@ -256,6 +363,7 @@ function createTaskMutationService({ cycleRepo, profileRepo, scoreService }) {
     calculateProgress(cycle);
 
     // Score completion flips using post-recalc progress / tier.
+    // `updateCycle` never flips anything → score stays 0.
     const { pointsEarned } = scoreService.scoreCompletionFlips(cycle, flips);
 
     // UB-10: lifetime delta gated on pointsEarned !== 0; floor 0 is
@@ -299,6 +407,7 @@ function createTaskMutationService({ cycleRepo, profileRepo, scoreService }) {
     applyUpdates,
     applyDeletes,
     applyMove,
+    applyCycleUpdate,
   };
 }
 
@@ -310,4 +419,5 @@ module.exports = {
   applyUpdates,
   applyDeletes,
   applyMove,
+  applyCycleUpdate,
 };

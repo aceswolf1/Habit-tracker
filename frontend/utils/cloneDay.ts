@@ -46,6 +46,13 @@ export function cloneTaskFromSource(source: Task): Task {
     gifVideoUrl: source.gifVideoUrl,
     gifStillUrl: source.gifStillUrl,
     notes: source.notes,
+    // v2.1: carry habitId + task meta across the clone (D3 keeps the
+    // habit, the row/display surfaces stay identical).
+    habitId: source.habitId,
+    tag: source.tag,
+    durationMin: source.durationMin,
+    timeOfDay: source.timeOfDay,
+    dueTime: source.dueTime,
     // recurrenceId intentionally NOT copied — clone != recurrence.
   };
 }

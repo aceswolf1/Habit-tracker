@@ -20,10 +20,13 @@
     :months="months"
     :currentMonthUuid="currentMonthUuid"
     :lifetimeScore="lifetimeScore"
+    :profile="profile"
     :hasMonth="hasMonth"
     :isFinished="isFinished"
+    :hasStartDate="hasStartDate"
     :openSettings="openSettings"
-    :newMonth="newMonth"
+    :newMonth="onSidebarNewMonth"
+    :setDates="onSidebarSetDates"
     :finishMonth="finishMonth"
     :refreshData="refreshDataFromStore"
     :openCreateTask="openCreateTask"
@@ -52,6 +55,7 @@
         :refreshData="refreshDataFromStore"
         :openCreateTask="openCreateTask"
         :finishMonth="finishMonth"
+        :onSetDates="onSidebarSetDates"
       />
       <ReadOnlyMonthView
         v-else-if="isFinished && hasMonth"
@@ -90,13 +94,22 @@
     :notify="notify"
     :modal="{ close: closeTaskModal }"
   />
+
+  <!-- v2.1 (W3): New month / Set dates / Clear dates dialog. -->
+  <NewMonthDialog
+    :open="newMonthDialogOpen"
+    :cycle="dialogCycle"
+    :mode="newMonthDialogMode"
+    @close="newMonthDialogOpen = false"
+    @created="onMonthCreated"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { storeToRefs } from "pinia";
 import { useMonthStore } from "./stores/monthStore";
-import { useSettingsStore } from "./stores/settingsStore";
+import { useSettingsStore, hydrateSettingsFromLocalStorage } from "./stores/settingsStore";
 import { onAppEvent } from "./composables/useAppEvents";
 import {
   providePageState,
@@ -105,6 +118,8 @@ import {
 import { useTaskModal } from "./composables/useTaskModal";
 import { useMonthViewMode } from "./composables/useMonthViewMode";
 import { provideBreakpoints } from "./composables/useBreakpoint";
+// v2.1 (W3): synth-sound module. Mounted once here.
+import { useSoundFx } from "./composables/useSoundFx";
 
 import AppShell from "./components/app/AppShell.vue";
 import AppBackground from "./components/app/AppBackground.vue";
@@ -114,6 +129,7 @@ import ReadOnlyMonthView from "./components/ReadOnlyMonthView.vue";
 import StatsOrReadonly from "./components/app/StatsOrReadonly.vue";
 import StatsUnfinishedPanel from "./components/app/StatsUnfinishedPanel.vue";
 import ModalsHost from "./components/app/ModalsHost.vue";
+import NewMonthDialog from "./components/app/NewMonthDialog.vue";
 
 import ToastNotification from "./components/ToastNotification.vue";
 import FloatingPoints from "./components/FloatingPoints.vue";
@@ -213,21 +229,73 @@ const storeRefs: any = storeToRefs(monthStore as any);
 const months = storeRefs.months;
 const lifetimeScore = storeRefs.lifetimeScore;
 const currentMonthUuid = storeRefs.currentMonthUuid;
+const profile = storeRefs.profile;
 const isFinished = computed(() => currentMonth.value?.finished || false);
 const hasMonth = computed(() => !!currentMonth.value);
+const hasStartDate = computed(() => {
+  const m: any = currentMonth.value;
+  return !!(m && (m.startDate || m.cycleStartDate));
+});
 
 function openSettings() {
   settingsStore.toggleDrawer(true);
 }
 
-function newMonth() {
-  const defaultName = new Date().toLocaleString("default", {
-    month: "long",
-    year: "numeric",
-  });
-  monthStore.createMonth(defaultName);
+// --- v2.1 (W3) NewMonthDialog wiring ------------------------------------
+
+const newMonthDialogOpen = ref(false);
+const newMonthDialogMode = ref<"newMonth" | "setDates" | "clearDatesOnly">(
+  "newMonth",
+);
+
+/**
+ * Snapshot of the active cycle for the dialog (the dialog expects a
+ * plain `{ uuid, name, startDate, finished }`; the store's currentMonth
+ * has a lot more fields that we'd otherwise drag into the prop type).
+ */
+const dialogCycle = computed(() => {
+  const m = currentMonth.value;
+  if (!m) return null;
+  return {
+    uuid: m.uuid,
+    name: m.name,
+    startDate: (m as any).startDate ?? null,
+    finished: !!m.finished,
+  };
+});
+
+function openNewMonthDialog(
+  mode: "newMonth" | "setDates" | "clearDatesOnly",
+) {
+  newMonthDialogMode.value = mode;
+  newMonthDialogOpen.value = true;
+}
+
+function onSidebarNewMonth() {
+  // No active cycle → fresh new month; with an active cycle the same
+  // handler rolls forward (the dialog handles "set dates" if there's
+  // no startDate, otherwise the user can clear dates from inside).
+  openNewMonthDialog(hasMonth.value ? "newMonth" : "newMonth");
+}
+
+function onSidebarSetDates() {
+  if (!hasMonth.value) {
+    openNewMonthDialog("newMonth");
+  } else {
+    openNewMonthDialog("setDates");
+  }
+}
+
+function onMonthCreated() {
+  // Ensure the page reflects whatever just happened; the dialog itself
+  // dispatches the toast.
+  refreshDataFromStore();
   section.value = "campaign";
 }
+
+useSoundFx();
+
+// -----------------------------------------------------------------------
 
 function finishMonth() {
   if (isFinished.value) return;
@@ -302,6 +370,10 @@ function handleToast(detail: {
 const toastFromBus = onAppEvent("toast", handleToast);
 
 onMounted(async () => {
+  // Pinia SSR-deserialised state ignores `typeof window` branches, so
+  // the settings persisted in `localStorage` need a client-side refresh
+  // before the UI reflects them on reload.
+  hydrateSettingsFromLocalStorage();
   await monthStore.fetchMonthData();
   if (!currentWeek.value && weeks.value.length) {
     setCurrentWeek(weeks.value[0]);

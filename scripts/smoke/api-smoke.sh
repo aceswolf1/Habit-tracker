@@ -194,13 +194,26 @@ assert_envelope_ok "current"
 CURRENT_UUID="$(jq -r '.data.uuid' "${RESP_BODY}")"
 echo "    current cycle uuid: ${CURRENT_UUID}"
 
-echo "==> smoke: [2] POST /api/cycles  -> 201"
-req POST /api/cycles '{"name":"Smoke Test Cycle"}'
+echo "==> smoke: [2] POST /api/cycles (with v2.1 startDate Monday)  -> 201"
+# v2.1: include a Monday startDate so the smoke proves the new field travels
+# through POST + GET. 2026-10-12 is a Monday in both 2025 and 2026; we pick a
+# clearly-future date so it's never in the past during smoke runs.
+SMOKE_START_DATE="2026-10-12"
+req POST /api/cycles "$(jq -n --arg sd "${SMOKE_START_DATE}" '{name:"Smoke Test Cycle", startDate:$sd}')"
 if [[ "${HTTP_CODE}" != "201" ]]; then
   echo "FATAL: POST /api/cycles expected 201, got ${HTTP_CODE}" >&2
   cat "${RESP_BODY}" >&2; echo >&2
   exit 12
 fi
+assert_envelope_ok "create"
+# Verify startDate round-trips on the created cycle.
+START_DATE_RAW="$(jq -r '.data.startDate' "${RESP_BODY}")"
+if [[ "${START_DATE_RAW}" != "${SMOKE_START_DATE}" ]]; then
+  echo "FATAL: created cycle.startDate expected ${SMOKE_START_DATE}, got ${START_DATE_RAW}" >&2
+  cat "${RESP_BODY}" >&2
+  exit 33
+fi
+echo "    cycle carries startDate=${START_DATE_RAW} OK"
 assert_envelope_ok "create"
 NEW_UUID="$(jq -r '.data.uuid' "${RESP_BODY}")"
 WEEK_UUID="$(jq -r '.data.weeks[0].uuid' "${RESP_BODY}")"
@@ -297,6 +310,68 @@ if [[ "${HTTP_CODE}" != "400" ]]; then
   echo "FATAL: invalid PATCH expected 400, got ${HTTP_CODE}"; cat "${RESP_BODY}"; exit 25
 fi
 assert_envelope_err VALIDATION_ERROR "invalid-patch"
+
+# ---- v2.1 — completedAt set on a flip + cleared on reverse ----------------
+echo
+echo "==> smoke: [10a] v2.1 — PATCH updateTasks(complete) sets completedAt"
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-1","completed":true}]}'
+assert_envelope_ok "completedAt-set"
+req GET "/api/cycles/${NEW_UUID}"
+assert_envelope_ok "completedAt-get"
+COMPLETED_AT="$(jq -r '
+  def find:
+    [.data.weeks[].days[].tasks[] | select(.uuid=="t-smoke-1")][0].completedAt
+    // "<<missing>>";
+  find
+' "${RESP_BODY}")"
+echo "    completedAt after check: ${COMPLETED_AT}"
+if [[ -z "${COMPLETED_AT}" || "${COMPLETED_AT}" == "<<missing>>" || "${COMPLETED_AT}" == "null" ]]; then
+  echo "FATAL: completedAt must be set on completion, got '${COMPLETED_AT}'"; cat "${RESP_BODY}"; exit 31
+fi
+echo "    completedAt set OK"
+
+echo "==> smoke: [10b] v2.1 — PATCH updateTasks(uncomplete) clears completedAt"
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-1","completed":false}]}'
+assert_envelope_ok "completedAt-clear"
+req GET "/api/cycles/${NEW_UUID}"
+assert_envelope_ok "completedAt-get-after-clear"
+COMPLETED_AT="$(jq -r '
+  def find:
+    [.data.weeks[].days[].tasks[] | select(.uuid=="t-smoke-1")][0].completedAt
+    // "<<missing>>";
+  find
+' "${RESP_BODY}")"
+echo "    completedAt after un-check: ${COMPLETED_AT}"
+if [[ "${COMPLETED_AT}" != "null" && "${COMPLETED_AT}" != "<<missing>>" ]]; then
+  echo "FATAL: completedAt was not cleared (got '${COMPLETED_AT}')"; cat "${RESP_BODY}"; exit 32
+fi
+echo "    completedAt clear OK (cleared via reverse flip)"
+
+# ---- v2.1 — profile displayName PATCH + GET round-trip -------------------
+echo
+echo "==> smoke: [10c] v2.1 — PATCH /api/cycles/profile sets displayName; GET reflects it"
+req PATCH "/api/cycles/profile" '{"displayName":"SmokeTester"}'
+assert_envelope_ok "displayName-patch"
+DN_RAW="$(jq -r '.data.displayName' "${RESP_BODY}")"
+if [[ "${DN_RAW}" != "SmokeTester" ]]; then
+  echo "FATAL: displayName patch expected 'SmokeTester', got '${DN_RAW}'"; cat "${RESP_BODY}"; exit 34
+fi
+# GET /profile round-trips it.
+req GET "/api/cycles/profile"
+assert_envelope_ok "displayName-get"
+DN_GET="$(jq -r '.data.displayName' "${RESP_BODY}")"
+if [[ "${DN_GET}" != "SmokeTester" ]]; then
+  echo "FATAL: GET /profile displayName expected 'SmokeTester', got '${DN_GET}'"; cat "${RESP_BODY}"; exit 35
+fi
+echo "    displayName round-trip OK (set + get both 'SmokeTester')"
+# Clear with null so subsequent runs aren't polluted by the previous displayName.
+req PATCH "/api/cycles/profile" '{"displayName":null}'
+assert_envelope_ok "displayName-clear"
+DN_CLEAR="$(jq -r '.data.displayName' "${RESP_BODY}")"
+if [[ "${DN_CLEAR}" != "null" ]]; then
+  echo "FATAL: displayName clear expected null, got '${DN_CLEAR}'"; cat "${RESP_BODY}"; exit 36
+fi
+echo "    displayName clear OK (back to null)"
 
 # ---- V2 A8: Task `notes` set + clear (mirrors FIX-01 gifUrl clear step) ---
 echo

@@ -13,23 +13,27 @@
  */
 import { defineStore } from "pinia";
 import type {
-  Cycle, CycleSummary, FinishResult, PatchBody, Profile, Task,
+  Cycle, CycleSummary, FinishResult, PatchBody, Profile,
+  LevelInfo,
 } from "../types/index";
 import { ApiError, patchCycle as apiPatchCycle } from "../services/cycleApi";
 import {
-  findDayByUuid, findTaskByUuid, findTaskLocation, findWeekByUuid,
+  findDayByUuid, findTaskByUuid, findTaskLocation,
   moveTaskInCycle, removeRecurrenceFromDay, removeTaskFromDay,
 } from "../utils/cycleMutations";
-import {
-  createTaskDraft, generateRecurrenceId, isSameAddPayload,
-} from "../utils/taskFactory";
 import { applyProgressToCopy, refreshProgressLocal } from "../utils/cycleCloning";
+import { bulkAddTasksToCycle } from "../utils/bulkAddTasks";
+import { applyTaskMetaUpdate } from "../utils/taskPayload";
+import type { BulkAddTasksPayload, UpdateTaskPayload } from "../utils/taskPayloadTypes";
 import { buildCloneAdditions, appendClonedTasksToCycle } from "../utils/cloneDay";
 import {
   createMonthAction, fetchMonthDataAction, finishCurrentMonthAction,
   resetToOriginalAction, setCurrentMonthAction,
+  setCycleDatesAction, updateDisplayNameAction,
 } from "../utils/cycleNetwork";
 import { emitAppEvent } from "../composables/useAppEvents";
+import { levelInfo as computeLevelInfo } from "../utils/sharedLevels";
+import { emitLevelUpIfCrossed } from "../utils/levelUp";
 
 // UB-12: serial PATCH queue keyed by cycleUuid.
 const cycleMutationQueues: Record<string, Promise<unknown>> = {};
@@ -62,6 +66,21 @@ export const useMonthStore = defineStore("month", {
       state.currentMonth ? state.currentMonth.progress : 0,
     /** Backwards-compatible lifetimeScore accessor; components read this via storeToRefs. */
     lifetimeScore: (state): number => state.profile?.lifetimeScore ?? 0,
+    /** v2.1: profile `displayName` (or `null` when unset). Components read
+     *  via storeToRefs; back-compat consumers check for undefined. */
+    displayName: (state): string | null => {
+      const dn = state.profile?.displayName;
+      return typeof dn === "string" && dn.length > 0 ? dn : null;
+    },
+    /** v2.1: lifetime-XP level curve. Pure derivation from `lifetimeScore`
+     *  via the shared `shared/levels.js` implementation. */
+    levelInfo(): LevelInfo {
+      return computeLevelInfo(this.lifetimeScore ?? 0);
+    },
+    /** v2.1: cycle start date (Monday 'YYYY-MM-DD') or `null` when undated. */
+    cycleStartDate(): string | null {
+      return this.currentMonth?.startDate ?? null;
+    },
     getWeeks: (state) => (state.currentMonth ? state.currentMonth.weeks : []),
     getWeekByUuid: (state) => (uuid: string) =>
       state.currentMonth ? findWeekByUuid(state.currentMonth, uuid) ?? undefined : undefined,
@@ -92,6 +111,8 @@ export const useMonthStore = defineStore("month", {
     /**
      * UB-10 FE: apply pointsEarned when !== 0; keep lifetimeScore >= 0.
      * Floating UI may still show a negative delta via the pointsEarned event.
+     *
+     * v2.1: when the post-apply level rises, emit `levelUp` exactly once.
      */
     applyPointsEarned(pointsEarned: number | undefined | null,
       detail: { taskUuid?: string; tier?: string | null; isLegendary?: boolean } = {}) {
@@ -102,11 +123,13 @@ export const useMonthStore = defineStore("month", {
         tier: detail.tier,
         isLegendary: detail.isLegendary || false,
       });
-      const next = Math.max(0, (this.profile?.lifetimeScore ?? 0) + pointsEarned);
+      const prev = this.profile?.lifetimeScore ?? 0;
+      const next = Math.max(0, prev + pointsEarned);
       this.profile = {
         ...(this.profile ?? { uuid: "", lifetimeScore: 0 }),
         lifetimeScore: next,
       };
+      emitLevelUpIfCrossed(prev, next);
     },
 
     /**
@@ -187,66 +210,25 @@ export const useMonthStore = defineStore("month", {
       );
     },
 
-    bulkAddTasks(options: {
-      description: string;
-      optional?: boolean;
-      legendary?: boolean;
-      dayUuidsByWeek: Record<string, string[]>;
-      repeatWeeks?: string[];
-      baseWeekUuid: string;
-      recurrenceId?: string;
-      persist?: boolean;
-      icon?: string;
-      gifUrl?: string;
-      gifVideoUrl?: string;
-      gifStillUrl?: string;
-      /** V2: optional free-form memo applied to every added task. */
-      notes?: string;
-    }) {
+    bulkAddTasks(options: BulkAddTasksPayload) {
       if (!this.currentMonth || this.currentMonth.finished) return;
-      const {
-        description,
-        optional = false,
-        legendary = false,
-        dayUuidsByWeek,
-        persist = true,
-        icon,
-        gifUrl,
-        gifVideoUrl,
-        gifStillUrl,
-        notes,
-      } = options;
-      const recurrenceId = options.recurrenceId || generateRecurrenceId();
-      const additions: Extract<PatchBody, { type: "addTasks" }>["additions"] = [];
-      Object.entries(dayUuidsByWeek).forEach(([weekUuid, dayUuids]) => {
-        const week = findWeekByUuid(this.currentMonth!, weekUuid);
-        if (!week) return;
-        Array.from(new Set(dayUuids)).forEach((dayUuid) => {
-          const day = week.days.find((d) => d.uuid === dayUuid);
-          if (!day) return;
-          // Prevent duplicate insertion within the same submit run.
-          if (
-            day.tasks.some((t) =>
-              isSameAddPayload(t, { description, optional, legendary, icon, gifUrl })
-            )
-          ) {
-            return;
-          }
-          const newTask = createTaskDraft({
-            description,
-            optional,
-            legendary,
-            icon,
-            gifUrl,
-            gifVideoUrl,
-            gifStillUrl,
-            notes,
-            recurrenceId,
-            order: day.tasks.length,
-          });
-          day.tasks.push(newTask);
-          additions.push({ weekUuid, dayUuid, task: newTask });
-        });
+      const persist = options.persist !== false;
+      const { additions } = bulkAddTasksToCycle(this.currentMonth, {
+        description: options.description,
+        optional: options.optional,
+        legendary: options.legendary,
+        dayUuidsByWeek: options.dayUuidsByWeek,
+        icon: options.icon,
+        gifUrl: options.gifUrl,
+        gifVideoUrl: options.gifVideoUrl,
+        gifStillUrl: options.gifStillUrl,
+        notes: options.notes,
+        habitId: options.habitId,
+        tag: options.tag,
+        durationMin: options.durationMin,
+        timeOfDay: options.timeOfDay,
+        dueTime: options.dueTime,
+        recurrenceId: options.recurrenceId,
       });
       refreshProgressLocal(this.currentMonth);
       if (persist && additions.length) {
@@ -257,36 +239,12 @@ export const useMonthStore = defineStore("month", {
       }
     },
 
-    updateTask(
-      taskUuid: string,
-      // FIX-01: `icon` / `gifUrl` accept `null` to clear the field
-      // server-side; `undefined` keeps the existing value. V2 A8 extends
-      // the same null/clear semantics to `notes`.
-      payload: {
-        description?: string;
-        optional?: boolean;
-        legendary?: boolean;
-        icon?: string | null;
-        gifUrl?: string | null;
-        gifVideoUrl?: string | null;
-        gifStillUrl?: string | null;
-        notes?: string | null;
-      }
-    ) {
+    updateTask(taskUuid: string, payload: UpdateTaskPayload) {
       if (this.currentMonth?.finished) return;
       const task = findTaskByUuid(this.currentMonth, taskUuid);
       if (!task) return;
-      if (payload.description !== undefined) task.description = payload.description;
-      if (payload.optional !== undefined) task.optional = payload.optional;
-      if (payload.legendary !== undefined) task.legendary = payload.legendary;
-      // `!== undefined` covers null + string (set/clear); strict undefined = no-op.
-      if (payload.icon !== undefined) task.icon = payload.icon as Task["icon"];
-      if (payload.gifUrl !== undefined) task.gifUrl = payload.gifUrl as Task["gifUrl"];
-      if (payload.gifVideoUrl !== undefined) task.gifVideoUrl = payload.gifVideoUrl as Task["gifVideoUrl"];
-      if (payload.gifStillUrl !== undefined) task.gifStillUrl = payload.gifStillUrl as Task["gifStillUrl"];
-      if (payload.notes !== undefined) task.notes = payload.notes as Task["notes"];
+      applyTaskMetaUpdate(task, payload as Parameters<typeof applyTaskMetaUpdate>[1]);
       refreshProgressLocal(this.currentMonth);
-
       this.enqueueCycleMutation(this.currentMonth.uuid, "habit update", {
         type: "updateTasks",
         updates: [{ uuid: taskUuid, ...payload }],
@@ -384,8 +342,49 @@ export const useMonthStore = defineStore("month", {
       await setCurrentMonthAction(this, uuid);
     },
 
-    async createMonth(name?: string) {
-      await createMonthAction(this, name);
+    /**
+     * v2.1: create a (possibly dated) month. `startDate` MUST be a Monday
+     * 'YYYY-MM-DD' or undefined; the backend rejects anything else with
+     * 400 `VALIDATION_ERROR`. The local `mondayOf(today)` defaults are
+     * computed at the call site (e.g. NewMonthDialog).
+     */
+    async createMonth(name?: string, startDate?: string) {
+      await createMonthAction(this, name, startDate);
+    },
+
+    /**
+     * v2.1: set or clear the start date on the CURRENT cycle. `null`
+     * clears (back to an undated month); a string is sent straight to the
+     * backend, which enforces "is a Monday" + 409 on finished cycles.
+     * On success the returned cycle replaces `currentMonth`.
+     */
+    async setCycleDates(startDate: string | null) {
+      try {
+        await setCycleDatesAction(this, startDate);
+      } catch (err) {
+        if (err instanceof ApiError) {
+          console.error("setCycleDates failed:", err.code, err.message);
+        } else {
+          console.error("setCycleDates failed", err);
+        }
+      }
+    },
+
+    /**
+     * v2.1: PATCH the player `displayName` (or clear it with `null`).
+     * Returns the patched profile so callers can react.
+     */
+    async updateDisplayName(name: string | null): Promise<Profile | undefined> {
+      try {
+        return await updateDisplayNameAction(this, name);
+      } catch (err) {
+        if (err instanceof ApiError) {
+          console.error("updateDisplayName failed:", err.code, err.message);
+        } else {
+          console.error("updateDisplayName failed", err);
+        }
+        return undefined;
+      }
     },
 
     async finishCurrentMonth(): Promise<FinishResult | undefined> {

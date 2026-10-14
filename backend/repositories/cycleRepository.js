@@ -49,6 +49,9 @@ function createCycleRepository({ Cycle }) {
         finished: 1,
         createdAt: 1,
         finishedAt: 1,
+        // v2.1: include startDate so the list summaries can render undated
+        // months distinctly (legacy data without it gets `null`).
+        startDate: 1,
       };
       const [docs, total] = await Promise.all([
         Cycle.find()
@@ -68,6 +71,7 @@ function createCycleRepository({ Cycle }) {
         finished: !!c.finished,
         createdAt: c.createdAt,
         finishedAt: c.finishedAt || null,
+        startDate: c.startDate || null,
       }));
       return { items, total };
     },

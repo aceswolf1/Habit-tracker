@@ -97,6 +97,7 @@
       :week="currentWeek"
       :weekIndex="weekIndex"
       :currentDayUuid="currentDayUuid"
+      :cycle="month"
       :todayIndex="todayIndex"
       :setCurrentDay="setCurrentDay"
     />
@@ -115,6 +116,7 @@
           :weeks="month.weeks"
           :monthProgress="month.progress"
           :isFinished="isFinished"
+          :cycle="month"
           :toggleTask="toggleTask"
           :openEditTask="openEditTask"
           :openCreateTaskForDay="openCreateTaskForDay"

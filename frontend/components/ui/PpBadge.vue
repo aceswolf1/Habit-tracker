@@ -6,13 +6,15 @@
 
 <script setup lang="ts">
 /*
- * V2 Combat Deck badge (contract §2).
+ * V2 Combat Deck badge (contract §2 / §5).
  *
  * Sharp tag with a 1px border and a low-opacity wash. Kinds:
  *   - legendary  → magenta border + wash, magenta text.
  *   - optional   → amber dashed border, amber text.
  *   - common     → muted slate border, white text (default).
  *   - rare       → cyan border + wash, cyan text.
+ *   - essential  → green border + wash, green text (v2.1 task tag).
+ *   - defense    → amber border + wash, amber text (v2.1 task tag).
  *   - active     → cyan border + wash, cyan text (same as rare — used
  *                  for "ACTIVE", "TODAY"-style state pills).
  *   - boss       → magenta border + wash, magenta text (same family
@@ -31,6 +33,8 @@ const props = withDefaults(
       | "optional"
       | "common"
       | "rare"
+      | "essential"
+      | "defense"
       | "active"
       | "boss"
       | "today"
@@ -76,6 +80,12 @@ const classes = computed(() => ["pp-badge", `pp-badge--${props.kind}`]);
   background: rgba(0, 240, 255, 0.1);
   color: var(--pp-cyan);
 }
+.pp-badge--essential {
+  border-color: var(--pp-green);
+  background: rgba(0, 255, 102, 0.12);
+  color: var(--pp-green);
+}
+.pp-badge--defense,
 .pp-badge--today {
   border-color: var(--pp-amber);
   background: rgba(255, 190, 11, 0.12);
