@@ -26,11 +26,14 @@ export interface DayStats {
 
 /** XP a single task would award at the current month tier. */
 export function getTaskXp(task: Task, monthProgress: number): number {
-  return calculateTaskPoints(
+  const base = calculateTaskPoints(
     !!task.optional,
     monthProgress,
     !!task.legendary,
   );
+  // v2.2: a completed task also earned its stored strike bonus.
+  const bonus = task.completed ? task.comboBonus || 0 : 0;
+  return base + bonus;
 }
 
 /**

@@ -68,7 +68,11 @@ function calculateMonthScore(month) {
             month.progress || 0,
             task.legendary || false
           );
+          // v2.2: include the per-task strike bonus (XP awarded on top of
+          // base by the combo math). Older tasks without `comboBonus` contribute
+          // 0 — additive only.
           totalScore += points;
+          totalScore += (task.comboBonus || 0);
         }
       }
     }

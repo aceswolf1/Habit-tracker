@@ -34,6 +34,13 @@ const { normalizeDescription, habitKey, newHabitId } = require('./habits');
 const { levelInfo } = require('./levels');
 const { BOSSES, bossForWeek } = require('./bosses');
 const { TAGS, TIMES_OF_DAY, isHHMM } = require('./taskMeta');
+const {
+  COMBO_GAP_DAYS,
+  comboMultiplier,
+  comboName,
+  daysBetween,
+  nextCombo,
+} = require('./combos');
 
 let passed = 0;
 function check(name, fn) {
@@ -502,6 +509,118 @@ check('index barrel re-exports new modules without collisions', () => {
   assert.strictEqual(typeof ix.bossForWeek, 'function');
   assert.strictEqual(typeof ix.isHHMM, 'function');
   assert.ok(Array.isArray(ix.BOSSES));
+});
+
+// =========================================================================
+// v2.2 — shared/combos.js
+// =========================================================================
+
+check('comboMultiplier: combo 1 → 1×, 2 → 1.25×, 3 → 1.5×, 4 → 1.75×, 5+ → 2× (cap)', () => {
+  assert.strictEqual(comboMultiplier(1), 1);
+  assert.strictEqual(comboMultiplier(2), 1.25);
+  assert.strictEqual(comboMultiplier(3), 1.5);
+  assert.strictEqual(comboMultiplier(4), 1.75);
+  assert.strictEqual(comboMultiplier(5), 2);
+  assert.strictEqual(comboMultiplier(6), 2);
+  assert.strictEqual(comboMultiplier(99), 2);
+  // Negative / NaN → floor at 1.
+  assert.strictEqual(comboMultiplier(0), 1);
+  assert.strictEqual(comboMultiplier(-3), 1);
+  assert.strictEqual(comboMultiplier(NaN), 1);
+});
+
+check('comboName: null below 2; DOUBLE/TRIPLE/QUAD/PENTA STRIKE; ×N STRIKE above 5', () => {
+  assert.strictEqual(comboName(0), null);
+  assert.strictEqual(comboName(1), null);
+  assert.strictEqual(comboName(null), null);
+  assert.strictEqual(comboName(undefined), null);
+  assert.strictEqual(comboName(2), 'DOUBLE STRIKE');
+  assert.strictEqual(comboName(3), 'TRIPLE STRIKE');
+  assert.strictEqual(comboName(4), 'QUAD STRIKE');
+  assert.strictEqual(comboName(5), 'PENTA STRIKE');
+  assert.strictEqual(comboName(6), '×6 STRIKE');
+  assert.strictEqual(comboName(9), '×9 STRIKE');
+});
+
+check('daysBetween: integer calendar days across month + year boundaries (UTC noon math)', () => {
+  assert.strictEqual(daysBetween('2026-10-12', '2026-10-12'), 0);
+  assert.strictEqual(daysBetween('2026-10-12', '2026-10-13'), 1);
+  assert.strictEqual(daysBetween('2026-10-12', '2026-10-14'), 2);
+  assert.strictEqual(daysBetween('2026-10-12', '2026-10-15'), 3);
+  // Month boundary
+  assert.strictEqual(daysBetween('2026-10-31', '2026-11-01'), 1);
+  assert.strictEqual(daysBetween('2026-10-30', '2026-11-02'), 3);
+  // Year boundary — diff 1 must hold even though the months roll
+  assert.strictEqual(daysBetween('2026-12-31', '2027-01-01'), 1);
+  assert.strictEqual(daysBetween('2026-12-30', '2027-01-01'), 2);
+  assert.strictEqual(daysBetween('2026-12-29', '2027-01-01'), 3);
+  // Leap day
+  assert.strictEqual(daysBetween('2024-02-28', '2024-03-01'), 2, '2024 leap year');
+  assert.strictEqual(daysBetween('2026-02-28', '2026-03-01'), 1, '2026 NOT a leap year');
+  // Defensive
+  assert.ok(Number.isNaN(daysBetween('not-a-date', '2026-10-12')));
+  assert.ok(Number.isNaN(daysBetween('2026-10-12', null)));
+});
+
+check('nextCombo: first-ever completion (prev null) → 1', () => {
+  assert.strictEqual(nextCombo(null, null, '2026-10-12'), 1);
+  assert.strictEqual(nextCombo(undefined, undefined, '2026-10-12'), 1);
+  assert.strictEqual(nextCombo('2026-10-12', null, '2026-10-12'), 1, 'null prevCombo wins');
+  assert.strictEqual(nextCombo('2026-10-12', 0, '2026-10-12'), 1, 'prevCombo 0 → 1');
+});
+
+check('nextCombo: gap 0 (same day) keeps the combo unchanged (no increase)', () => {
+  assert.strictEqual(nextCombo('2026-10-12', 1, '2026-10-12'), 1, 'combo 1 stays at 1 same-day');
+  assert.strictEqual(nextCombo('2026-10-12', 2, '2026-10-12'), 2, 'combo 2 stays at 2 same-day');
+  assert.strictEqual(nextCombo('2026-10-12', 5, '2026-10-12'), 5, 'combo 5 stays at 5 same-day');
+});
+
+check('nextCombo: gap 1 → prevCombo+1', () => {
+  assert.strictEqual(nextCombo('2026-10-12', 1, '2026-10-13'), 2);
+  assert.strictEqual(nextCombo('2026-10-12', 2, '2026-10-13'), 3);
+  assert.strictEqual(nextCombo('2026-10-12', 4, '2026-10-13'), 5);
+  assert.strictEqual(nextCombo('2026-10-12', 5, '2026-10-13'), 6, 'above cap keeps growing');
+});
+
+check('nextCombo: gap 2 (the boundary) → prevCombo+1', () => {
+  assert.strictEqual(nextCombo('2026-10-12', 1, '2026-10-14'), 2);
+  assert.strictEqual(nextCombo('2026-10-12', 3, '2026-10-14'), 4);
+});
+
+check('nextCombo: gap > 2 (3+) resets to 1', () => {
+  assert.strictEqual(nextCombo('2026-10-12', 1, '2026-10-15'), 1);
+  assert.strictEqual(nextCombo('2026-10-12', 5, '2026-10-16'), 1);
+  assert.strictEqual(nextCombo('2026-10-12', 9, '2026-11-01'), 1, '3-week gap → reset');
+});
+
+check('nextCombo: gap crosses month + year boundary correctly', () => {
+  // Same-year month roll, gap 1
+  assert.strictEqual(nextCombo('2026-10-31', 3, '2026-11-01'), 4);
+  // Year roll, gap 1
+  assert.strictEqual(nextCombo('2026-12-31', 2, '2027-01-01'), 3);
+  // Year roll, gap 2
+  assert.strictEqual(nextCombo('2026-12-30', 4, '2027-01-01'), 5);
+  // Year roll, gap 3 → 1 (reset)
+  assert.strictEqual(nextCombo('2026-12-29', 4, '2027-01-01'), 1);
+});
+
+check('nextCombo: defensive invalid completedOn / out-of-order dates', () => {
+  assert.strictEqual(nextCombo('2026-10-12', 5, null), 1);
+  assert.strictEqual(nextCombo('2026-10-12', 5, 'nope'), 1);
+  assert.strictEqual(nextCombo('2026-10-12', 5, '2026-10-11'), 1, 'time-travel → reset');
+});
+
+check('COMBO_GAP_DAYS is the contract constant (2)', () => {
+  assert.strictEqual(COMBO_GAP_DAYS, 2);
+});
+
+check('index barrel re-exports combo helpers', () => {
+  const ix = require('./index');
+  assert.strictEqual(typeof ix.comboMultiplier, 'function');
+  assert.strictEqual(typeof ix.comboName, 'function');
+  assert.strictEqual(typeof ix.nextCombo, 'function');
+  assert.strictEqual(typeof ix.daysBetween, 'function');
+  assert.strictEqual(ix.COMBO_GAP_DAYS, 2);
 });
 
 console.log(`\n${passed} checks passed`);

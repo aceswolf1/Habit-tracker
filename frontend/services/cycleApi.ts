@@ -25,7 +25,9 @@ import type {
   FinishResult,
   Profile,
   ProfilePatch,
+  Insights,
 } from "../types/index";
+import { todayIso } from "../utils/sharedDates";
 
 // ---------- Errors ----------
 
@@ -250,15 +252,24 @@ export async function createCycle(
  * PATCH a cycle. The body must be a discriminated union (see contract §4).
  * The response is normalized into a `PatchResult`, accepting either
  * `{cycle, pointsEarned, …}` (new) or `{month, pointsEarned, …}` (legacy).
+ *
+ * v2.2: when the body is `{type:"updateTasks", …}` and `clientDate` is
+ * not already set, we stamp the browser-local date so the BE's
+ * `completedOn` reflects the user's wall-clock. The server is the source
+ * of truth — this is just for combo math.
  */
 export async function patchCycle(
   uuid: string,
   body: PatchBody
 ): Promise<PatchResult> {
+  let bodyToSend: PatchBody = body;
+  if (body && body.type === "updateTasks" && !body.clientDate) {
+    bodyToSend = { ...body, clientDate: todayIso() };
+  }
   const res = await fetch(`/api/cycles/${encodeURIComponent(uuid)}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(bodyToSend),
   });
   let raw: any = null;
   try {
@@ -278,12 +289,23 @@ export async function patchCycle(
       "PATCH response missing cycle payload",
     );
   }
-  return {
+  const result: PatchResult = {
     cycle: cycle as Cycle,
     pointsEarned: Number(payload?.pointsEarned) || 0,
     isLegendary: Boolean(payload?.isLegendary),
     currentTier: payload?.currentTier ?? "",
   };
+  // v2.2: optional `combo` field (last completion in the request).
+  if (payload && payload.combo && typeof payload.combo === "object") {
+    const c = payload.combo;
+    result.combo = {
+      taskUuid: String(c.taskUuid || ""),
+      combo: Number(c.combo) || 1,
+      name: typeof c.name === "string" ? c.name : null,
+      bonus: Number(c.bonus) || 0,
+    };
+  }
+  return result;
 }
 
 export async function finishCycle(uuid: string): Promise<FinishResult> {
@@ -305,4 +327,22 @@ export async function finishCycle(uuid: string): Promise<FinishResult> {
     statistics: (payload?.statistics ?? null) as FinishResult["statistics"],
     alreadyFinished: Boolean(payload?.alreadyFinished),
   };
+}
+
+/**
+ * v2.2: read-only insights endpoint (`GET /api/cycles/insights`). See
+ * `development/v2-features/orchestration-ctx/decisions/contract-v2.2.md`
+ * §3 for the full payload shape.
+ */
+export async function getInsights(): Promise<Insights> {
+  const res = await fetch("/api/cycles/insights");
+  let body: any = null;
+  try {
+    body = await res.json();
+  } catch {
+    /* empty */
+  }
+  throwIfFailed(res, body);
+  const payload = extractPayload(body);
+  return (payload || {}) as Insights;
 }

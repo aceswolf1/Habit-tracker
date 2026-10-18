@@ -41,16 +41,45 @@
         icon="⌁"
       />
     </div>
+
+    <div class="hero-section__actions">
+      <button
+        type="button"
+        class="hero-section__cert-btn font-display"
+        data-pp-hero-cert-btn
+        @click="onCertificateClick"
+      >
+        <span aria-hidden="true">▣</span>
+        <span>Certificate</span>
+      </button>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import StatCard from '../StatCard.vue';
+import { emitAppEvent } from '../../composables/useAppEvents';
 
 const props = defineProps<{
   statistics: any;
 }>();
+
+defineEmits<{
+  // Reserved for any future wiring at MonthStatistics level; the
+  // certificate modal opens via the bus for now.
+  (e: 'open-certificate'): void;
+}>();
+
+/**
+ * v2.2 (W2 contract §5): clicking the Certificate button on a finished
+ * month's Stats page re-opens the certificate modal. The `monthFinished`
+ * event handler in ModalsHost is the canonical opener — emitting the
+ * same event re-fires that handler.
+ */
+function onCertificateClick() {
+  emitAppEvent('monthFinished', { cycleUuid: '' });
+}
 
 const tierKey = computed(() => {
   const tier = props.statistics?.finalTier || 'Bronze';
@@ -142,6 +171,42 @@ const bonusText = computed(() => {
 @media (min-width: 1024px) {
   .hero-stats {
     grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/*
+  v2.2 (W2) — "Certificate" action button. Right-aligned on the bottom
+  of the hero section; opens the certificate modal (which then re-fetches
+  insights if it has to). The cyan styling matches the + ADD PROTOCOL
+  primary action elsewhere in the V2 UI.
+*/
+.hero-section__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
+}
+.hero-section__cert-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pp-void);
+  background: var(--pp-cyan);
+  border: 1px solid var(--pp-cyan);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 120ms linear, color 120ms linear;
+}
+.hero-section__cert-btn:hover {
+  color: var(--pp-text);
+  background: var(--pp-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-section__cert-btn {
+    transition: none;
   }
 }
 </style>

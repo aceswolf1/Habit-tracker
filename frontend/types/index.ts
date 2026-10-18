@@ -53,6 +53,13 @@ export interface Task {
   timeOfDay?: TaskTimeOfDay;
   /** v2.1: 24-hour HH:MM string; only meaningful on dated days. */
   dueTime?: string;
+  /** v2.2: server-stamped local calendar date ('YYYY-MM-DD') of the
+   * last completion. `null` when the task is currently un-completed. */
+  completedOn?: string | null;
+  /** v2.2: latest strike-combo level (>= 1 when completed). */
+  combo?: number;
+  /** v2.2: extra XP awarded on top of base for the latest completion. */
+  comboBonus?: number;
 }
 
 export interface Day {
@@ -194,6 +201,16 @@ export interface PatchResult {
   pointsEarned: number;
   isLegendary: boolean;
   currentTier: string;
+  /** v2.2: present when the LAST update in the request was an
+   * `updateTasks` that completed a task. Carries the strike info the
+   * FloatingPoints component flashes. */
+  combo?: {
+    taskUuid: string;
+    combo: number;
+    /** Display name (e.g. 'DOUBLE STRIKE'). `null` when combo === 1. */
+    name: string | null;
+    bonus: number;
+  };
 }
 
 export interface FinishResult {
@@ -255,6 +272,10 @@ export interface PatchUpdateTasks {
     timeOfDay?: TaskTimeOfDay | null;
     dueTime?: string | null;
   }>;
+  /** v2.2: optional browser-local 'YYYY-MM-DD'. When present, used as
+   * the task's `completedOn` stamp on a false→true flip; falls back to
+   * the UTC date of `completedAt` otherwise. */
+  clientDate?: string;
 }
 
 export interface PatchDeleteTasks {
@@ -291,4 +312,58 @@ export type PatchBody =
 
 export interface ProfilePatch {
   displayName?: string | null;
+}
+
+// ---------- v2.2: insights payload (contract §3) ----------
+
+export interface InsightsPerfectDays {
+  current: number;
+  longest: number;
+}
+
+export interface InsightsFinishedMonths {
+  total: number;
+  streak: number;
+}
+
+export interface InsightsHabit {
+  habitKey: string;
+  name: string;
+  completions: number;
+  currentCombo: number;
+  bestCombo: number;
+  lastCompletedOn: string | null;
+}
+
+export interface InsightsMonth {
+  uuid: string;
+  name: string;
+  startDate: string | null;
+  finished: boolean;
+  progress: number;
+  score: number;
+  perfectDays: number;
+  completionRate: number;
+}
+
+export interface InsightsCombatLogEntry {
+  completedAt: string;
+  completedOn: string;
+  taskUuid: string;
+  description: string;
+  xp: number;
+  combo: number | null;
+  comboName: string | null;
+  cycleUuid: string;
+}
+
+export interface Insights {
+  perfectDays: InsightsPerfectDays;
+  finishedMonths: InsightsFinishedMonths;
+  habits: InsightsHabit[];
+  months: InsightsMonth[];
+  /** Mon..Sun (0..6) — % of tasks completed. */
+  weekdayRates: number[];
+  /** Last 7 days by `completedOn`, newest first, capped at 100. */
+  combatLog: InsightsCombatLogEntry[];
 }

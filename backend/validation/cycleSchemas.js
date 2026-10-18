@@ -145,6 +145,12 @@ const updateTasksSchema = z
   .object({
     type: z.literal('updateTasks'),
     updates: z.array(taskUpdateSchema).min(1),
+    // v2.2: browser-local 'YYYY-MM-DD'. When present, used as the
+    // `completedOn` stamp on a false→true flip; falls back to the UTC
+    // date of `completedAt` otherwise.
+    clientDate: z.string().refine(isIsoDate, {
+      message: 'clientDate must be YYYY-MM-DD',
+    }).optional(),
   })
   .strict();
 

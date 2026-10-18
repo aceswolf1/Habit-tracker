@@ -86,6 +86,20 @@
         >
           {{ task.description }}
         </h3>
+        <!-- v2.2: STRIKE READY (pending task) — muted pill announcing that
+             completing now would continue the combo. Shown for tasks
+             whose habit was last completed within the combo window. -->
+        <PpBadge
+          v-if="strikeReadyLabel"
+          kind="muted"
+          :title="strikeReadyTitle"
+        >{{ strikeReadyLabel }}</PpBadge>
+        <!-- v2.2: STRIKE EARNED (completed task) — magenta badge with
+             DOUBLE/TRIPLE/QUAD/PENTA STRIKE name for combo >= 2. -->
+        <PpBadge
+          v-else-if="comboLabel"
+          kind="strike"
+        >{{ comboLabel }}</PpBadge>
         <PpBadge
           v-if="tagKind"
           :kind="tagKind"
@@ -178,7 +192,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, toRef } from "vue";
 import TaskMedia from "../task/TaskMedia.vue";
 import TaskRowMenu from "./TaskRowMenu.vue";
 import PpIcon from "../ui/PpIcon.vue";
@@ -192,8 +206,9 @@ import {
   tagBadgeLabel,
   timeOfDayLabel,
 } from "../../composables/useCampaignStats";
+import { useTaskRowStrikeBadge } from "../../composables/useTaskRowStrikeBadge";
 import { injectCampaignBreakpoints } from "../../composables/campaignBreakpoints";
-import type { Task, Week } from "../../types/index";
+import type { InsightsHabit, Task, Week } from "../../types/index";
 import type { TaskTag, TaskTimeOfDay } from "../../types/index";
 
 const props = defineProps<{
@@ -205,6 +220,9 @@ const props = defineProps<{
   isFinished: boolean;
   /** v2.1: whether the row's day is today. Drives the DUE IN / OVERDUE line. */
   isToday: boolean;
+  /** v2.2: insights habit table, used for the STRIKE READY pill on
+   * pending tasks. Optional — when unset, no STRIKE READY pill is shown. */
+  insightHabits?: InsightsHabit[] | null;
 }>();
 
 const emit = defineEmits<{
@@ -261,6 +279,16 @@ const dueLine = computed(() =>
     { isToday: props.isToday, now: now.value },
     props.task.dueTime ?? null,
   ),
+);
+
+// v2.2: strike + STRIKE READY badge derivations — see
+// `composables/useTaskRowStrikeBadge.ts`. TaskRow + TaskTile share the
+// same rule via this composable so the two surfaces never drift.
+const taskRef = toRef(props, "task");
+const habitsRef = toRef(props, "insightHabits");
+const { comboLabel, strikeReadyLabel, strikeReadyTitle } = useTaskRowStrikeBadge(
+  taskRef,
+  habitsRef,
 );
 
 /**

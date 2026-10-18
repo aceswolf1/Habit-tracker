@@ -47,6 +47,22 @@ export type AppEvents = {
     level: number;
     title: string;
   };
+  /** v2.2: a false→true PATCH completed a habit that just hit a strike
+   * (combo ≥ 2). FloatingPoints listens and flashes 'TRIPLE STRIKE +5'. */
+  strike: {
+    taskUuid: string;
+    combo: number;
+    /** Display name (e.g. 'DOUBLE STRIKE'). `null` when combo < 2 (should
+     * never fire, but defensive). */
+    name: string | null;
+    bonus: number;
+  };
+  /** v2.2: a month was just finished via `finishCurrentMonth`. The
+   * certificate modal (W2) subscribes to this from `ModalsHost` and
+   * opens itself. */
+  monthFinished: {
+    cycleUuid: string;
+  };
 };
 
 export type AppEventName = keyof AppEvents;
@@ -62,6 +78,8 @@ const handlers: { [K in AppEventName]: Set<AppEventHandler<K>> } = {
   pointsEarned: new Set(),
   taskCompleted: new Set(),
   levelUp: new Set(),
+  strike: new Set(),
+  monthFinished: new Set(),
 };
 
 /**
@@ -111,4 +129,6 @@ export function _resetAppEventHandlers(): void {
   handlers.pointsEarned.clear();
   handlers.taskCompleted.clear();
   handlers.levelUp.clear();
+  handlers.strike.clear();
+  handlers.monthFinished.clear();
 }

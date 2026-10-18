@@ -3,26 +3,26 @@
  * Wiring only. All HTTP semantics live in the controller; all business
  * rules live in the services; all I/O lives in the repositories.
  *
- * Route order matters in Express: literal paths (`/profile`, `/current`)
- * must be registered before the `:id` wildcard.
+ * Route order matters in Express: literal paths (`/profile`, `/insights`,
+ * `/current`) must be registered before the `:id` wildcard.
  */
 
 const express = require('express');
-
 const { createCycleController } = require('../controllers/cycleController');
 const {
-  cycleLifecycleService,
-  taskMutationService,
+  cycleLifecycleService, taskMutationService, insightsService,
 } = require('../services');
 
 const router = express.Router();
 const c = createCycleController({
   lifecycleService: cycleLifecycleService,
   taskMutationService,
+  insightsService,
 });
 
 router.get('/profile', c.getProfile);
 router.patch('/profile', c.patchProfile);
+router.get('/insights', c.getInsights);
 router.get('/current', c.getCurrent);
 router.get('/', c.list);
 router.post('/', c.create);

@@ -335,6 +335,14 @@ Contract: `development/v2-features/orchestration-ctx/decisions/contract-v2.1.md`
 - **Sound FX:** `composables/useSoundFx.ts` (WebAudio synth, no files, volume ≤ 0.2, lazy AudioContext on first gesture, default off).
 - **Density rule:** 7 task rows must fit at 1440×900 — header, week tabs and strip changes must not add height on desktop.
 
+### v2.2 additions (strike combos, insights, certificate, telemetry)
+Contract: `development/v2-features/orchestration-ctx/decisions/contract-v2.2.md` (decisions E1–E7).
+- **Strike combos** (`shared/combos.js`): completing the same habit (`habitKey`) again within 2 calendar days of its previous completion → combo +1 (same day = no increase; longer gap → 1). XP multiplier `1 + 0.25·(combo−1)`, cap ×2; legendary ×3 still applies. Names DOUBLE/TRIPLE/QUAD/PENTA STRIKE, then `×N STRIKE`. Forward-only: earlier completions are never rescored.
+- **Task fields** (server-maintained on check, unset on un-check): `completedOn` (local date — the FE sends `clientDate` on every `updateTasks`), `combo`, `comboBonus`, `comboBase`. Un-check subtracts exactly `base + comboBonus`. PATCH responses carry `combo: {taskUuid, combo, name, bonus}`; the store emits the `strike` app event (FloatingPoints flash) and refreshes insights (1 s debounce).
+- **Previous-completion lookup** is `cycleRepository.findRecentCompletionForHabit` (latest `completedOn` ≤ date, across all cycles). It has its own test against a stub model (`backend/scripts/test-repo-habit-lookup.js`) because the fake repo can't catch real-repo bugs; smoke asserts a 3-day TRIPLE STRIKE.
+- **`GET /api/cycles/insights`** (read-only, computed from all cycles): `perfectDays` (all required done; no-task days skipped), `finishedMonths`, `habits` (top 20; completions count pre-v2.2 tasks too), `months`, `weekdayRates`, `combatLog` (last 7 days). Store: `insights` / `fetchInsights()`.
+- **UI:** strike badge + `STRIKE READY ×N` on rows/tiles; cockpit split into `components/campaign/cockpit/*` with Combat log + perfect streak; `components/certificate/` (modal + canvas PNG, opens on the `monthFinished` event and from Stats → CERTIFICATE); Telemetry page (`components/telemetry/*`, sidebar section `telemetry`).
+
 ### Performance
 Measured with `development/remediation-w5/measurements/bench.mjs` (V2 copy: `development/v2-redesign/tasks/W3-qa/bench-v2.mjs`). V2 vs v0.6.0: same 60 fps, far fewer running animations and media bytes; JS heap ~1 MB higher (accepted).
 - **Task GIFs:** a picked GIF stores `gifUrl` (fallback), `gifVideoUrl` (MP4) and `gifStillUrl` (still). `TaskMedia` renders `<video preload="none" :poster>` and `useInViewPlayback` plays it only while ≥ 25% visible and the tab is visible, never under reduced motion. Older tasks fall back to a lazy `<img>`.

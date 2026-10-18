@@ -50,6 +50,16 @@
       >{{ task.description }}</span>
     </div>
     <div class="flex items-center gap-1 flex-wrap">
+      <!-- v2.2: combo badge for completed tiles (magenta), STRIKE READY
+           for pending tiles (muted). Same logic as TaskRow. -->
+      <PpBadge
+        v-if="comboLabel"
+        kind="strike"
+      >{{ comboLabel }}</PpBadge>
+      <PpBadge
+        v-else-if="strikeReadyLabel"
+        kind="muted"
+      >{{ strikeReadyLabel }}</PpBadge>
       <PpBadge
         v-if="tagKind"
         :kind="tagKind"
@@ -73,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, toRef } from "vue";
 import TaskMedia from "../task/TaskMedia.vue";
 import PpBadge from "../ui/PpBadge.vue";
 import {
@@ -81,12 +91,15 @@ import {
   tagBadgeKind,
   tagBadgeLabel,
 } from "../../composables/useCampaignStats";
-import type { Task } from "../../types/index";
+import { useTaskRowStrikeBadge } from "../../composables/useTaskRowStrikeBadge";
+import type { InsightsHabit, Task } from "../../types/index";
 
 const props = defineProps<{
   task: Task;
   dayUuid: string;
   index: number;
+  /** v2.2: insights habit table for the STRIKE READY pill. Optional. */
+  insightHabits?: InsightsHabit[] | null;
 }>();
 
 const emit = defineEmits<{
@@ -101,6 +114,15 @@ const emit = defineEmits<{
 const durationLabel = computed(() => formatDurationLabel(props.task.durationMin));
 const tagKind = computed(() => tagBadgeKind(props.task.tag));
 const tagLabel = computed(() => tagBadgeLabel(props.task.tag) || "");
+
+// v2.2: share the strike + STRIKE READY computation with TaskRow so
+// the two surfaces never drift.
+const taskRef = toRef(props, "task");
+const habitsRef = toRef(props, "insightHabits");
+const { comboLabel, strikeReadyLabel } = useTaskRowStrikeBadge(
+  taskRef,
+  habitsRef,
+);
 
 /**
  * Check button classes (Wave B fixup):

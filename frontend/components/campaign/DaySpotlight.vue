@@ -109,6 +109,7 @@
         :index="originalIndex(task)"
         :isFinished="isFinished"
         :isToday="isTodayForDay"
+        :insightHabits="insightHabits"
         @toggle="onToggle"
         @edit="onEdit"
         @delete="onDelete"
@@ -164,11 +165,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, shallowRef } from "vue";
+import { computed, ref, shallowRef, type Ref } from "vue";
 import TaskRow from "./TaskRow.vue";
 import TaskFilterBar, { type Filter } from "./TaskFilterBar.vue";
 import CloneDayPanel from "./CloneDayPanel.vue";
-import type { Day, Task, Week, Cycle } from "../../types/index";
+import type { Day, InsightsHabit, Task, Week, Cycle } from "../../types/index";
 import { getDayStats } from "../../composables/useCampaignStats";
 import { findToday as findTodayFn } from "../../utils/sharedDates";
 
@@ -181,6 +182,9 @@ const props = defineProps<{
   /** v2.1: full cycle so DaySpotlight can resolve whether the
    *  spotlight's day is today via `findToday(cycle)`. */
   cycle: Cycle | null;
+  /** v2.2: insights habit table, piped down to TaskRow for the
+   * STRIKE READY pill. Optional so legacy callers still compile. */
+  insightHabits?: InsightsHabit[] | null;
   toggleTask: (uuid: string) => void;
   openEditTask: (uuid: string) => void;
   openCreateTaskForDay: (dayUuid: string) => void;

@@ -29,7 +29,8 @@
 const { notFound, cycleFinished } = require('./errors');
 const { PROFILE_UUID } = require('../config');
 const { calculateProgress, generateUuid } = require('../../shared/progress');
-const { newHabitId } = require('../../shared/habits');
+const { newHabitId, normalizeDescription } = require('../../shared/habits');
+const { nextCombo, comboName } = require('../../shared/combos');
 
 // v2.1: max length of the `habitId` field on TaskSchema. The schema
 // constraint is duplicated here so the service can pre-trim before save.
@@ -116,6 +117,30 @@ function applyAdditions(cycle, additions) {
 }
 
 /**
+ * Resolve the habitKey for a task. Prefer `task.habitId`; fall back to
+ * `name:<normalized description>` (matches `shared/habits.habitKey`).
+ */
+function resolveHabitKey(task) {
+  if (task && typeof task.habitId === 'string' && task.habitId.length > 0) {
+    return task.habitId;
+  }
+  const desc = task && typeof task.description === 'string' ? task.description : '';
+  return `name:${normalizeDescription(desc)}`;
+}
+
+/**
+ * Format a Date as a UTC 'YYYY-MM-DD' (matches `shared/dates.dayDate`
+ * style; uses UTC so it's timezone-stable regardless of host TZ).
+ */
+function utcDateOf(d) {
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return null;
+  const yy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+/**
  * Pure: apply each update to its matching task. Returns the array
  * of completion flips for the scoring service.
  *
@@ -128,11 +153,35 @@ function applyAdditions(cycle, additions) {
  *   - `false → true`  → server stamps `completedAt = new Date()`
  *   - `true → false`  → server clears `completedAt` to `null`
  *
+ * v2.2 combo semantics (E1–E4):
+ *   - On a false→true flip the server also stamps `completedOn`
+ *     (either `opts.clientDate` or the UTC date of `completedAt`)
+ *     and computes `combo` by chaining with the most recent prior
+ *     completion of the same habitKey (`opts.lookupPreviousCompletion`).
+ *   - On a true→false flip the server unsets `completedOn`, `combo`,
+ *     and `comboBonus`. The flip carries the stored `comboBonus` so
+ *     the scoring service can reverse it exactly.
+ *
+ * `opts` is optional; when omitted, the function falls back to legacy
+ * v2.1 behavior (no combo math; `comboBonus` flips stay at 0).
+ *
  * @param {object} cycle
  * @param {Array<object>} updates  zod-validated items
- * @returns {Array<{optional:boolean, legendary:boolean, direction:'complete'|'uncomplete'}>}
+ * @param {{
+ *   clientDate?: string|null,
+ *   lookupPreviousCompletion?: (habitKey:string, beforeIso:string, excludeTaskUuid:string) =>
+ *     Promise<{completedOn:string, combo:number, comboBonus:number}|null>,
+ * }} [opts]
+ * @returns {Promise<Array<{optional:boolean, legendary:boolean,
+ *   direction:'complete'|'uncomplete', combo?:number, comboBonus?:number,
+ *   taskUuid?:string}>>}
  */
-function applyUpdates(cycle, updates) {
+async function applyUpdates(cycle, updates, opts) {
+  const ctx = opts || {};
+  const clientDate = typeof ctx.clientDate === 'string' && ctx.clientDate
+    ? ctx.clientDate : null;
+  const lookup = typeof ctx.lookupPreviousCompletion === 'function'
+    ? ctx.lookupPreviousCompletion : null;
   const flips = [];
   for (const update of updates) {
     for (const week of cycle.weeks) {
@@ -173,14 +222,67 @@ function applyUpdates(cycle, updates) {
         if (update.completed !== undefined && wasCompleted !== update.completed) {
           if (update.completed) {
             task.completedAt = new Date();
+            // v2.2: stamp `completedOn` for combo math.
+            const completedOn = clientDate || utcDateOf(task.completedAt);
+            task.completedOn = completedOn;
+            // Resolve combo by chaining with the most recent prior
+            // completion of the same habitKey. Awaited because the lookup
+            // hits the DB.
+            let prev = null;
+            if (lookup) {
+              const habitKey = resolveHabitKey(task);
+              try {
+                prev = await lookup(habitKey, completedOn, task.uuid);
+              } catch (err) {
+                // Defensive: a lookup failure should not block a check.
+                // Surface in logs (server.js request-id logger) and fall
+                // back to combo=1.
+                prev = null;
+              }
+            }
+            const combo = nextCombo(
+              prev && prev.completedOn ? prev.completedOn : null,
+              prev && typeof prev.combo === 'number' ? prev.combo : null,
+              completedOn
+            );
+            task.combo = combo;
+            // `comboBonus` is computed at POST-recalc tier by the scoring
+            // service (UB-06) and then stamped on the task by the patchCycle
+            // orchestrator after the score loop runs. We track the resolved
+            // combo on the flip so the scorer can derive the bonus.
+            flips.push({
+              taskUuid: task.uuid,
+              optional: task.optional,
+              legendary: task.legendary || false,
+              direction: 'complete',
+              combo,
+              // comboBonus is set by patchCycle after scoring; default 0 so
+              // legacy callers (no v2.2) get the same behaviour.
+              comboBonus: 0,
+            });
           } else {
             task.completedAt = null;
+            task.completedOn = null;
+            task.combo = undefined;
+            // Capture the bonus + stored base BEFORE clearing so the
+            // scoring service can reverse them exactly (E4: forward-only;
+            // un-check reverses). For pre-v2.2 tasks neither field is set,
+            // and the score service falls back to POST-recalc tier (v2.1
+            // behavior) — see scoreCompletionFlips.
+            const storedBonus = typeof task.comboBonus === 'number' ? task.comboBonus : 0;
+            const storedBase = typeof task.comboBase === 'number' ? task.comboBase : null;
+            task.comboBonus = undefined;
+            task.comboBase = undefined;
+            const flip = {
+              taskUuid: task.uuid,
+              optional: task.optional,
+              legendary: task.legendary || false,
+              direction: 'uncomplete',
+              comboBonus: storedBonus,
+            };
+            if (storedBase !== null) flip.basePoints = storedBase;
+            flips.push(flip);
           }
-          flips.push({
-            optional: task.optional,
-            legendary: task.legendary || false,
-            direction: !wasCompleted && update.completed ? 'complete' : 'uncomplete',
-          });
         }
       }
     }
@@ -298,9 +400,13 @@ function applyCycleUpdate(cycle, body) {
  * live in `services/index.js` (w3-core).
  *
  * @param {{
- *   cycleRepo: { findByUuid(uuid):Promise<object|null>, save(doc):Promise<object> },
+ *   cycleRepo: { findByUuid(uuid):Promise<object|null>, save(doc):Promise<object>,
+ *                findRecentCompletionForHabit(habitKey:string, beforeIso:string,
+ *                  opts?:{excludeTaskUuid?:string}):Promise<{completedOn:string, combo:number, comboBonus:number}|null> },
  *   profileRepo: { applyLifetimeDelta(uuid:string, delta:number):Promise<object> },
- *   scoreService: { scoreCompletionFlips(cycle, flips):{pointsEarned:number}, tierFor(progress):string }
+ *   scoreService: { scoreCompletionFlips(cycle, flips):{pointsEarned:number},
+ *                   scoreForCompletion(combo:number, optional:boolean, progress:number, legendary:boolean):{base:number, bonus:number, total:number},
+ *                   tierFor(progress):string }
  * }} deps
  */
 function createTaskMutationService({ cycleRepo, profileRepo, scoreService }) {
@@ -313,7 +419,8 @@ function createTaskMutationService({ cycleRepo, profileRepo, scoreService }) {
   /**
    * @param {string} uuid
    * @param {object} body  zod-validated PATCH body
-   * @returns {Promise<{cycle:object, pointsEarned:number, isLegendary:boolean, currentTier:string}>}
+   * @returns {Promise<{cycle:object, pointsEarned:number, isLegendary:boolean,
+   *    currentTier:string, combo?:{taskUuid:string, combo:number, name:string|null, bonus:int}}>}
    */
   async function patchCycle(uuid, body) {
     const cycle = await cycleRepo.findByUuid(uuid);
@@ -331,9 +438,20 @@ function createTaskMutationService({ cycleRepo, profileRepo, scoreService }) {
       case 'addTasks':
         applyAdditions(cycle, body.additions);
         break;
-      case 'updateTasks':
-        flips = applyUpdates(cycle, body.updates);
+      case 'updateTasks': {
+        const ctx = {
+          clientDate: body.clientDate || null,
+          lookupPreviousCompletion: async (habitKey, beforeIso, excludeTaskUuid) => {
+            if (typeof cycleRepo.findRecentCompletionForHabit !== 'function') return null;
+            return cycleRepo.findRecentCompletionForHabit(habitKey, beforeIso, {
+              excludeUuid: uuid,
+              excludeTaskUuid,
+            });
+          },
+        };
+        flips = await applyUpdates(cycle, body.updates, ctx);
         break;
+      }
       case 'deleteTasks':
         applyDeletes(cycle, body);
         break;
@@ -361,6 +479,35 @@ function createTaskMutationService({ cycleRepo, profileRepo, scoreService }) {
     // post-mutation tier (e.g. crossing 24% → 25% should award Silver,
     // not Bronze).
     calculateProgress(cycle);
+
+    // v2.2: for each `complete` flip, stamp `task.comboBonus` (and the
+    // task's stored base `comboBase`) with the values the scoring service
+    // computes at POST-recalc tier. These are what gets reversed exactly
+    // on un-check — see also the `flip.basePoints` branch below.
+    if (typeof scoreService.scoreForCompletion === 'function') {
+      for (const flip of flips) {
+        if (flip.direction !== 'complete') continue;
+        if (!flip.taskUuid) continue;
+        outer: for (const week of cycle.weeks) {
+          for (const day of week.days) {
+            const t = day.tasks.find((x) => x.uuid === flip.taskUuid);
+            if (t) {
+              const { base, bonus } = scoreService.scoreForCompletion(
+                flip.combo || 1,
+                t.optional,
+                cycle.progress || 0,
+                t.legendary || false
+              );
+              t.comboBonus = bonus;
+              t.comboBase = base;
+              flip.comboBonus = bonus;
+              flip.basePoints = base; // stored base; un-check uses it
+              break outer;
+            }
+          }
+        }
+      }
+    }
 
     // Score completion flips using post-recalc progress / tier.
     // `updateCycle` never flips anything → score stays 0.
@@ -392,12 +539,36 @@ function createTaskMutationService({ cycleRepo, profileRepo, scoreService }) {
       }
     }
 
-    return {
+    // v2.2: PATCH response `combo` field — the LAST completion in the
+    // request, so the UI can flash 'TRIPLE STRIKE +5' etc. Only emit
+    // when the last update was an `updateTasks` completing a task.
+    let comboField;
+    if (body.type === 'updateTasks' && body.updates.length > 0) {
+      const last = body.updates[body.updates.length - 1];
+      // Find the last completing flip (matches the last update only if
+      // it actually flipped false→true).
+      for (let i = flips.length - 1; i >= 0; i--) {
+        const f = flips[i];
+        if (f.direction === 'complete' && f.taskUuid === last.uuid) {
+          comboField = {
+            taskUuid: f.taskUuid,
+            combo: f.combo || 1,
+            name: comboName(f.combo || 1),
+            bonus: f.comboBonus || 0,
+          };
+          break;
+        }
+      }
+    }
+
+    const result = {
       cycle: savedCycle,
       pointsEarned,
       isLegendary,
       currentTier: scoreService.tierFor(savedCycle.progress || 0),
     };
+    if (comboField) result.combo = comboField;
+    return result;
   }
 
   return {

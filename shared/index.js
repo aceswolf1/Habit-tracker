@@ -16,6 +16,7 @@ const habits   = require('./habits');
 const levels   = require('./levels');
 const bosses   = require('./bosses');
 const taskMeta = require('./taskMeta');
+const combos   = require('./combos');
 
 module.exports = {
   ...progress,
@@ -25,4 +26,5 @@ module.exports = {
   ...levels,
   ...bosses,
   ...taskMeta,
+  ...combos,
 };

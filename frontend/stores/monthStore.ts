@@ -1,20 +1,17 @@
 /**
  * Pinia store for cycles. Id stays `month` so existing `useMonthStore()`
- * callers in components compile unchanged. The ONLY HTTP-calling consumer
- * of `services/cycleApi.ts`. Pure cycle walking + Task construction lives
- * in `utils/cycleMutations.ts` + `utils/taskFactory.ts`; cloning + progress
- * math lives in `utils/cycleCloning.ts` + `utils/cloneDay.ts`; long API
- * orchestration lives in `utils/cycleNetwork.ts`. App-level events
- * (`toast`, `pointsEarned`, `taskCompleted`) flow through
- * `composables/useAppEvents.emitAppEvent`.
- *
- * W4 contract: public action names + signatures, getter names, and the
- * state shape are unchanged. Components compile without edits.
+ * callers compile unchanged. ONLY HTTP-calling consumer of
+ * `services/cycleApi.ts`. Pure cycle walking in `utils/cycleMutations.ts`;
+ * cloning + progress in `utils/cycleCloning.ts` + `utils/cloneDay.ts`;
+ * long API orchestration in `utils/cycleNetwork.ts`. App-level events
+ * (`toast`, `pointsEarned`, `taskCompleted`, `strike`, `monthFinished`)
+ * flow through `composables/useAppEvents.emitAppEvent`. v2.2 adds
+ * `insights` state + `strike` / `monthFinished` events (additive).
  */
 import { defineStore } from "pinia";
 import type {
-  Cycle, CycleSummary, FinishResult, PatchBody, Profile,
-  LevelInfo,
+  Cycle, CycleSummary, PatchBody, Profile,
+  LevelInfo, Insights,
 } from "../types/index";
 import { ApiError, patchCycle as apiPatchCycle } from "../services/cycleApi";
 import {
@@ -27,9 +24,9 @@ import { applyTaskMetaUpdate } from "../utils/taskPayload";
 import type { BulkAddTasksPayload, UpdateTaskPayload } from "../utils/taskPayloadTypes";
 import { buildCloneAdditions, appendClonedTasksToCycle } from "../utils/cloneDay";
 import {
-  createMonthAction, fetchMonthDataAction, finishCurrentMonthAction,
-  resetToOriginalAction, setCurrentMonthAction,
-  setCycleDatesAction, updateDisplayNameAction,
+  createMonthAction, fetchInsightsAction, fetchMonthDataAction,
+  finishCurrentMonthAction, resetToOriginalAction, setCurrentMonthAction,
+  setCycleDatesAction, updateDisplayNameAction, scheduleInsightsRefresh,
 } from "../utils/cycleNetwork";
 import { emitAppEvent } from "../composables/useAppEvents";
 import { levelInfo as computeLevelInfo } from "../utils/sharedLevels";
@@ -56,6 +53,9 @@ export const useMonthStore = defineStore("month", {
     profile: null as Profile | null,
     isLoading: false,
     error: null as string | null,
+    // v2.2: read-only insights payload. `null` until the first
+    // `fetchInsights()` resolves.
+    insights: null as Insights | null,
   }),
 
   getters: {
@@ -66,14 +66,12 @@ export const useMonthStore = defineStore("month", {
       state.currentMonth ? state.currentMonth.progress : 0,
     /** Backwards-compatible lifetimeScore accessor; components read this via storeToRefs. */
     lifetimeScore: (state): number => state.profile?.lifetimeScore ?? 0,
-    /** v2.1: profile `displayName` (or `null` when unset). Components read
-     *  via storeToRefs; back-compat consumers check for undefined. */
+    /** v2.1: profile `displayName` (or `null` when unset). */
     displayName: (state): string | null => {
       const dn = state.profile?.displayName;
       return typeof dn === "string" && dn.length > 0 ? dn : null;
     },
-    /** v2.1: lifetime-XP level curve. Pure derivation from `lifetimeScore`
-     *  via the shared `shared/levels.js` implementation. */
+    /** v2.1: lifetime-XP level curve. */
     levelInfo(): LevelInfo {
       return computeLevelInfo(this.lifetimeScore ?? 0);
     },
@@ -100,9 +98,8 @@ export const useMonthStore = defineStore("month", {
     },
 
     async recoverFromPersistFailure(operation: string) {
-      try {
-        await this.fetchMonthData();
-      } catch (recoveryError) {
+      try { await this.fetchMonthData(); }
+      catch (recoveryError) {
         console.error(`Recovery after ${operation} failed`, recoveryError);
       }
       this.notifyPersistError(operation);
@@ -111,7 +108,6 @@ export const useMonthStore = defineStore("month", {
     /**
      * UB-10 FE: apply pointsEarned when !== 0; keep lifetimeScore >= 0.
      * Floating UI may still show a negative delta via the pointsEarned event.
-     *
      * v2.1: when the post-apply level rises, emit `levelUp` exactly once.
      */
     applyPointsEarned(pointsEarned: number | undefined | null,
@@ -132,10 +128,8 @@ export const useMonthStore = defineStore("month", {
       emitLevelUpIfCrossed(prev, next);
     },
 
-    /**
-     * Optimistic-action helper. Mutates `currentMonth` in place using the
-     * shared progress math so we don't carry a parallel formula in the store.
-     */
+    /** Optimistic-action helper. Mutates `currentMonth` in place using the
+     * shared progress math so we don't carry a parallel formula. */
     refreshProgressLocal() {
       refreshProgressLocal(this.currentMonth);
     },
@@ -148,6 +142,7 @@ export const useMonthStore = defineStore("month", {
     enqueueCycleMutation(cycleUuid: string, operation: string, body: PatchBody,
       onSuccess?: (res: {
         cycle: Cycle; pointsEarned: number; isLegendary: boolean; currentTier: string;
+        combo?: { taskUuid: string; combo: number; name: string | null; bonus: number };
       }) => void) {
       const run = async () => {
         try {
@@ -168,7 +163,6 @@ export const useMonthStore = defineStore("month", {
       };
       const prev = cycleMutationQueues[cycleUuid] || Promise.resolve();
       const next = prev.then(run, run);
-      // Keep the chain unbroken even if an inner mutation recovers/rejects.
       cycleMutationQueues[cycleUuid] = next.then(
         () => undefined,
         () => undefined
@@ -187,7 +181,6 @@ export const useMonthStore = defineStore("month", {
       loc.task.completed = newStatus;
       refreshProgressLocal(this.currentMonth);
 
-      // Emit particle burst event if completing (not uncompleting).
       if (newStatus) {
         emitAppEvent("taskCompleted", {
           taskUuid,
@@ -201,12 +194,23 @@ export const useMonthStore = defineStore("month", {
         this.currentMonth.uuid,
         "task toggle",
         { type: "updateTasks", updates: [{ uuid: taskUuid, completed: newStatus }] },
-        (res) =>
+        (res) => {
           this.applyPointsEarned(res.pointsEarned, {
             taskUuid,
             tier: res.currentTier,
             isLegendary: res.isLegendary,
-          })
+          });
+          // v2.2: emit `strike` for FloatingPoints, then refresh insights.
+          if (res.combo && res.combo.combo >= 2 && res.combo.taskUuid === taskUuid) {
+            emitAppEvent("strike", {
+              taskUuid: res.combo.taskUuid,
+              combo: res.combo.combo,
+              name: res.combo.name,
+              bonus: res.combo.bonus,
+            });
+          }
+          this.scheduleInsightsRefresh();
+        }
       );
     },
 
@@ -293,7 +297,6 @@ export const useMonthStore = defineStore("month", {
       );
       if (!moved) return;
       refreshProgressLocal(this.currentMonth);
-      // `moved.insertedAt` reflects any clamping the helper applied.
       this.enqueueCycleMutation(this.currentMonth.uuid, "habit move", {
         type: "moveTasks",
         taskUuid,
@@ -305,8 +308,7 @@ export const useMonthStore = defineStore("month", {
     /**
      * V2 A9 — Clone every task from `sourceDayUuid` into each day in
      * `targetDayUuids` via a single PATCH `addTasks`. Returns the
-     * number of tasks actually added (dedup skips existing matches).
-     * Finished month = no-op (returns 0).
+     * number of tasks actually added. Finished month = no-op (0).
      */
     cloneDayTasks(sourceDayUuid: string, targetDayUuids: string[]): number {
       if (!this.currentMonth || this.currentMonth.finished) return 0;
@@ -329,9 +331,6 @@ export const useMonthStore = defineStore("month", {
       return added;
     },
 
-    /** Legacy local-only `addTask` was removed in W2b — `bulkAddTasks` is the only
-     * supported create path (and the only one known to TaskModal). */
-
     // ----- thin pass-throughs to the network helpers (`utils/cycleNetwork.ts`) -----
 
     async fetchMonthData() {
@@ -345,19 +344,13 @@ export const useMonthStore = defineStore("month", {
     /**
      * v2.1: create a (possibly dated) month. `startDate` MUST be a Monday
      * 'YYYY-MM-DD' or undefined; the backend rejects anything else with
-     * 400 `VALIDATION_ERROR`. The local `mondayOf(today)` defaults are
-     * computed at the call site (e.g. NewMonthDialog).
+     * 400 `VALIDATION_ERROR`.
      */
     async createMonth(name?: string, startDate?: string) {
       await createMonthAction(this, name, startDate);
     },
 
-    /**
-     * v2.1: set or clear the start date on the CURRENT cycle. `null`
-     * clears (back to an undated month); a string is sent straight to the
-     * backend, which enforces "is a Monday" + 409 on finished cycles.
-     * On success the returned cycle replaces `currentMonth`.
-     */
+    /** v2.1: set or clear the start date on the CURRENT cycle. */
     async setCycleDates(startDate: string | null) {
       try {
         await setCycleDatesAction(this, startDate);
@@ -370,10 +363,7 @@ export const useMonthStore = defineStore("month", {
       }
     },
 
-    /**
-     * v2.1: PATCH the player `displayName` (or clear it with `null`).
-     * Returns the patched profile so callers can react.
-     */
+    /** v2.1: PATCH the player `displayName` (or clear it with `null`). */
     async updateDisplayName(name: string | null): Promise<Profile | undefined> {
       try {
         return await updateDisplayNameAction(this, name);
@@ -387,8 +377,20 @@ export const useMonthStore = defineStore("month", {
       }
     },
 
-    async finishCurrentMonth(): Promise<FinishResult | undefined> {
-      return finishCurrentMonthAction(this);
+    async finishCurrentMonth(): Promise<void> {
+      await finishCurrentMonthAction(this);
+      // v2.2: insights depend on finished-month streaks; refresh now.
+      await fetchInsightsAction(this);
+    },
+
+    /** v2.2: refresh the read-only insights payload (failures swallowed). */
+    async fetchInsights(): Promise<void> {
+      await fetchInsightsAction(this);
+    },
+
+    /** v2.2: debounce-coalesced insights refresh (used by the toggle path). */
+    scheduleInsightsRefresh() {
+      scheduleInsightsRefresh(this);
     },
 
     async resetToOriginal() {

@@ -30,7 +30,16 @@ const TaskSchema = new mongoose.Schema({
   gifVideoUrl: String,
   gifStillUrl: String,
   // V2: optional free-form note (≤ 280 chars). `null` clears the field.
-  notes: String
+  notes: String,
+  // v2.2 — server-maintained strike-combo state. Set on a false→true flip;
+  // cleared on a true→false flip. Clients never send these.
+  completedOn: String, // 'YYYY-MM-DD' local calendar date
+  combo: Number,       // latest combo level (>=1 when completed)
+  comboBonus: Number,  // extra XP awarded on top of base (>=0)
+  comboBase: Number    // base XP at the time of completion (>=0); used to
+                       // reverse the un-check exactly (stored alongside
+                       // comboBonus so pre-v2.2 tasks fall back to
+                       // POST-recalc tier without missing data).
 });
 
 const DaySchema = new mongoose.Schema({

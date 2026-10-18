@@ -46,8 +46,20 @@
           :class="{ 'app-sidebar__nav-item--active': section === 'stats' }"
           @click="onNav('stats')"
         >
-          <UiPpIcon name="insights" :size="18" />
+          <UiPpIcon name="military_tech" :size="18" />
           <span>STATS</span>
+        </button>
+        <!-- v2.2 (W3): Telemetry — cross-month trends, weekday rates, top
+             habits, streak rollups. Lives alongside Campaign + Stats. -->
+        <button
+          type="button"
+          class="app-sidebar__nav-item"
+          :class="{ 'app-sidebar__nav-item--active': section === 'telemetry' }"
+          @click="onNav('telemetry')"
+          data-pp-nav-telemetry
+        >
+          <UiPpIcon name="insights" :size="18" />
+          <span>TELEMETRY</span>
         </button>
       </nav>
 
@@ -152,7 +164,7 @@ import PpButton from "../ui/PpButton.vue";
 import "./AppSidebar.styles.scss";
 
 const props = defineProps<{
-  section: "campaign" | "stats";
+  section: "campaign" | "stats" | "telemetry";
   open: boolean;
   isDesktop: boolean;
   hasMonth: boolean;
@@ -170,13 +182,13 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "update:section", v: "campaign" | "stats"): void;
+  (e: "update:section", v: "campaign" | "stats" | "telemetry"): void;
   (e: "update:open", v: boolean): void;
   (e: "close"): void;
   (e: "selectMonth", uuid: string): void;
 }>();
 
-function onNav(v: "campaign" | "stats") {
+function onNav(v: "campaign" | "stats" | "telemetry") {
   emit("update:section", v);
   if (!props.isDesktop) emit("update:open", false);
 }

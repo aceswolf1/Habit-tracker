@@ -66,6 +66,7 @@
           :task="task"
           :dayUuid="day.uuid"
           :index="tidx"
+          :insightHabits="insightHabits"
           @toggle="onToggle"
           @edit="onEdit"
           @delete="onDelete"
@@ -85,7 +86,7 @@
 import { computed, ref, shallowRef } from "vue";
 import { injectCampaignBreakpoints } from "../../composables/campaignBreakpoints";
 import TaskTile from "./TaskTile.vue";
-import type { Day, Task, Week } from "../../types/index";
+import type { Day, InsightsHabit, Task, Week } from "../../types/index";
 
 const props = defineProps<{
   week: Week;
@@ -98,6 +99,8 @@ const props = defineProps<{
   deleteSingleTask: (uuid: string) => void;
   currentDayUuid: string | null;
   setCurrentDay: (dayUuid: string) => void;
+  /** v2.2: insights habit table for STRIKE READY on tiles. */
+  insightHabits?: InsightsHabit[] | null;
 }>();
 
 const bp = injectCampaignBreakpoints();

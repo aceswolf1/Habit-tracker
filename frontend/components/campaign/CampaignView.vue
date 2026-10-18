@@ -117,6 +117,7 @@
           :monthProgress="month.progress"
           :isFinished="isFinished"
           :cycle="month"
+          :insightHabits="insights?.habits || null"
           :toggleTask="toggleTask"
           :openEditTask="openEditTask"
           :openCreateTaskForDay="openCreateTaskForDay"
@@ -131,6 +132,8 @@
           :currentDayUuid="currentDayUuid"
           :selectDay="setCurrentDay"
           :isFinished="isFinished"
+          :insights="insights"
+          :monthProgress="month.progress"
         />
       </template>
 
@@ -148,6 +151,7 @@
           :deleteSingleTask="deleteSingleTask"
           :currentDayUuid="currentDayUuid"
           :setCurrentDay="setCurrentDay"
+          :insightHabits="insights?.habits || null"
         />
       </template>
     </div>
@@ -155,7 +159,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useMonthStore } from "../../stores/monthStore";
 import { useSettingsStore } from "../../stores/settingsStore";
@@ -167,7 +171,7 @@ import DaySpotlight from "./DaySpotlight.vue";
 import WeekGrid from "./WeekGrid.vue";
 import CampaignCockpit from "./CampaignCockpit.vue";
 import PpIcon from "../ui/PpIcon.vue";
-import type { Cycle } from "../../types/index";
+import type { Cycle, Insights } from "../../types/index";
 
 const props = defineProps<{
   isFinished: boolean;
@@ -178,6 +182,16 @@ const monthStore = useMonthStore();
 const settings = useSettingsStore();
 const storeRefs: any = storeToRefs(monthStore as any);
 const month = computed<Cycle | null>(() => storeRefs.currentMonth?.value ?? null);
+const insights = computed<Insights | null>(() => storeRefs.insights?.value ?? null);
+
+// v2.2: trigger an insights refresh on mount if the store has none yet
+// (e.g. user navigated directly to the campaign page). Failures are
+// swallowed by `fetchInsights()` so this never throws.
+onMounted(() => {
+  if (!insights.value) {
+    monthStore.fetchInsights();
+  }
+});
 
 // W2-integration / page-state-sharing: read the SINGLE app.vue-owned
 // state via inject (M-1). Calling `useMonthPageState()` here would

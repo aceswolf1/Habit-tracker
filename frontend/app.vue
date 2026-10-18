@@ -66,7 +66,7 @@
     <!-- Stats section: full statistics for finished months;
          progress + "unlock on finish" + finished-months list for
          unfinished months. -->
-    <template v-else>
+    <template v-else-if="section === 'stats'">
       <StatsOrReadonly
         v-if="hasMonth && isFinished"
         :isFinished="isFinished"
@@ -81,6 +81,12 @@
         :currentMonthUuid="currentMonthUuid"
         @selectMonth="onSelectMonthFromPanel"
       />
+    </template>
+
+    <!-- v2.2 (W3): Telemetry page — cross-month insights, weekday rates,
+         top habits with strike combos, streak rollups. -->
+    <template v-else-if="section === 'telemetry'">
+      <TelemetryView />
     </template>
   </AppShell>
 
@@ -130,6 +136,8 @@ import StatsOrReadonly from "./components/app/StatsOrReadonly.vue";
 import StatsUnfinishedPanel from "./components/app/StatsUnfinishedPanel.vue";
 import ModalsHost from "./components/app/ModalsHost.vue";
 import NewMonthDialog from "./components/app/NewMonthDialog.vue";
+// v2.2 (W3): Telemetry page — read-only insights panels.
+import TelemetryView from "./components/telemetry/TelemetryView.vue";
 
 import ToastNotification from "./components/ToastNotification.vue";
 import FloatingPoints from "./components/FloatingPoints.vue";
@@ -221,7 +229,8 @@ providePageState({
 });
 
 // V2 shell: local section state owned here, bound v-model to AppShell.
-const section = ref<"campaign" | "stats">("campaign");
+// v2.2 (W3): adds `'telemetry'` (cross-month insights page).
+const section = ref<"campaign" | "stats" | "telemetry">("campaign");
 
 // Toast + reactive slices
 const toastRef = ref<InstanceType<typeof ToastNotification> | null>(null);

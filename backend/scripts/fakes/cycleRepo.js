@@ -23,6 +23,54 @@ function createFakeCycleRepository() {
     return store.has(uuid) ? clone(store.get(uuid)) : null;
   }
 
+  /**
+   * v2.2 fake — mirrors `cycleRepository.findRecentCompletionForHabit`.
+   * Walks every cycle in the fake's store. Excludes a task only when
+   * BOTH `excludeCycleUuid` AND `excludeTaskUuid` match — that way,
+   * the same uuid reused across different cycles is still picked up.
+   * Returns the latest match (latest `completedOn`).
+   */
+  async function findRecentCompletionForHabit(habitKey, beforeIso, opts) {
+    if (!habitKey || !beforeIso) return null;
+    const excludeCycleUuid = (opts && (opts.excludeCycleUuid || opts.excludeUuid)) || null;
+    const excludeTaskUuid = opts && opts.excludeTaskUuid;
+    let best = null;
+    for (const c of store.values()) {
+      for (const week of c.weeks || []) {
+        for (const day of week.days || []) {
+          for (const t of day.tasks || []) {
+            if (!t.completed || !t.completedOn) continue;
+            if (t.completedOn > beforeIso) continue;
+            if (excludeCycleUuid && c.uuid === excludeCycleUuid
+                && excludeTaskUuid && t.uuid === excludeTaskUuid) continue;
+            const key = t.habitId
+              || `name:${(t.description || '').trim().replace(/\s+/g, ' ').toLowerCase()}`;
+            if (key !== habitKey) continue;
+            if (!best || t.completedOn > best.completedOn) {
+              best = {
+                taskUuid: t.uuid,
+                cycleUuid: c.uuid,
+                completedOn: t.completedOn,
+                combo: t.combo || 1,
+                comboBonus: t.comboBonus || 0,
+                legendary: !!t.legendary,
+              };
+            }
+          }
+        }
+      }
+    }
+    return best;
+  }
+
+  /**
+   * v2.2 fake — returns a lean clone of every cycle (no filter, no
+   * projection). Used by the insights service tests.
+   */
+  async function findAllForInsights() {
+    return Array.from(store.values()).map(clone);
+  }
+
   async function findCurrentUnfinished() {
     const candidates = Array.from(store.values())
       .filter((c) => c && c.finished === false)
@@ -88,6 +136,8 @@ function createFakeCycleRepository() {
     listSummaries,
     create,
     save,
+    findRecentCompletionForHabit,
+    findAllForInsights,
     _reset,
     _all,
     _raw,

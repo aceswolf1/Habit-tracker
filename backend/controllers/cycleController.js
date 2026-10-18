@@ -72,13 +72,29 @@ function handleError(res, err, fallbackMessage = 'Internal server error') {
  *     updateProfile(updates:object): Promise<{uuid, lifetimeScore, displayName?}>,
  *   },
  *   taskMutationService: {
- *     patchCycle(uuid:string, body:object): Promise<{cycle:object, pointsEarned:number, isLegendary:boolean, currentTier:string}>,
+ *     patchCycle(uuid:string, body:object): Promise<{cycle:object, pointsEarned:number, isLegendary:boolean, currentTier:string, combo?:object}>,
+ *   },
+ *   insightsService?: {
+ *     compute(opts?:{today?:string}): Promise<object>,
  *   },
  * }} deps
  */
-function createCycleController({ lifecycleService, taskMutationService }) {
+function createCycleController({ lifecycleService, taskMutationService, insightsService }) {
   if (!lifecycleService || !taskMutationService) {
     throw new Error('createCycleController requires { lifecycleService, taskMutationService }');
+  }
+
+  // ---- GET /insights (v2.2) -----------------------------------------------
+  async function getInsights(req, res) {
+    if (!insightsService) {
+      return fail(res, 501, 'INTERNAL', 'insights service is not configured');
+    }
+    try {
+      const data = await insightsService.compute();
+      return ok(res, data);
+    } catch (err) {
+      return handleError(res, err, 'Failed to compute insights');
+    }
   }
 
   // ---- GET /profile --------------------------------------------------------
@@ -187,6 +203,7 @@ function createCycleController({ lifecycleService, taskMutationService }) {
     getById,
     patch,
     finish,
+    getInsights,
   };
 }
 

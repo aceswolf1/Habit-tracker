@@ -22,6 +22,11 @@
  *                  surface to live on).
  *   - today      → amber border + wash, amber text.
  *   - done       → green border + wash, green text.
+ *   - strike     → magenta border + wash, magenta text (v2.2 §5:
+ *                  DOUBLE / TRIPLE / QUAD STRIKE badge on completed
+ *                  tasks with combo >= 2).
+ *   - muted      → low-contrast slate, used for the "STRIKE READY"
+ *                  pill on pending tasks (v2.2 §5).
  */
 
 import { computed } from "vue";
@@ -38,7 +43,9 @@ const props = withDefaults(
       | "active"
       | "boss"
       | "today"
-      | "done";
+      | "done"
+      | "strike"
+      | "muted";
   }>(),
   { kind: "common" },
 );
@@ -106,5 +113,16 @@ const classes = computed(() => ["pp-badge", `pp-badge--${props.kind}`]);
   border-color: var(--pp-line);
   background: var(--pp-card);
   color: var(--pp-text);
+}
+.pp-badge--strike {
+  border-color: var(--pp-magenta);
+  background: rgba(255, 0, 127, 0.18);
+  color: var(--pp-magenta);
+}
+.pp-badge--muted {
+  border-color: var(--pp-line);
+  background: transparent;
+  color: var(--pp-muted);
+  opacity: 0.85;
 }
 </style>

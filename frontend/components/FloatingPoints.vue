@@ -27,17 +27,30 @@
             '--float-offset-x': point.offsetX + 'px',
           }"
           :class="[
-            point.points > 0 ? 'floating-point--positive' : 'floating-point--negative',
+            point.kind === 'strike'
+              ? 'floating-point--strike'
+              : point.points > 0
+                ? 'floating-point--positive'
+                : 'floating-point--negative',
             point.isLegendary ? 'floating-point--legendary' : '',
             point.tier ? `floating-point--${point.tier.toLowerCase()}` : '',
           ]"
         >
           <span v-if="point.isLegendary" class="floating-point__icon" aria-hidden="true">★</span>
-          <span class="floating-point__value">
-            {{ point.points > 0 ? '+' : '' }}{{ point.points }}
+          <span v-if="point.kind === 'strike'" class="floating-point__strike" aria-hidden="true">⚡</span>
+          <span v-if="point.kind === 'strike'" class="floating-point__value">
+            {{ point.strikeName }}
           </span>
-          <span class="floating-point__label">XP</span>
-          <span v-if="point.isLegendary" class="floating-point__mult">3×</span>
+          <span v-if="point.kind === 'strike'" class="floating-point__label">
+            +{{ point.bonus }}
+          </span>
+          <template v-else>
+            <span class="floating-point__value">
+              {{ point.points > 0 ? '+' : '' }}{{ point.points }}
+            </span>
+            <span class="floating-point__label">XP</span>
+            <span v-if="point.isLegendary" class="floating-point__mult">3×</span>
+          </template>
         </div>
       </TransitionGroup>
     </div>
@@ -50,12 +63,18 @@ import { onAppEvent } from '../composables/useAppEvents';
 
 interface FloatingPoint {
   id: number;
+  /** Either an XP delta (pointsEarned) or a 0 placeholder when it's a strike flash. */
   points: number;
   x: number;
   y: number;
   offsetX: number;
   tier?: string;
   isLegendary?: boolean;
+  /** v2.2: when 'strike', the popup renders a "DOUBLE STRIKE +5" style
+   * line anchored on the just-checked task, instead of an XP number. */
+  kind?: 'xp' | 'strike';
+  strikeName?: string;
+  bonus?: number;
 }
 
 const activePoints = ref<FloatingPoint[]>([]);
@@ -90,7 +109,8 @@ const handlePointsEarned = (detail: { points: number; taskUuid?: string; tier?: 
     y,
     offsetX,
     tier,
-    isLegendary
+    isLegendary,
+    kind: 'xp',
   };
 
   activePoints.value.push(newPoint);
@@ -105,11 +125,57 @@ const handlePointsEarned = (detail: { points: number; taskUuid?: string; tier?: 
   }, duration);
 };
 
+// v2.2: subscribe to the typed `strike` event. Renders a "DOUBLE
+// STRIKE +5"-style popup anchored on the just-checked row's DOM rect.
+// Honors reduced motion (handled at the CSS level by the static
+// transform keyframes — same as the XP variant).
+const handleStrike = (detail: {
+  taskUuid: string;
+  combo: number;
+  name: string | null;
+  bonus: number;
+}) => {
+  const { taskUuid, name, bonus } = detail;
+  const taskElement = document.querySelector(`[data-task-uuid="${taskUuid}"]`);
+  let x = window.innerWidth / 2;
+  let y = window.innerHeight / 2;
+  if (taskElement) {
+    const rect = taskElement.getBoundingClientRect();
+    x = rect.left + rect.width / 2;
+    y = rect.top + rect.height / 2;
+  }
+  const offsetX = (Math.random() - 0.5) * 30;
+  // Defensive: never show a useless popup when `name` is missing.
+  const strikeName = (name && name.length > 0) ? name : 'STRIKE';
+  const safeBonus = Math.max(0, Math.round(Number(bonus) || 0));
+  const newPoint: FloatingPoint = {
+    id: pointIdCounter++,
+    points: 0,
+    x,
+    y,
+    offsetX,
+    kind: 'strike',
+    strikeName,
+    bonus: safeBonus,
+  };
+  activePoints.value.push(newPoint);
+  // Strike popup is short by spec: 1.4 s, then dismissed.
+  const duration = 1400;
+  setTimeout(() => {
+    const index = activePoints.value.findIndex(p => p.id === newPoint.id);
+    if (index !== -1) {
+      activePoints.value.splice(index, 1);
+    }
+  }, duration);
+};
+
 // Typed-bus subscription (UB-54). Returned fn unsubscribes in onBeforeUnmount.
-const unsubscribe = onAppEvent('pointsEarned', handlePointsEarned);
+const unsubscribeXp = onAppEvent('pointsEarned', handlePointsEarned);
+const unsubscribeStrike = onAppEvent('strike', handleStrike);
 
 onBeforeUnmount(() => {
-  unsubscribe();
+  unsubscribeXp();
+  unsubscribeStrike();
 });
 </script>
 
@@ -165,6 +231,34 @@ onBeforeUnmount(() => {
 .floating-point--legendary {
   font-size: 1.25rem;
   color: var(--pp-magenta);
+}
+
+/* v2.2 strike popup: magenta-tinted, no tier, single popup per check.
+   Static transform from the existing `@keyframes floatUp` keyframes —
+   no extra animation here so reduced-motion still kills motion. */
+.floating-point--strike {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 2px 8px;
+  background: rgba(255, 0, 127, 0.22);
+  border: 1px solid var(--pp-magenta);
+  color: var(--pp-magenta);
+  letter-spacing: 0.06em;
+  font-size: 0.95rem;
+}
+.floating-point--strike .floating-point__strike {
+  font-size: 0.95rem;
+  color: var(--pp-magenta);
+}
+.floating-point--strike .floating-point__value {
+  font-size: 1rem;
+  font-weight: 800;
+}
+.floating-point--strike .floating-point__label {
+  font-size: 0.85rem;
+  opacity: 1;
+  font-weight: 700;
 }
 
 .floating-point__icon {

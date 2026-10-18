@@ -58,7 +58,7 @@ import AppSidebar from "./AppSidebar.vue";
 import AppHeader from "./AppHeader.vue";
 
 const props = defineProps<{
-  section: "campaign" | "stats";
+  section: "campaign" | "stats" | "telemetry";
   currentMonth: any;
   months: Array<{ uuid: string; name: string; finished: boolean }>;
   currentMonthUuid: string | null;
@@ -80,7 +80,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "update:section", v: "campaign" | "stats"): void;
+  (e: "update:section", v: "campaign" | "stats" | "telemetry"): void;
 }>();
 
 const sidebarOpen = ref(false);

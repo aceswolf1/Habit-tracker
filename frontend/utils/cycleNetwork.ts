@@ -11,18 +11,20 @@
  * change for consumers.
  */
 
-import type { FinishResult, Profile } from "../types/index";
+import type { FinishResult, Insights, Profile } from "../types/index";
 import {
   createCycle as apiCreateCycle,
   finishCycle as apiFinishCycle,
   getCycle as apiGetCycle,
   getCurrent as apiGetCurrent,
   getProfile as apiGetProfile,
+  getInsights as apiGetInsights,
   listCycles as apiListCycles,
   patchCycle as apiPatchCycle,
   updateProfile as apiUpdateProfile,
 } from "../services/cycleApi";
 import { applyProgressToCopy } from "./cycleCloning";
+import { emitAppEvent } from "../composables/useAppEvents";
 import type { useMonthStore } from "../stores/monthStore";
 
 type Store = ReturnType<typeof useMonthStore>;
@@ -73,6 +75,9 @@ export async function fetchMonthDataAction(store: Store): Promise<void> {
       store.currentMonth = applyProgressToCopy(currentCycle);
       store.currentMonthUuid = currentCycle.uuid;
     }
+    // v2.2: best-effort insights fetch. Failures are non-fatal — the
+    // combat log / telemetry pages show an empty state when absent.
+    await fetchInsightsAction(store);
   } catch (err) {
     store.error =
       err instanceof Error ? err.message : "Unknown error occurred";
@@ -135,8 +140,8 @@ export async function createMonthAction(
 
 export async function finishCurrentMonthAction(
   store: Store,
-): Promise<FinishResult | undefined> {
-  if (!store.currentMonth || store.currentMonth.finished) return undefined;
+): Promise<void> {
+  if (!store.currentMonth || store.currentMonth.finished) return;
   store.isLoading = true;
   try {
     const result = await apiFinishCycle(store.currentMonth.uuid);
@@ -147,16 +152,54 @@ export async function finishCurrentMonthAction(
     } catch {
       /* keep prior summaries */
     }
-    return result;
+    // v2.2: emit `monthFinished` so the certificate modal (W2) can
+    // open itself. `finishCurrentMonthAction` no longer returns the
+    // FinishResult — callers wanting it should use the API directly or
+    // await this and read `store.currentMonth` for the updated cycle.
+    emitAppEvent("monthFinished", { cycleUuid: result.cycle.uuid });
+    void result;
   } catch (err) {
     store.error =
       err instanceof Error ? err.message : "Failed to finish month";
     // eslint-disable-next-line no-console
     console.error("Error finishing month:", err);
-    return undefined;
   } finally {
     store.isLoading = false;
   }
+}
+
+/**
+ * v2.2: refresh the read-only insights payload from
+ * `GET /api/cycles/insights`. Failures are swallowed (insights is
+ * advisory; combat log / perfect streak UI should never break the page).
+ */
+export async function fetchInsightsAction(store: Store): Promise<Insights | null> {
+  try {
+    const insights = await apiGetInsights();
+    store.insights = insights;
+    return insights;
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Insights fetch failed", err);
+    return null;
+  }
+}
+
+// v2.2: debounce timer shared by the toggle path. Coalesces multiple
+// rapid toggles into a single insights fetch.
+let insightsRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+const INSIGHTS_DEBOUNCE_MS = 1000;
+
+/**
+ * v2.2: schedule a debounced insights refresh. Multiple calls within
+ * `INSIGHTS_DEBOUNCE_MS` collapse to one fetch.
+ */
+export function scheduleInsightsRefresh(store: Store): void {
+  if (insightsRefreshTimer) clearTimeout(insightsRefreshTimer);
+  insightsRefreshTimer = setTimeout(() => {
+    insightsRefreshTimer = null;
+    void fetchInsightsAction(store);
+  }, INSIGHTS_DEBOUNCE_MS);
 }
 
 /** Reset by refetching everything — used by the settings drawer. */

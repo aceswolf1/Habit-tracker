@@ -408,6 +408,91 @@ if [[ "${NOTES_RAW}" != "null" && "${NOTES_RAW}" != "<<missing>>" ]]; then
 fi
 echo "    notes clear OK (notes cleared via null)"
 
+# ---- v2.2 — strike combos (E1+E2): same habit on two consecutive days → combo 2 ----
+echo
+echo "==> smoke: [10c] v2.2 — same habit on two consecutive days → combo 2 + bonus > 0"
+# Two tasks with the same `habitId` placed in the same cycle on
+# different days. Complete the first on day 1, then the second on day 2
+# → the lookup chains → combo 2 with a bonus.
+req PATCH "/api/cycles/${NEW_UUID}" "$(jq -n --arg w "$WEEK_UUID" --arg d2 "$DAY2_UUID" '
+  {type:"addTasks", additions:[{
+    weekUuid:$w, dayUuid:$d2,
+    task:{uuid:"t-smoke-2", description:"smoke strike pair", optional:false, completed:false, habitId:"h-smoke-strike"}
+  }]
+}')"
+assert_envelope_ok "strike-add-second"
+# Pin the habitId on t-smoke-1 too — the original step seeded the task
+# without one, so it has an auto-assigned `h-<base36>` id. Overwrite it so
+# the strike lookup chains across them.
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-1","habitId":"h-smoke-strike"}]}'
+assert_envelope_ok "strike-habit-pin"
+# First completion (Monday 2026-10-13). t-smoke-1 is on DAY1_UUID (day 0
+# of week 0 = Monday).
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-1","completed":true}],"clientDate":"2026-10-13"}'
+assert_envelope_ok "strike-first"
+# Second completion the next day on t-smoke-2 (which is in DAY2_UUID =
+# day 1 of week 0 = Tuesday 2026-10-14). The lookup for habitKey
+# 'h-smoke-strike' beforeIso 2026-10-14 finds t-smoke-1 (completed on
+# 2026-10-13 ≤ 2026-10-14). diff = 1 day, combo → 2.
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-2","completed":true}],"clientDate":"2026-10-14"}'
+assert_envelope_ok "strike-second"
+if ! jq -e '.data.combo != null and .data.combo.combo == 2 and .data.combo.name == "DOUBLE STRIKE" and .data.combo.bonus > 0' "${RESP_BODY}" >/dev/null; then
+  echo "FATAL: v2.2 strike response should report combo=2, name=DOUBLE STRIKE, bonus>0"
+  cat "${RESP_BODY}"; exit 37
+fi
+STRIKE_BONUS="$(jq -r '.data.combo.bonus' "${RESP_BODY}")"
+STRIKE_COMBO="$(jq -r '.data.combo.combo' "${RESP_BODY}")"
+echo "    combo=${STRIKE_COMBO} name=DOUBLE STRIKE bonus=${STRIKE_BONUS} OK"
+# Read the cycle back; combo/comboBonus/completedOn are persisted on the
+# second task (the one the response describes).
+req GET "/api/cycles/${NEW_UUID}"
+assert_envelope_ok "strike-get"
+COMBO_STATE="$(jq -r '
+  [.data.weeks[].days[].tasks[] | select(.uuid=="t-smoke-2")][0]
+  | { combo: .combo, comboBonus: .comboBonus, completedOn: .completedOn }
+' "${RESP_BODY}")"
+echo "    persisted combo state on t-smoke-2: ${COMBO_STATE}"
+if ! jq -e '.combo == 2 and .comboBonus > 0 and (.completedOn == "2026-10-14")' <<< "${COMBO_STATE}" >/dev/null; then
+  echo "FATAL: persisted combo state should be combo=2, comboBonus>0, completedOn=2026-10-14"
+  cat "${RESP_BODY}"; exit 38
+fi
+echo "    strike chain OK (combo 2 + bonus > 0 persisted on t-smoke-2)"
+# Third consecutive day must chain from the LATEST completion (combo 3).
+# Regression guard: the real repository once kept the first match, which
+# scored day 3 as DOUBLE STRIKE again.
+DAY3_UUID="$(jq -r '.data.weeks[0].days[2].uuid' "${RESP_BODY}")"
+req PATCH "/api/cycles/${NEW_UUID}" "$(jq -n --arg w "$WEEK_UUID" --arg d3 "$DAY3_UUID" '
+  {type:"addTasks", additions:[{
+    weekUuid:$w, dayUuid:$d3,
+    task:{uuid:"t-smoke-3", description:"smoke strike pair", optional:false, completed:false, habitId:"h-smoke-strike"}
+  }]
+}')"
+assert_envelope_ok "strike-add-third"
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-3","completed":true}],"clientDate":"2026-10-15"}'
+assert_envelope_ok "strike-third"
+if ! jq -e '.data.combo.combo == 3 and .data.combo.name == "TRIPLE STRIKE"' "${RESP_BODY}" >/dev/null; then
+  echo "FATAL: third consecutive day should be combo=3 TRIPLE STRIKE"
+  cat "${RESP_BODY}"; exit 39
+fi
+echo "    combo=3 TRIPLE STRIKE OK"
+
+# ---- v2.2 — GET /api/cycles/insights returns the contract payload shape ----
+echo
+echo "==> smoke: [10d] v2.2 — GET /api/cycles/insights returns the contract payload"
+req GET "/api/cycles/insights"
+assert_envelope_ok "insights"
+if ! jq -e '
+  .data.perfectDays != null and .data.perfectDays.current != null and .data.perfectDays.longest != null
+  and .data.finishedMonths != null and .data.finishedMonths.total != null and .data.finishedMonths.streak != null
+  and (.data.habits | type == "array")
+  and (.data.months | type == "array")
+  and (.data.weekdayRates | type == "array" and (length == 7))
+  and (.data.combatLog | type == "array")
+' "${RESP_BODY}" >/dev/null; then
+  echo "FATAL: insights payload missing one of the contract keys"; cat "${RESP_BODY}"; exit 39
+fi
+echo "    insights payload shape OK"
+
 echo "==> smoke: [11] POST /api/cycles/${NEW_UUID}/finish"
 req POST "/api/cycles/${NEW_UUID}/finish"
 assert_envelope_ok "finish"

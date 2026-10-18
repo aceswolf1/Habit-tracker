@@ -18,6 +18,7 @@ const {
 
 const { createCycleLifecycleService } = require('./cycleLifecycleService');
 const { createTaskMutationService } = require('./taskMutationService');
+const { createInsightsService } = require('./insightsService');
 const scoreService = require('./scoreService');
 
 const cycleLifecycleService = createCycleLifecycleService({
@@ -31,10 +32,16 @@ const taskMutationService = createTaskMutationService({
   scoreService,
 });
 
+// v2.2: insights endpoint service (read-only, computed on demand).
+const insightsService = createInsightsService({
+  cycleRepo: cycleRepository,
+});
+
 module.exports = {
   // Default wired services (controllers import these)
   cycleLifecycleService,
   taskMutationService,
+  insightsService,
   scoreService,
   // Underlying repositories for server boot housekeeping only.
   cycleRepository,
