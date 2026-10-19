@@ -407,9 +407,10 @@ function applyCycleUpdate(cycle, body) {
  *   scoreService: { scoreCompletionFlips(cycle, flips):{pointsEarned:number},
  *                   scoreForCompletion(combo:number, optional:boolean, progress:number, legendary:boolean):{base:number, bonus:number, total:number},
  *                   tierFor(progress):string }
+ *   rewardsService?: { syncRewards(uuid:string, opts?:object): Promise<{newChests:object[], newAchievements:object[]}> },
  * }} deps
  */
-function createTaskMutationService({ cycleRepo, profileRepo, scoreService }) {
+function createTaskMutationService({ cycleRepo, profileRepo, scoreService, rewardsService }) {
   if (!cycleRepo || !profileRepo || !scoreService) {
     throw new Error(
       'createTaskMutationService requires { cycleRepo, profileRepo, scoreService }'
@@ -568,6 +569,33 @@ function createTaskMutationService({ cycleRepo, profileRepo, scoreService }) {
       currentTier: scoreService.tierFor(savedCycle.progress || 0),
     };
     if (comboField) result.combo = comboField;
+
+    // v2.3: sync rewards after every lifecycle-affecting write. Only
+    // attach the `rewards` block when something is new (the FE flashes
+    // toasts only for actual unlocks; an empty delta is silent).
+    if (rewardsService && typeof rewardsService.syncRewards === 'function') {
+      try {
+        const sync = await rewardsService.syncRewards(PROFILE_UUID);
+        if (sync && (sync.newChests.length || sync.newAchievements.length)) {
+          result.rewards = {
+            newChests: sync.newChests.map((c) => c.level),
+            newAchievements: sync.newAchievements.map((a) => ({
+              id: a.id,
+              // name + credits come from the catalog; the FE merges them
+              // with the rewards store response on the next fetchRewards,
+              // so for toasts the id + a server-derived amount is enough.
+              credits: a.credits,
+            })),
+          };
+        }
+      } catch (err) {
+        // Defensive: a rewards-sync failure must not roll back the cycle.
+        // Surface in logs (server.js request-id logger) and continue.
+        // eslint-disable-next-line no-console
+        console.error('[taskMutationService] rewards sync failed', err);
+      }
+    }
+
     return result;
   }
 

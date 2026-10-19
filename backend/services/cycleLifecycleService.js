@@ -44,9 +44,14 @@ const { PROFILE_UUID } = require('../config');
  *     applyLifetimeDelta(uuid, delta): Promise<object>,
  *     updateProfile(uuid, updates): Promise<object>,
  *   },
+ *   rewardsService?: {
+ *     syncRewards(uuid): Promise<{newChests:object[], newAchievements:object[]}>,
+ *     getRewardsResponse(uuid): Promise<object>,
+ *     claimChest(uuid, chestId): Promise<{chest:object, credits:number}>,
+ *   },
  * }} deps
  */
-function createCycleLifecycleService({ cycleRepo, profileRepo }) {
+function createCycleLifecycleService({ cycleRepo, profileRepo, rewardsService }) {
   if (!cycleRepo || !profileRepo) {
     throw new Error('createCycleLifecycleService requires { cycleRepo, profileRepo }');
   }
@@ -143,7 +148,7 @@ function createCycleLifecycleService({ cycleRepo, profileRepo }) {
     calculateProgress(cycle);
     const saved = await cycleRepo.save(cycle);
     const obj = saved && typeof saved.toObject === 'function' ? saved.toObject() : saved;
-    return {
+    const out = {
       cycle: obj,
       pointsEarned: 0,
       isLegendary: false,
@@ -153,6 +158,7 @@ function createCycleLifecycleService({ cycleRepo, profileRepo }) {
         : obj.progress >= 25 ? 'Silver'
         : 'Bronze',
     };
+    return out;
   }
 
   /**
@@ -172,11 +178,25 @@ function createCycleLifecycleService({ cycleRepo, profileRepo }) {
     if (!cycle) throw notFound(`Cycle ${uuid} not found`);
 
     if (cycle.finished && cycle.statistics) {
-      return {
+      const out = {
         cycle: cycle.toObject(),
         statistics: cycle.statistics,
         alreadyFinished: true,
       };
+      // v2.3: even an idempotent finish can produce new chests / achievements
+      // (the player may have unlocked one via history after the first call).
+      // Try to attach a `rewards` block.
+      const sync = await _syncRewards();
+      if (sync.newChests.length || sync.newAchievements.length) {
+        out.rewards = {
+          newChests: sync.newChests.map((c) => c.level),
+          newAchievements: sync.newAchievements.map((a) => ({
+            id: a.id,
+            credits: a.credits,
+          })),
+        };
+      }
+      return out;
     }
 
     calculateProgress(cycle);
@@ -188,11 +208,24 @@ function createCycleLifecycleService({ cycleRepo, profileRepo }) {
     cycle.statistics = statistics;
 
     const saved = await cycleRepo.save(cycle);
-    return {
+    const out = {
       cycle: saved.toObject(),
       statistics,
       alreadyFinished: false,
     };
+    // v2.3: sync rewards after a fresh finish (F3 — achievements come from
+    // history and the just-finished month contributes finishedMonths + tier).
+    const sync = await _syncRewards();
+    if (sync.newChests.length || sync.newAchievements.length) {
+      out.rewards = {
+        newChests: sync.newChests.map((c) => c.level),
+        newAchievements: sync.newAchievements.map((a) => ({
+          id: a.id,
+          credits: a.credits,
+        })),
+      };
+    }
+    return out;
   }
 
   /**
@@ -222,6 +255,38 @@ function createCycleLifecycleService({ cycleRepo, profileRepo }) {
     };
   }
 
+  // ------- v2.3 — rewards endpoints (rewardsService is optional for
+  // unit tests that don't wire it; routes always wire it via services/index.js).
+
+  async function getRewards() {
+    if (!rewardsService) {
+      throw new Error('rewardsService is not wired into cycleLifecycleService');
+    }
+    return rewardsService.getRewardsResponse(PROFILE_UUID);
+  }
+
+  async function claimChest(chestId) {
+    if (!rewardsService) {
+      throw new Error('rewardsService is not wired into cycleLifecycleService');
+    }
+    return rewardsService.claimChest(PROFILE_UUID, chestId);
+  }
+
+  /**
+   * Sync rewards internally. Always returns the delta `{newChests, newAchievements}`
+   * (possibly empty) — used by `finish` to attach the `rewards` block.
+   */
+  async function _syncRewards() {
+    if (!rewardsService) return { newChests: [], newAchievements: [] };
+    try {
+      return await rewardsService.syncRewards(PROFILE_UUID);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[cycleLifecycleService] rewards sync failed', err);
+      return { newChests: [], newAchievements: [] };
+    }
+  }
+
   return {
     getOrCreateCurrent,
     getByUuid,
@@ -231,6 +296,10 @@ function createCycleLifecycleService({ cycleRepo, profileRepo }) {
     finish,
     getProfile,
     updateProfile,
+    // v2.3
+    getRewards,
+    claimChest,
+    _syncRewards,
   };
 }
 

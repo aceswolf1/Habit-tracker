@@ -211,12 +211,17 @@ export interface PatchResult {
     name: string | null;
     bonus: number;
   };
+  /** v2.3: present when the PATCH earned new chests or unlocked
+   *  achievements. The FE merges names by id on the next fetchRewards. */
+  rewards?: PatchRewardEvent;
 }
 
 export interface FinishResult {
   cycle: Cycle;
   statistics: Statistics | null;
   alreadyFinished: boolean;
+  /** v2.3: present when the finish unlocked a chest or achievement. */
+  rewards?: PatchRewardEvent;
 }
 
 // ---------- Discriminated PATCH bodies (contract §4) ----------
@@ -312,6 +317,70 @@ export type PatchBody =
 
 export interface ProfilePatch {
   displayName?: string | null;
+}
+
+// ---------- v2.3: rewards payload (contract §3) ----------
+
+export type ChestRarity = 'common' | 'rare' | 'epic' | 'legendary';
+export const CHEST_RARITIES = ['common', 'rare', 'epic', 'legendary'] as const;
+
+export interface Chest {
+  id: string;
+  level: number;
+  earnedAt: string;
+  claimedAt: string | null;
+  rarity: ChestRarity | null;
+  credits: number | null;
+}
+
+export type AchievementSize = 'small' | 'medium' | 'large';
+export const ACHIEVEMENT_SIZES = ['small', 'medium', 'large'] as const;
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  size: AchievementSize;
+  credits: number;
+  unlocked: boolean;
+  unlockedAt: string | null;
+  /** 0..1 — percent toward unlocking. UI shows locked rows as dimmed + bar. */
+  progress: number;
+  current: number;
+  target: number;
+}
+
+export interface RewardsNextReward {
+  level: number | null;
+  xpRemaining: number | null;
+}
+
+export interface Rewards {
+  credits: number;
+  level: number;
+  title: string;
+  lifetimeScore: number;
+  nextReward: RewardsNextReward;
+  chests: Chest[];
+  achievements: Achievement[];
+}
+
+/**
+ * PATCH /:id and POST /:id/finish responses may carry a `rewards` field
+ * when something new was earned. The names are NOT included server-side
+ * (the FE merges by id against the rewards store on the next fetchRewards).
+ */
+export interface PatchRewardEvent {
+  newChests: number[];
+  newAchievements: Array<{
+    id: string;
+    credits: number;
+  }>;
+}
+
+export interface ClaimChestResult {
+  chest: Chest;
+  credits: number;
 }
 
 // ---------- v2.2: insights payload (contract §3) ----------

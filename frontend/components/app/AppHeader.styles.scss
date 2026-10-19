@@ -1,4 +1,5 @@
-/* AppHeader scoped styles (V2 Combat Deck + v2.1 W3 player identity).
+/* AppHeader scoped styles (V2 Combat Deck + v2.1 W3 player identity
+ * + v2.3 W2 rewards chrome).
  *
  * The .vue file imports this via `<style scoped src>`. Keeping all
  * rules here keeps AppHeader.vue under the 400-line cap.
@@ -9,8 +10,9 @@
  *   3.  Month title + tier strip
  *   4.  v2.1 (W3) player identity line
  *   5.  v2.1 (W3) meter rail (LVL + MONTH bars)
- *   6.  Responsive overrides (≥ lg, ≤ sm)
- *   7.  Reduced motion (no animation today; documents intent)
+ *   6.  v2.3 (W2) chest button + credits + NEXT REWARD label
+ *   7.  Responsive overrides (≥ lg, ≤ sm)
+ *   8.  Reduced motion (no animation today; documents intent)
  */
 
 .app-header {
@@ -189,6 +191,83 @@
   text-transform: uppercase;
   color: var(--pp-muted);
   text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- v2.3 (W2) chest button + credits + NEXT REWARD --------------- */
+
+.app-header__chest {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid var(--pp-line);
+  color: var(--pp-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 150ms ease, border-color 150ms ease,
+    box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.app-header__chest:hover {
+  color: var(--pp-cyan);
+  border-color: var(--pp-cyan);
+  background: rgba(0, 240, 255, 0.08);
+}
+
+.app-header__chest--has {
+  color: var(--pp-amber);
+  border-color: var(--pp-amber);
+  box-shadow: 0 0 6px rgba(255, 190, 11, 0.35);
+}
+
+.app-header__chest--has:hover {
+  filter: brightness(1.08);
+}
+
+.app-header__chest-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pp-amber);
+  color: var(--pp-void);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.625rem;
+  letter-spacing: 0;
+  line-height: 1;
+  box-shadow: 0 0 4px rgba(255, 190, 11, 0.5);
+}
+
+/* v2.3: credits badge inline with the player identity. */
+.app-header__credits {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--pp-line);
+  background: var(--pp-card);
+  color: var(--pp-text);
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+}
+
+.app-header__credits-glyph {
+  color: var(--pp-cyan);
+  font-weight: 700;
+  font-size: 0.8rem;
+  line-height: 1;
 }
 
 /* ---- Responsive (≤ sm) ---------------------------------------------- */
@@ -214,17 +293,38 @@
   .app-header__identity-name {
     max-width: 10ch;
   }
+  /* On phones the credits badge is the same size but the chest
+     button keeps its 40×40 tap target (W4b ≥ 40 px rule). */
+  .app-header__chest {
+    width: 40px;
+    height: 40px;
+  }
+  .app-header__chest-badge {
+    min-width: 16px;
+    height: 16px;
+    font-size: 0.5rem;
+  }
+  .app-header__credits {
+    font-size: 0.55rem;
+    padding: 0.05rem 0.3rem;
+  }
   .app-header__bars--compact .app-header__bar-label {
     display: none;
   }
   .app-header__bars--compact .app-header__bar-row {
     grid-template-columns: 1fr;
   }
+  /* Keep the LVL meter row visible on small screens even when
+     `compact` is set; collapse ONLY the label, keep the bar. */
+  .app-header__bars--compact .app-header__bar-row:first-child {
+    grid-template-columns: 1fr;
+  }
 }
 
-/* v2.1 density (lead): on desktop keep the header as tall as v2.0 so seven
-   task rows still fit in a 1440×900 window — identity + tier share one line
-   and the LVL / MONTH meters sit side by side. */
+/* v2.1 density (lead) + v2.3 (W2): on desktop keep the header as
+   tall as v2.0 so seven task rows still fit in a 1440×900 window —
+   identity + credits + tier share one line and the LVL/MONTH meters
+   sit side by side. */
 @media (min-width: 1024px) {
   .app-header__title {
     flex-direction: row;
@@ -242,4 +342,18 @@
   .app-header__bar-row {
     flex: 1 1 0;
   }
+  /* The NEXT REWARD label is wider than the bare "LVL" / "MONTH"
+     strings, so widen the label column on desktop. */
+  .app-header__bar-row {
+    grid-template-columns: minmax(11rem, max-content) 1fr;
+  }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-header__chest,
+  .app-header__chest:hover,
+  .app-header__chest-badge {
+    transition: none !important;
+  }
+}
+

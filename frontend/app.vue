@@ -30,6 +30,10 @@
     :finishMonth="finishMonth"
     :refreshData="refreshDataFromStore"
     :openCreateTask="openCreateTask"
+    :openChests="onOpenChests"
+    :unclaimedCount="rewardsStore.unclaimedCount"
+    :credits="rewardsStore.credits"
+    :nextReward="rewardsStore.nextReward"
   >
     <!-- Campaign section: EditableMonthView for active months,
          ReadOnlyMonthView for finished months. -->
@@ -88,6 +92,11 @@
     <template v-else-if="section === 'telemetry'">
       <TelemetryView />
     </template>
+    <!-- v2.3 (W3): Trophy Vault page — achievements, certificate gallery,
+         chest history. Reads from rewardsStore + monthStore.months. -->
+    <template v-else-if="section === 'vault'">
+      <VaultView />
+    </template>
   </AppShell>
 
   <!-- Modal hosts (create/edit task + settings drawer). -->
@@ -112,11 +121,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useMonthStore } from "./stores/monthStore";
 import { useSettingsStore, hydrateSettingsFromLocalStorage } from "./stores/settingsStore";
-import { onAppEvent } from "./composables/useAppEvents";
+// v2.3 (W2): rewards store — chest badge, credits, achievements.
+import { useRewardsStore } from "./stores/rewardsStore";
+import { useAppToasts } from "./composables/useAppToasts";
+import { emitAppEvent } from "./composables/useAppEvents";
 import {
   providePageState,
   useMonthPageState,
@@ -138,6 +150,9 @@ import ModalsHost from "./components/app/ModalsHost.vue";
 import NewMonthDialog from "./components/app/NewMonthDialog.vue";
 // v2.2 (W3): Telemetry page — read-only insights panels.
 import TelemetryView from "./components/telemetry/TelemetryView.vue";
+// v2.3 (W3): Trophy Vault page — achievements, certificate gallery,
+// chest history. Reads from rewardsStore + monthStore.months.
+import VaultView from "./components/vault/VaultView.vue";
 
 import ToastNotification from "./components/ToastNotification.vue";
 import FloatingPoints from "./components/FloatingPoints.vue";
@@ -157,6 +172,9 @@ if (requestPath !== "/" && requestPath !== "") {
 // Stores
 const monthStore = useMonthStore();
 const settingsStore = useSettingsStore();
+// v2.3 (W2): rewards store — drives the AppHeader chest badge, the
+// credits balance readout, and the chest/achievement toasts.
+const rewardsStore = useRewardsStore();
 
 // Page state composables
 const {
@@ -230,7 +248,8 @@ providePageState({
 
 // V2 shell: local section state owned here, bound v-model to AppShell.
 // v2.2 (W3): adds `'telemetry'` (cross-month insights page).
-const section = ref<"campaign" | "stats" | "telemetry">("campaign");
+// v2.3 (W3): adds `'vault'` (Trophy Vault: achievements + certs + chests).
+const section = ref<"campaign" | "stats" | "telemetry" | "vault">("campaign");
 
 // Toast + reactive slices
 const toastRef = ref<InstanceType<typeof ToastNotification> | null>(null);
@@ -248,6 +267,17 @@ const hasStartDate = computed(() => {
 
 function openSettings() {
   settingsStore.toggleDrawer(true);
+}
+
+// --- v2.3 (W2) rewards wiring ----------------------------------------
+
+/**
+ * Open the chest modal in `ModalsHost` by dispatching the `openChests`
+ * app event. Going through the bus keeps the header agnostic of where
+ * the modal is mounted; the W3 Trophy Vault uses the same path.
+ */
+function onOpenChests() {
+  emitAppEvent("openChests", {});
 }
 
 // --- v2.1 (W3) NewMonthDialog wiring ------------------------------------
@@ -335,48 +365,9 @@ function onSelectMonthFromPanel(uuid: string) {
   section.value = "stats";
 }
 
-// Notify adapter object — ModalsHost calls these on create/edit/delete.
-const notify = {
-  created: () =>
-    toastRef.value?.add({
-      title: "HABIT ADDED",
-      message: "New quest accepted!",
-      type: "success",
-    }),
-  updated: () =>
-    toastRef.value?.add({
-      title: "HABIT UPDATED",
-      message: "Quest parameters modified.",
-      type: "info",
-    }),
-  deleted: () =>
-    toastRef.value?.add({
-      title: "HABIT REMOVED",
-      message: "Quest abandoned.",
-      type: "warning",
-    }),
-  singleDelete: () =>
-    toastRef.value?.add({
-      title: "HABIT REMOVED",
-      message: "Quest abandoned.",
-      type: "warning",
-    }),
-};
-
-// --- Typed event bus + legacy window listener (UB-54) ---
-function handleToast(detail: {
-  type: "success" | "error" | "info" | "warning";
-  title: string;
-  message: string;
-}) {
-  toastRef.value?.add({
-    type: detail.type,
-    title: detail.title,
-    message: detail.message,
-  });
-}
-
-const toastFromBus = onAppEvent("toast", handleToast);
+// Toasts: ModalsHost notify adapter + app-event toasts (toast, chestEarned,
+// achievementUnlocked). Subscriptions are released on unmount inside.
+const { notify } = useAppToasts(toastRef);
 
 onMounted(async () => {
   // Pinia SSR-deserialised state ignores `typeof window` branches, so
@@ -387,11 +378,11 @@ onMounted(async () => {
   if (!currentWeek.value && weeks.value.length) {
     setCurrentWeek(weeks.value[0]);
   }
+  // v2.3 (W2): kick off an initial rewards fetch so the header badge /
+  // credits readout aren't blank on first paint.
+  rewardsStore.fetchRewards().catch(() => undefined);
 });
 
-onBeforeUnmount(() => {
-  toastFromBus();
-});
 </script>
 
 <style lang="scss">

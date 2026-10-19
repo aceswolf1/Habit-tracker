@@ -508,6 +508,84 @@ if [[ "${HTTP_CODE}" != "409" ]]; then
 fi
 assert_envelope_err CYCLE_FINISHED "finished-patch"
 
+echo "==> smoke: [v23-1] GET /api/cycles/rewards  (synced payload)"
+req GET /api/cycles/rewards
+assert_envelope_ok "rewards-get"
+if ! jq -e '
+  .data.credits != null and .data.level != null and .data.title != null
+  and .data.lifetimeScore != null
+  and .data.nextReward != null and .data.nextReward.level != null and .data.nextReward.xpRemaining != null
+  and (.data.chests | type == "array")
+  and (.data.achievements | type == "array" and (length == 16))
+' "${RESP_BODY}" >/dev/null; then
+  echo "FATAL: rewards payload missing one of the contract keys"; cat "${RESP_BODY}"; exit 41
+fi
+echo "    rewards payload shape OK (credits, level, title, nextReward, chests[], achievements[16])"
+REWARD_CREDITS_BEFORE="$(jq -r '.data.credits' "${RESP_BODY}")"
+echo "    credits before claim: ${REWARD_CREDITS_BEFORE}"
+
+# Find a chest we can claim. The contract backfills chests for every level
+# 2..current; the smoke run generates enough XP for at least one chest.
+# We try the first few chest ids (`ch-2` .. `ch-5`) and pick the first one
+# the server returns. Falls back to "no chests claimable" — still PASS, but
+# the claim steps below become no-ops and we don't fail the smoke.
+CLAIMED_CHEST_ID=""
+for cid in ch-2 ch-3 ch-4 ch-5 ch-6; do
+  CANDIDATE="$(jq -r --arg c "$cid" '[.data.chests[] | select(.id == $c and .claimedAt == null)][0].id // ""' "${RESP_BODY}")"
+  if [[ -n "${CANDIDATE}" ]]; then CLAIMED_CHEST_ID="${CANDIDATE}"; break; fi
+done
+echo "    chose chest id for claim: ${CLAIMED_CHEST_ID:-<none>}"
+
+if [[ -n "${CLAIMED_CHEST_ID}" ]]; then
+  echo "==> smoke: [v23-2] POST /api/cycles/rewards/chests/${CLAIMED_CHEST_ID}/claim  (200, credits > 0)"
+  req POST "/api/cycles/rewards/chests/${CLAIMED_CHEST_ID}/claim"
+  assert_envelope_ok "rewards-claim"
+  CLAIMED_CREDITS="$(jq -r '.data.credits' "${RESP_BODY}")"
+  CLAIMED_CHEST_RARITY="$(jq -r '.data.chest.rarity // ""' "${RESP_BODY}")"
+  # `data.credits` here is the awarded amount (per §3 — not the post-claim balance).
+  if ! jq -e '.data.credits > 0' "${RESP_BODY}" >/dev/null; then
+    echo "FATAL: claim credits must be > 0, got ${CLAIMED_CREDITS}"
+    cat "${RESP_BODY}"; exit 42
+  fi
+  if ! jq -e '.data.chest.rarity | type == "string" and (. == "common" or . == "rare" or . == "epic" or . == "legendary")' "${RESP_BODY}" >/dev/null; then
+    echo "FATAL: claimed chest did not return a valid rarity (${CLAIMED_CHEST_RARITY})"
+    cat "${RESP_BODY}"; exit 42
+  fi
+  echo "    claimed credits=${CLAIMED_CREDITS} (rarity=${CLAIMED_CHEST_RARITY}) OK"
+
+  echo "==> smoke: [v23-3] POST same claim again -> 409 ALREADY_CLAIMED"
+  req POST "/api/cycles/rewards/chests/${CLAIMED_CHEST_ID}/claim"
+  if [[ "${HTTP_CODE}" != "409" ]]; then
+    echo "FATAL: second claim expected 409, got ${HTTP_CODE}"; cat "${RESP_BODY}"; exit 43
+  fi
+  assert_envelope_err ALREADY_CLAIMED "rewards-already-claimed"
+fi
+
+# GET /rewards shape: chests include rarity + credits for claimed rows
+# (this also re-syncs the profile, which is OK after a 409).
+echo "==> smoke: [v23-4] GET /api/cycles/rewards — re-sync after claim shows claimed chest with rarity+credits"
+req GET /api/cycles/rewards
+assert_envelope_ok "rewards-resync"
+if [[ -n "${CLAIMED_CHEST_ID}" ]]; then
+  if ! jq -e --arg c "${CLAIMED_CHEST_ID}" '
+    .data.chests
+    | map(select(.id == $c))
+    | (.[0].claimedAt != null and .[0].rarity != null and .[0].credits != null)
+  ' "${RESP_BODY}" >/dev/null; then
+    echo "FATAL: claimed chest ${CLAIMED_CHEST_ID} not visible with claimedAt+rarity+credits on resync"
+    cat "${RESP_BODY}"; exit 44
+  fi
+  echo "    claimed chest ${CLAIMED_CHEST_ID} persists with rarity + credits OK"
+fi
+
+# Unknown chest → 404.
+echo "==> smoke: [v23-5] POST /api/cycles/rewards/chests/ch-doesnotexist/claim -> 404 NOT_FOUND"
+req POST "/api/cycles/rewards/chests/ch-doesnotexist/claim"
+if [[ "${HTTP_CODE}" != "404" ]]; then
+  echo "FATAL: unknown chest expected 404, got ${HTTP_CODE}"; cat "${RESP_BODY}"; exit 45
+fi
+assert_envelope_err NOT_FOUND "rewards-chest-404"
+
 echo "==> smoke: [13] GET /api/tasks  (proxy allowlist removed it -> 404)"
 req GET /api/tasks
 if [[ "${HTTP_CODE}" != "404" ]]; then

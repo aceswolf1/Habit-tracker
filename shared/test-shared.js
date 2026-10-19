@@ -41,6 +41,18 @@ const {
   daysBetween,
   nextCombo,
 } = require('./combos');
+const {
+  CHEST_CREDITS,
+  chestOdds,
+  rollRarity,
+  nextRewardInfo,
+} = require('./rewards');
+const {
+  ACHIEVEMENTS,
+  ACHIEVEMENT_CREDITS,
+  evaluateAchievements,
+  indexOfTier,
+} = require('./achievements');
 
 let passed = 0;
 function check(name, fn) {
@@ -621,6 +633,213 @@ check('index barrel re-exports combo helpers', () => {
   assert.strictEqual(typeof ix.nextCombo, 'function');
   assert.strictEqual(typeof ix.daysBetween, 'function');
   assert.strictEqual(ix.COMBO_GAP_DAYS, 2);
+});
+
+// =========================================================================
+// v2.3 — shared/rewards.js
+// =========================================================================
+
+check('CHEST_CREDITS matches the contract (common 10 / rare 25 / epic 50 / legendary 100)', () => {
+  assert.deepStrictEqual(CHEST_CREDITS, {
+    common: 10, rare: 25, epic: 50, legendary: 100,
+  });
+});
+
+check('chestOdds sums to exactly 1 at every level band', () => {
+  for (const lv of [1, 5, 9, 10, 15, 19, 20, 30, 99]) {
+    const o = chestOdds(lv);
+    const sum = o.common + o.rare + o.epic + o.legendary;
+    assert.ok(Math.abs(sum - 1) < 1e-9, `odds at level ${lv} must sum to 1; got ${sum}`);
+    // Band-shape guard rails (F2):
+    if (lv < 10) {
+      assert.deepStrictEqual(o, { common: 0.60, rare: 0.25, epic: 0.12, legendary: 0.03 });
+    } else if (lv < 20) {
+      assert.deepStrictEqual(o, { common: 0.45, rare: 0.30, epic: 0.18, legendary: 0.07 });
+    } else {
+      assert.deepStrictEqual(o, { common: 0.30, rare: 0.35, epic: 0.25, legendary: 0.10 });
+    }
+  }
+});
+
+check('rollRarity: deterministic with an injected rand; covers boundaries', () => {
+  // At level 5 (band <10): .60/.25/.12/.03
+  //   sample < 0.60                  → common
+  //   0.60 <= sample < 0.85          → rare
+  //   0.85 <= sample < 0.97          → epic
+  //   0.97 <= sample                 → legendary
+  const cases = [
+    { lv: 5,  sample: 0.0,     expect: 'common' },
+    { lv: 5,  sample: 0.5999,  expect: 'common' },
+    { lv: 5,  sample: 0.60,    expect: 'rare' },
+    { lv: 5,  sample: 0.8499,  expect: 'rare' },
+    { lv: 5,  sample: 0.85,    expect: 'epic' },
+    { lv: 5,  sample: 0.9699,  expect: 'epic' },
+    { lv: 5,  sample: 0.97,    expect: 'legendary' },
+    { lv: 5,  sample: 0.9999,  expect: 'legendary' },
+    // Level 10–19
+    { lv: 15, sample: 0.4499,  expect: 'common' },
+    { lv: 15, sample: 0.45,    expect: 'rare' },
+    { lv: 15, sample: 0.7499,  expect: 'rare' },
+    { lv: 15, sample: 0.75,    expect: 'epic' },
+    { lv: 15, sample: 0.9299,  expect: 'epic' },
+    { lv: 15, sample: 0.93,    expect: 'legendary' },
+    // Level 20+
+    { lv: 25, sample: 0.2999,  expect: 'common' },
+    { lv: 25, sample: 0.30,    expect: 'rare' },
+    { lv: 25, sample: 0.6499,  expect: 'rare' },
+    { lv: 25, sample: 0.65,    expect: 'epic' },
+    { lv: 25, sample: 0.8999,  expect: 'epic' },
+    { lv: 25, sample: 0.90,    expect: 'legendary' },
+  ];
+  for (const c of cases) {
+    const got = rollRarity(c.lv, () => c.sample);
+    assert.strictEqual(got, c.expect, `lv=${c.lv} sample=${c.sample}: expected ${c.expect}, got ${got}`);
+  }
+});
+
+check('rollRarity: defensive — bad rand (NaN, ≥1) collapses to common', () => {
+  assert.strictEqual(rollRarity(5, () => NaN), 'common');
+  assert.strictEqual(rollRarity(5, () => -0.1), 'common');
+  assert.strictEqual(rollRarity(5, () => 1.5), 'common');
+});
+
+check('rollRarity: distribution sanity (10000 trials) stays inside a generous error band', () => {
+  // Loose sanity: for level 5 the legendary share is 3%. Across 10000 trials
+  // we expect a hit rate between 1% and 6%.
+  let legend = 0;
+  const N = 10000;
+  for (let i = 0; i < N; i++) {
+    if (rollRarity(5) === 'legendary') legend++;
+  }
+  const rate = legend / N;
+  assert.ok(rate > 0.01 && rate < 0.06, `legendary rate should be ~0.03; got ${rate.toFixed(4)}`);
+});
+
+check('nextRewardInfo: level 1 (0 XP) → next reward level 2, xp 25', () => {
+  // level 1 starts at 0 XP, next = 25, intoLevel = 0 → remaining 25.
+  assert.deepStrictEqual(nextRewardInfo(0),   { level: 2, xpRemaining: 25 });
+  assert.deepStrictEqual(nextRewardInfo(24),  { level: 2, xpRemaining: 1 });
+  assert.deepStrictEqual(nextRewardInfo(25),  { level: 3, xpRemaining: 75 });
+  assert.deepStrictEqual(nextRewardInfo(26),  { level: 3, xpRemaining: 74 });
+});
+
+check('nextRewardInfo: ARCHON (level 40+) → level:null, xpRemaining:null', () => {
+  const archon = nextRewardInfo(25 * 39 * 39);
+  assert.strictEqual(archon.level, null);
+  assert.strictEqual(archon.xpRemaining, null);
+});
+
+check('nextRewardInfo: defensive — negative XP clamps to level 1', () => {
+  const r = nextRewardInfo(-100);
+  assert.strictEqual(r.level, 2, 'next reward is level 2');
+  assert.strictEqual(r.xpRemaining, 25);
+});
+
+// =========================================================================
+// v2.3 — shared/achievements.js
+// =========================================================================
+
+check('ACHIEVEMENTS catalog has 16 entries with the contract ids', () => {
+  assert.strictEqual(ACHIEVEMENTS.length, 16);
+  const ids = ACHIEVEMENTS.map((a) => a.id);
+  for (const id of [
+    'first-blood', 'grinder-10', 'grinder-100', 'grinder-500',
+    'month-1', 'month-3', 'month-12',
+    'tier-silver', 'tier-gold', 'tier-champion', 'tier-final',
+    'perfect-3', 'perfect-7',
+    'strike-2', 'strike-5',
+    'level-10',
+  ]) {
+    assert.ok(ids.includes(id), `catalog missing ${id}`);
+  }
+});
+
+check('ACHIEVEMENT_CREDITS maps size → credit (small 10 / medium 25 / large 50)', () => {
+  assert.deepStrictEqual(ACHIEVEMENT_CREDITS, { small: 10, medium: 25, large: 50 });
+});
+
+check('evaluateAchievements: empty stats → all rows unlocked:false, progress=0', () => {
+  const rows = evaluateAchievements({});
+  assert.strictEqual(rows.length, ACHIEVEMENTS.length);
+  for (const r of rows) {
+    assert.strictEqual(r.unlocked, false, `${r.id} should be locked`);
+    assert.strictEqual(r.progress, 0, `${r.id} should have progress 0`);
+    assert.strictEqual(typeof r.target, 'number');
+    assert.strictEqual(typeof r.credits, 'number');
+  }
+});
+
+check('evaluateAchievements: first-blood unlocks at completions=1', () => {
+  const rows = evaluateAchievements({ completions: 1 });
+  const fb = rows.find((r) => r.id === 'first-blood');
+  assert.strictEqual(fb.unlocked, true);
+  assert.strictEqual(fb.current, 1);
+  assert.strictEqual(fb.target, 1);
+  assert.strictEqual(fb.progress, 1);
+});
+
+check('evaluateAchievements: progress is fractional (<1) under target', () => {
+  const rows = evaluateAchievements({ completions: 5, finishedMonths: 2, level: 4 });
+  const grinder = rows.find((r) => r.id === 'grinder-10');      // target 10
+  const machine = rows.find((r) => r.id === 'grinder-500');    // target 500
+  const level10 = rows.find((r) => r.id === 'level-10');       // target 10
+  assert.strictEqual(grinder.unlocked, false);
+  assert.ok(Math.abs(grinder.progress - 0.5) < 1e-9, `expected 0.5; got ${grinder.progress}`);
+  assert.strictEqual(machine.unlocked, false);
+  assert.ok(Math.abs(machine.progress - 0.01) < 1e-9);
+  assert.strictEqual(level10.unlocked, false);
+  assert.ok(Math.abs(level10.progress - 0.4) < 1e-9);
+});
+
+check('evaluateAchievements: tier-silver/champion require bestTierReached index 1/3', () => {
+  const rows = evaluateAchievements({ bestTierReached: 3 });
+  const silver    = rows.find((r) => r.id === 'tier-silver');
+  const champion  = rows.find((r) => r.id === 'tier-champion');
+  const finalForm = rows.find((r) => r.id === 'tier-final');
+  assert.strictEqual(silver.unlocked, true);
+  assert.strictEqual(silver.current, 3);
+  assert.strictEqual(champion.unlocked, true);
+  assert.strictEqual(finalForm.unlocked, false);
+});
+
+check('indexOfTier: maps progress to Bronze=0..Final=4', () => {
+  assert.strictEqual(indexOfTier(0),    0);
+  assert.strictEqual(indexOfTier(24),   0);
+  assert.strictEqual(indexOfTier(25),   1);
+  assert.strictEqual(indexOfTier(50),   2);
+  assert.strictEqual(indexOfTier(75),   3);
+  assert.strictEqual(indexOfTier(100),  4);
+  assert.strictEqual(indexOfTier(110),  4);
+  assert.strictEqual(indexOfTier(-10),  0);
+});
+
+check('evaluateAchievements: strike-2 unlocks at bestCombo=2', () => {
+  const rows = evaluateAchievements({ bestCombo: 2 });
+  const s2 = rows.find((r) => r.id === 'strike-2');
+  const s5 = rows.find((r) => r.id === 'strike-5');
+  assert.strictEqual(s2.unlocked, true);
+  assert.strictEqual(s5.unlocked, false);
+});
+
+check('evaluateAchievements: level-10 unlocks at level=10', () => {
+  const rows = evaluateAchievements({ level: 10 });
+  const r = rows.find((x) => x.id === 'level-10');
+  assert.strictEqual(r.unlocked, true);
+});
+
+// =========================================================================
+// v2.3 — index barrel re-exports rewards + achievements
+// =========================================================================
+
+check('index barrel re-exports rewards + achievements helpers', () => {
+  const ix = require('./index');
+  assert.deepStrictEqual(ix.CHEST_CREDITS, CHEST_CREDITS);
+  assert.strictEqual(typeof ix.chestOdds, 'function');
+  assert.strictEqual(typeof ix.rollRarity, 'function');
+  assert.strictEqual(typeof ix.nextRewardInfo, 'function');
+  assert.strictEqual(typeof ix.evaluateAchievements, 'function');
+  assert.deepStrictEqual(ix.ACHIEVEMENT_CREDITS, ACHIEVEMENT_CREDITS);
+  assert.ok(Array.isArray(ix.ACHIEVEMENTS) && ix.ACHIEVEMENTS.length === 16);
 });
 
 console.log(`\n${passed} checks passed`);

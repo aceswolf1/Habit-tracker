@@ -61,6 +61,19 @@
           <UiPpIcon name="insights" :size="18" />
           <span>TELEMETRY</span>
         </button>
+        <!-- v2.3 (W3): Trophy Vault — achievements grid, finished-month
+             certificates, chest history. The trophy icon is added by W2
+             (contract §5); until then military_tech stands in. -->
+        <button
+          type="button"
+          class="app-sidebar__nav-item"
+          :class="{ 'app-sidebar__nav-item--active': section === 'vault' }"
+          @click="onNav('vault')"
+          data-pp-nav-vault
+        >
+          <UiPpIcon :name="trophyIcon" :size="18" />
+          <span>TROPHY VAULT</span>
+        </button>
       </nav>
 
       <!-- Month switcher -->
@@ -164,7 +177,7 @@ import PpButton from "../ui/PpButton.vue";
 import "./AppSidebar.styles.scss";
 
 const props = defineProps<{
-  section: "campaign" | "stats" | "telemetry";
+  section: "campaign" | "stats" | "telemetry" | "vault";
   open: boolean;
   isDesktop: boolean;
   hasMonth: boolean;
@@ -182,13 +195,22 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "update:section", v: "campaign" | "stats" | "telemetry"): void;
+  (e: "update:section", v: "campaign" | "stats" | "telemetry" | "vault"): void;
   (e: "update:open", v: boolean): void;
   (e: "close"): void;
   (e: "selectMonth", uuid: string): void;
 }>();
 
-function onNav(v: "campaign" | "stats" | "telemetry") {
+// v2.3 (W3): `trophy` was added by W2 to the icon registry. Use it
+// when available, fall back to `military_tech` for the rare case the
+// icon list isn't yet shipped (e.g. mid-task).
+import type { IconName } from "../ui/iconNames";
+import { ICON_NAMES } from "../ui/iconNames";
+const trophyIcon: IconName = ICON_NAMES.includes("trophy")
+  ? "trophy"
+  : "military_tech";
+
+function onNav(v: "campaign" | "stats" | "telemetry" | "vault") {
   emit("update:section", v);
   if (!props.isDesktop) emit("update:open", false);
 }

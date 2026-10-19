@@ -25,6 +25,7 @@ import {
 } from "../services/cycleApi";
 import { applyProgressToCopy } from "./cycleCloning";
 import { emitAppEvent } from "../composables/useAppEvents";
+import { forwardRewardsEvent } from "./rewardsBridge";
 import type { useMonthStore } from "../stores/monthStore";
 
 type Store = ReturnType<typeof useMonthStore>;
@@ -157,6 +158,10 @@ export async function finishCurrentMonthAction(
     // FinishResult — callers wanting it should use the API directly or
     // await this and read `store.currentMonth` for the updated cycle.
     emitAppEvent("monthFinished", { cycleUuid: result.cycle.uuid });
+    // v2.3: forward the finish `rewards` block (chests / achievements
+    // unlocked by history + the just-finished month). The bridge emits
+    // the toast events and debounces a refetch so names + IDs land.
+    forwardRewardsEvent(result.rewards);
     void result;
   } catch (err) {
     store.error =

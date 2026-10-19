@@ -30,6 +30,7 @@ const ICON_NAMES = [
   "chevron_left", "chevron_right", "star", "drag_indicator",
   "calendar_month", "more_horiz", "refresh", "flag", "swap_horiz",
   "notes",
+  "inventory_2", "trophy", "diamond", "lock",
 ];
 
 function extractPaths(src) {

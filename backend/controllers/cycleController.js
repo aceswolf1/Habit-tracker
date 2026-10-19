@@ -24,6 +24,7 @@ const {
   failValidation,
   failNotFound,
   failFinished,
+  failAlreadyClaimed,
 } = require('../utils/respond');
 const {
   createCycleSchema,
@@ -48,6 +49,7 @@ function handleError(res, err, fallbackMessage = 'Internal server error') {
   if (err && err instanceof DomainError) {
     if (err.code === 'NOT_FOUND') return failNotFound(res, err.message);
     if (err.code === 'CYCLE_FINISHED') return failFinished(res, err.message);
+    if (err.code === 'ALREADY_CLAIMED') return failAlreadyClaimed(res, err.message);
     if (err.code === 'VALIDATION_ERROR') {
       return fail(res, 400, 'VALIDATION_ERROR', err.message || 'Request validation failed', err.details);
     }
@@ -67,12 +69,14 @@ function handleError(res, err, fallbackMessage = 'Internal server error') {
  *     list({limit,offset}): Promise<{items:object[], meta:{total:number, limit:number, offset:number}}>,
  *     create({name?:string, startDate?:string}): Promise<object>,
  *     updateCycle(uuid:string, body:object): Promise<{cycle, pointsEarned, isLegendary, currentTier}>,
- *     finish(uuid:string): Promise<{cycle:object, statistics:object, alreadyFinished:boolean}>,
+ *     finish(uuid:string): Promise<{cycle:object, statistics:object, alreadyFinished:boolean, rewards?:object}>,
  *     getProfile(): Promise<{uuid, lifetimeScore, displayName?}>,
  *     updateProfile(updates:object): Promise<{uuid, lifetimeScore, displayName?}>,
+ *     getRewards(): Promise<object>,
+ *     claimChest(chestId:string): Promise<{chest:object, credits:number}>,
  *   },
  *   taskMutationService: {
- *     patchCycle(uuid:string, body:object): Promise<{cycle:object, pointsEarned:number, isLegendary:boolean, currentTier:string, combo?:object}>,
+ *     patchCycle(uuid:string, body:object): Promise<{cycle:object, pointsEarned:number, isLegendary:boolean, currentTier:string, combo?:object, rewards?:object}>,
  *   },
  *   insightsService?: {
  *     compute(opts?:{today?:string}): Promise<object>,
@@ -194,6 +198,26 @@ function createCycleController({ lifecycleService, taskMutationService, insights
     }
   }
 
+  // ---- v2.3: GET /rewards — synced shape per contract §3 ----------------
+  async function getRewards(req, res) {
+    try {
+      const data = await lifecycleService.getRewards();
+      return ok(res, data);
+    } catch (err) {
+      return handleError(res, err, 'Failed to load rewards');
+    }
+  }
+
+  // ---- v2.3: POST /rewards/chests/:chestId/claim --------------------------
+  async function claimChest(req, res) {
+    try {
+      const result = await lifecycleService.claimChest(req.params.chestId);
+      return ok(res, result);
+    } catch (err) {
+      return handleError(res, err, 'Failed to claim chest');
+    }
+  }
+
   return {
     getProfile,
     patchProfile,
@@ -204,6 +228,8 @@ function createCycleController({ lifecycleService, taskMutationService, insights
     patch,
     finish,
     getInsights,
+    getRewards,
+    claimChest,
   };
 }
 

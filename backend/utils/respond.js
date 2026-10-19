@@ -68,6 +68,8 @@ const failNotFound = (res, message = 'Not found') =>
   fail(res, 404, 'NOT_FOUND', message);
 const failFinished = (res, message = 'Cannot modify a finished cycle') =>
   fail(res, 409, 'CYCLE_FINISHED', message);
+const failAlreadyClaimed = (res, message = 'Chest already claimed') =>
+  fail(res, 409, 'ALREADY_CLAIMED', message);
 
 module.exports = {
   ok,
@@ -77,4 +79,5 @@ module.exports = {
   failValidation,
   failNotFound,
   failFinished,
+  failAlreadyClaimed,
 };

@@ -26,6 +26,8 @@ import type {
   Profile,
   ProfilePatch,
   Insights,
+  Rewards,
+  ClaimChestResult,
 } from "../types/index";
 import { todayIso } from "../utils/sharedDates";
 
@@ -305,6 +307,21 @@ export async function patchCycle(
       bonus: Number(c.bonus) || 0,
     };
   }
+  // v2.3: optional `rewards` block when a PATCH unlocked a chest or
+  // achievement. Surfaced so the FE can flash toasts / refresh the
+  // rewards store without waiting on the next fetchRewards.
+  if (payload && payload.rewards && typeof payload.rewards === "object") {
+    const r = payload.rewards;
+    result.rewards = {
+      newChests: Array.isArray(r.newChests) ? r.newChests.map((n) => Number(n) || 0) : [],
+      newAchievements: Array.isArray(r.newAchievements)
+        ? r.newAchievements.map((a) => ({
+            id: String(a.id || ""),
+            credits: Number(a.credits) || 0,
+          }))
+        : [],
+    };
+  }
   return result;
 }
 
@@ -321,12 +338,26 @@ export async function finishCycle(uuid: string): Promise<FinishResult> {
   }
   throwIfFailed(res, body);
   const payload = extractPayload(body);
-  // New: `{cycle, statistics, alreadyFinished}`. Legacy: `{success:true, cycle, statistics}`.
-  return {
+  // New: `{cycle, statistics, alreadyFinished, rewards?}`. Legacy: `{success:true, cycle, statistics}`.
+  const out: FinishResult = {
     cycle: (payload?.cycle ?? null) as Cycle,
     statistics: (payload?.statistics ?? null) as FinishResult["statistics"],
     alreadyFinished: Boolean(payload?.alreadyFinished),
   };
+  // v2.3: optional `rewards` block on the finish response (E4 contract).
+  if (payload && payload.rewards && typeof payload.rewards === "object") {
+    const r = payload.rewards;
+    out.rewards = {
+      newChests: Array.isArray(r.newChests) ? r.newChests.map((n) => Number(n) || 0) : [],
+      newAchievements: Array.isArray(r.newAchievements)
+        ? r.newAchievements.map((a) => ({
+            id: String(a.id || ""),
+            credits: Number(a.credits) || 0,
+          }))
+        : [],
+    };
+  }
+  return out;
 }
 
 /**
@@ -345,4 +376,49 @@ export async function getInsights(): Promise<Insights> {
   throwIfFailed(res, body);
   const payload = extractPayload(body);
   return (payload || {}) as Insights;
+}
+
+/**
+ * v2.3: synced rewards payload (chests, achievements, credits).
+ * Mirrors `shared/achievements.evaluateAchievements` + `shared/rewards`.
+ * Contract: `development/v2-features/orchestration-ctx/decisions/
+ * contract-v2.3.md` §3.
+ */
+export async function getRewards(): Promise<Rewards> {
+  const res = await fetch("/api/cycles/rewards");
+  let body: any = null;
+  try {
+    body = await res.json();
+  } catch {
+    /* empty */
+  }
+  throwIfFailed(res, body);
+  const payload = extractPayload(body);
+  return (payload || {}) as Rewards;
+}
+
+/**
+ * v2.3: atomic chest claim. Returns `{ chest, credits }` on success.
+ * Throws `ApiError { code: "ALREADY_CLAIMED", status: 409 }` on
+ * double-claim and `code: "NOT_FOUND", status: 404` when the chest id
+ * is unknown (rare; the rewards sync guarantees every earned chest
+ * exists on the profile).
+ */
+export async function claimChest(chestId: string): Promise<ClaimChestResult> {
+  const res = await fetch(
+    `/api/cycles/rewards/chests/${encodeURIComponent(chestId)}/claim`,
+    { method: "POST", headers: { "Content-Type": "application/json" } },
+  );
+  let body: any = null;
+  try {
+    body = await res.json();
+  } catch {
+    /* empty */
+  }
+  throwIfFailed(res, body);
+  const payload = extractPayload(body);
+  return {
+    chest: (payload?.chest ?? null) as ClaimChestResult["chest"],
+    credits: Number(payload?.credits) || 0,
+  };
 }

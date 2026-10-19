@@ -5,8 +5,8 @@
  * cloning + progress in `utils/cycleCloning.ts` + `utils/cloneDay.ts`;
  * long API orchestration in `utils/cycleNetwork.ts`. App-level events
  * (`toast`, `pointsEarned`, `taskCompleted`, `strike`, `monthFinished`)
- * flow through `composables/useAppEvents.emitAppEvent`. v2.2 adds
- * `insights` state + `strike` / `monthFinished` events (additive).
+ * flow through `composables/useAppEvents.emitAppEvent`. v2.3 forwards
+ * PATCH/finish `rewards` to `rewardsStore` via `utils/rewardsBridge.ts`.
  */
 import { defineStore } from "pinia";
 import type {
@@ -31,12 +31,12 @@ import {
 import { emitAppEvent } from "../composables/useAppEvents";
 import { levelInfo as computeLevelInfo } from "../utils/sharedLevels";
 import { emitLevelUpIfCrossed } from "../utils/levelUp";
+import { forwardRewardsEvent } from "../utils/rewardsBridge";
 
 // UB-12: serial PATCH queue keyed by cycleUuid.
 const cycleMutationQueues: Record<string, Promise<unknown>> = {};
 
-// W4 (UB-54): persistence-failure toast payload. Kept module-local because
-// the title is the only place "SAVE FAILED" appears in user-visible strings.
+// W4 (UB-54): persistence-failure toast payload. The only "SAVE FAILED" in strings.
 function persistErrorToast(operation: string) {
   return {
     type: "error" as const,
@@ -107,7 +107,7 @@ export const useMonthStore = defineStore("month", {
 
     /**
      * UB-10 FE: apply pointsEarned when !== 0; keep lifetimeScore >= 0.
-     * Floating UI may still show a negative delta via the pointsEarned event.
+     * Floating UI may show a negative delta via the pointsEarned event.
      * v2.1: when the post-apply level rises, emit `levelUp` exactly once.
      */
     applyPointsEarned(pointsEarned: number | undefined | null,
@@ -130,14 +130,14 @@ export const useMonthStore = defineStore("month", {
 
     /** Optimistic-action helper. Mutates `currentMonth` in place using the
      * shared progress math so we don't carry a parallel formula. */
-    refreshProgressLocal() {
+    refreshProgressLocal(): void {
       refreshProgressLocal(this.currentMonth);
     },
 
     /**
      * UB-12: serial PATCH queue per cycleUuid. On failure routes through
-     * `recoverFromPersistFailure` (refetch + toast). Stale-guard drops
-     * the response if the user switched cycles mid-flight.
+     * `recoverFromPersistFailure`. Stale-guard drops the response when the
+     * user switched cycles mid-flight.
      */
     enqueueCycleMutation(cycleUuid: string, operation: string, body: PatchBody,
       onSuccess?: (res: {
@@ -149,6 +149,10 @@ export const useMonthStore = defineStore("month", {
           const result = await apiPatchCycle(cycleUuid, body);
           if (this.currentMonth?.uuid !== cycleUuid) return result;
           this.currentMonth = applyProgressToCopy(result.cycle);
+          // v2.3: forward rewards to the rewards store so the toast + vault
+          // + chest badge animate. Done BEFORE `onSuccess` so handlers
+          // that read `rewardsStore.rewards` see the latest state.
+          forwardRewardsEvent(result.rewards);
           if (onSuccess) onSuccess(result);
           return result;
         } catch (err) {
@@ -305,11 +309,8 @@ export const useMonthStore = defineStore("month", {
       });
     },
 
-    /**
-     * V2 A9 — Clone every task from `sourceDayUuid` into each day in
-     * `targetDayUuids` via a single PATCH `addTasks`. Returns the
-     * number of tasks actually added. Finished month = no-op (0).
-     */
+    /** V2 A9 — Clone every task from `sourceDayUuid` into each day in
+     * `targetDayUuids` via a single PATCH `addTasks`. Finished month = no-op. */
     cloneDayTasks(sourceDayUuid: string, targetDayUuids: string[]): number {
       if (!this.currentMonth || this.currentMonth.finished) return 0;
       if (!sourceDayUuid || !targetDayUuids?.length) return 0;
@@ -341,11 +342,9 @@ export const useMonthStore = defineStore("month", {
       await setCurrentMonthAction(this, uuid);
     },
 
-    /**
-     * v2.1: create a (possibly dated) month. `startDate` MUST be a Monday
+    /** v2.1: create a (possibly dated) month. `startDate` MUST be a Monday
      * 'YYYY-MM-DD' or undefined; the backend rejects anything else with
-     * 400 `VALIDATION_ERROR`.
-     */
+     * 400 `VALIDATION_ERROR`. */
     async createMonth(name?: string, startDate?: string) {
       await createMonthAction(this, name, startDate);
     },
@@ -387,14 +386,9 @@ export const useMonthStore = defineStore("month", {
     async fetchInsights(): Promise<void> {
       await fetchInsightsAction(this);
     },
-
     /** v2.2: debounce-coalesced insights refresh (used by the toggle path). */
-    scheduleInsightsRefresh() {
-      scheduleInsightsRefresh(this);
-    },
+    scheduleInsightsRefresh() { scheduleInsightsRefresh(this); },
 
-    async resetToOriginal() {
-      await resetToOriginalAction(this);
-    },
+    async resetToOriginal() { await resetToOriginalAction(this); },
   },
 });

@@ -1,5 +1,6 @@
 <!--
-  V2 Combat Deck header (contract §3) + v2.1 (W3) player identity.
+  V2 Combat Deck header (contract §3) + v2.1 (W3) player identity
+  + v2.3 (W2) rewards chrome.
 
   v2.0 chrome: month title, tier label, XP, tier icons, NEW HABIT button.
   v2.1 (W3):
@@ -8,16 +9,18 @@
       (`frontend/utils/sharedLevels.ts#levelInfo`, which re-exports
       `shared/levels.js#levelInfo`).
     - Two stacked meters on ≥ sm (level + month), one compact bar on phone.
+    - Credits `◈ n` pinned next to the identity line.
+  v2.3 (W2):
+    - Chest icon button with an unclaimed-count badge (`inventory_2` icon).
+    - NEXT REWARD inline label on the LVL bar row (`LVL n · x XP`).
+    All additions stay inline on the existing two-row layout so the
+    desktop header doesn't grow taller (the 7-task-row fit rule).
 
   Two rows:
-    1. Month title + identity + tier/XP block + compact inline tier
-       icon strip + NEW HABIT button + hamburger (phone) / settings (≥lg).
-    2. Stacked LVL + MONTH progress bars.
-
-  Below lg the header lives at the top edge of `<main>`'s column (no
-  sidebar), so its horizontal padding matches the main content.
-  ≥ lg the sidebar takes 256px; we add horizontal padding so the title
-  no longer touches x = 256.
+    1. Month title + identity (incl. credits) + tier/XP block + compact
+       inline tier icon strip + NEW HABIT + settings + chest button.
+    2. Stacked LVL + MONTH progress bars (NEXT REWARD label sits to
+       the left of the LVL bar).
 -->
 <template>
   <header
@@ -49,7 +52,7 @@
           <UiPpBadge v-if="isFinished" kind="boss">LOCKED</UiPpBadge>
         </div>
 
-        <!-- v2.1 (W3): player identity. -->
+        <!-- v2.1 (W3) player identity + v2.3 (W2) credits -->
         <div
           class="app-header__identity font-mono"
           :title="identityTitle"
@@ -59,6 +62,14 @@
           <span class="app-header__identity-sep">·</span>
           <span class="app-header__identity-level">LVL {{ levelInfo.level }}</span>
           <span class="app-header__identity-title">{{ levelInfo.title }}</span>
+          <span
+            class="app-header__credits font-mono"
+            title="Credits balance"
+            data-pp-credits
+          >
+            <span class="app-header__credits-glyph" aria-hidden="true">◈</span>
+            {{ creditsBalance }}
+          </span>
         </div>
 
         <div
@@ -91,6 +102,24 @@
       </div>
 
       <div class="app-header__actions">
+        <!-- v2.3 (W2) chest button with unclaimed-count badge -->
+        <button
+          type="button"
+          class="app-header__chest"
+          :class="{ 'app-header__chest--has': unclaimedCount > 0 }"
+          :title="chestButtonTitle"
+          :aria-label="chestButtonTitle"
+          data-pp-chest-button
+          @click="onOpenChests"
+        >
+          <UiPpIcon name="inventory_2" :size="18" />
+          <span
+            v-if="unclaimedCount > 0"
+            class="app-header__chest-badge"
+            data-pp-chest-badge
+          >{{ unclaimedBadgeLabel }}</span>
+        </button>
+
         <PpButton
           variant="primary"
           icon="add_box"
@@ -110,14 +139,19 @@
       </div>
     </div>
 
-    <!-- v2.1 (W3): LVL + MONTH meter rail. -->
+    <!-- v2.1 (W3) meter rail + v2.3 (W2) NEXT REWARD label -->
     <div
       v-if="hasMonth || levelInfo.xpForNext !== null"
       class="app-header__bars"
       :class="{ 'app-header__bars--compact': compact }"
     >
       <div class="app-header__bar-row" :title="levelBarTitle">
-        <span class="app-header__bar-label">LVL</span>
+        <span class="app-header__bar-label" data-pp-next-reward>
+          <template v-if="nextRewardCopy">
+            {{ nextRewardCopy }}
+          </template>
+          <template v-else>LVL</template>
+        </span>
         <UiPpSegmentedProgress
           :value="levelInfo.progress"
           color="amber"
@@ -149,6 +183,7 @@ import PpButton from "../ui/PpButton.vue";
 import UiPpSegmentedProgress from "../ui/PpSegmentedProgress.vue";
 import type { IconName } from "../ui/iconNames";
 import { levelInfo as computeLevelInfo } from "../../utils/sharedLevels";
+import { nextRewardInfo as computeNextRewardInfo } from "../../utils/sharedRewards";
 
 const props = defineProps<{
   currentMonth: any;
@@ -159,8 +194,16 @@ const props = defineProps<{
   showHamburger: boolean;
   /** v2.1: optional profile object. `displayName` falls back to PALADIN. */
   profile?: { displayName?: string | null; lifetimeScore?: number } | null;
+  /** v2.3 (W2): unclaimed chest count from the rewards store. */
+  unclaimedCount?: number;
+  /** v2.3 (W2): current credit balance from the rewards store. */
+  credits?: number;
+  /** v2.3 (W2): next reward info `{ level, xpRemaining }`. */
+  nextReward?: { level: number | null; xpRemaining: number | null };
   openCreateTask: () => void;
   openSettings: () => void;
+  /** v2.3 (W2): open the ChestModal. */
+  openChests?: () => void;
 }>();
 
 const emit = defineEmits<{
@@ -190,9 +233,6 @@ const tierText = computed(() => {
   return "BEGINNER TIER";
 });
 
-// Progress bar colour follows the active tier. Below 25 % uses cyan as
-// a neutral base. ≥ 75 % turns amber (rewards), ≥ 90 % turns magenta
-// (champion) — keeps the header visually tied to the tier ladder.
 const progressColor = computed<
   "cyan" | "amber" | "green" | "gradient"
 >(() => {
@@ -202,8 +242,6 @@ const progressColor = computed<
   return "cyan";
 });
 
-// Tier icon strip — Bronze / Silver / Gold / Champion / Final.
-// Order matches the screen.png mockup.
 const tierBadges: { key: string; label: string; threshold: number; icon: IconName; colorVar: string }[] = [
   { key: "bronze", label: "Bronze", threshold: 25, icon: "workspace_premium", colorVar: "var(--pp-bronze)" },
   { key: "silver", label: "Silver", threshold: 50, icon: "workspace_premium", colorVar: "var(--pp-silver)" },
@@ -212,7 +250,7 @@ const tierBadges: { key: string; label: string; threshold: number; icon: IconNam
   { key: "final", label: "Final", threshold: 100, icon: "shield", colorVar: "var(--pp-cyan)" },
 ];
 
-// --- v2.1 (W3) player identity -----------------------------------------
+// --- v2.1 (W3) player identity ---
 
 const displayName = computed(() => {
   const dn = props.profile?.displayName;
@@ -233,8 +271,48 @@ const levelBarTitle = computed(() =>
     : "MAX LEVEL — ARCHON",
 );
 
+// --- v2.3 (W2) chest / credits / next reward --------------------------
+
+const unclaimedCount = computed<number>(() => props.unclaimedCount || 0);
+
+const creditsBalance = computed<number>(() => {
+  const c = Number(props.credits);
+  return Number.isFinite(c) && c >= 0 ? c : 0;
+});
+
+const chestBadgeLabel = computed<string>(() => {
+  const n = unclaimedCount.value;
+  return n > 99 ? "99+" : String(n);
+});
+const unclaimedBadgeLabel = computed<string>(() => chestBadgeLabel.value);
+
+const chestButtonTitle = computed(() =>
+  unclaimedCount.value > 0
+    ? `${unclaimedCount.value} unclaimed chest${unclaimedCount.value === 1 ? "" : "s"} — open the vault`
+    : "Chests — open the vault",
+);
+
+/**
+ * v2.3: NEXT REWARD label sits on the left of the LVL bar — same row,
+ * same height. Falls back to just "LVL" for max-level archons or
+ * before the rewards store has hydrated.
+ */
+const nextRewardCopy = computed<string | null>(() => {
+  const info = computeNextRewardInfo(props.lifetimeScore || 0);
+  const level = info?.level ?? props.nextReward?.level ?? null;
+  const remaining = info?.xpRemaining ?? props.nextReward?.xpRemaining ?? null;
+  if (level == null || remaining == null) return null;
+  return `NEXT REWARD: LVL ${level} · ${remaining} XP`;
+});
+
 function onNewHabit() {
   props.openCreateTask();
+}
+
+function onOpenChests() {
+  if (typeof props.openChests === "function") {
+    props.openChests();
+  }
 }
 </script>
 

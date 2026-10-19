@@ -43,7 +43,11 @@ export type IconName =
   | "refresh"
   | "flag"
   | "swap_horiz"
-  | "notes";
+  | "notes"
+  | "inventory_2"
+  | "trophy"
+  | "diamond"
+  | "lock";
 
 export const ICON_NAMES: IconName[] = [
   "grid_view",
@@ -82,4 +86,8 @@ export const ICON_NAMES: IconName[] = [
   "flag",
   "swap_horiz",
   "notes",
+  "inventory_2",
+  "trophy",
+  "diamond",
+  "lock",
 ];

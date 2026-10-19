@@ -63,6 +63,29 @@ export type AppEvents = {
   monthFinished: {
     cycleUuid: string;
   };
+  /** v2.3: a PATCH/finish just earned at least one chest. The header
+   *  badge (W2) listens and bumps the unclaimed-count animation. */
+  chestEarned: {
+    count: number;
+  };
+  /** v2.3: a PATCH/finish just unlocked an achievement. The toasts
+   *  (W2) and the Trophy Vault (W3) listen; name is empty in the
+   *  initial dispatch because the rewards store refetch fills it in. */
+  achievementUnlocked: {
+    id: string;
+    /** Catalog display name (`FIRST BLOOD`, …); empty string in the
+     *  initial dispatch because the rewards store hasn't refreshed yet. */
+    name: string;
+    credits: number;
+  };
+  /** v2.3: open the certificate modal for a specific cycleUuid.
+   *  Used by the Trophy Vault "Certificates" gallery (W3) to reuse
+   *  the same `MonthCertificate` already mounted in `ModalsHost`. */
+  openCertificate: {
+    cycleUuid: string;
+  };
+  /** v2.3: open W2's `ChestModal` (OPEN CHESTS button on the Vault). */
+  openChests: Record<string, never>;
 };
 
 export type AppEventName = keyof AppEvents;
@@ -80,6 +103,10 @@ const handlers: { [K in AppEventName]: Set<AppEventHandler<K>> } = {
   levelUp: new Set(),
   strike: new Set(),
   monthFinished: new Set(),
+  chestEarned: new Set(),
+  achievementUnlocked: new Set(),
+  openCertificate: new Set(),
+  openChests: new Set(),
 };
 
 /**
@@ -131,4 +158,8 @@ export function _resetAppEventHandlers(): void {
   handlers.levelUp.clear();
   handlers.strike.clear();
   handlers.monthFinished.clear();
+  handlers.chestEarned.clear();
+  handlers.achievementUnlocked.clear();
+  handlers.openCertificate.clear();
+  handlers.openChests.clear();
 }

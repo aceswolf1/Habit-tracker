@@ -35,7 +35,7 @@ All endpoints live under `/api/cycles` and use the v2 envelope:
 ```
 
 Error codes: `VALIDATION_ERROR` (400), `NOT_FOUND` (404), `CYCLE_FINISHED`
-(409), `INTERNAL` (500).
+(409), `ALREADY_CLAIMED` (409, v2.3 chest claim), `INTERNAL` (500).
 
 | Method + path           | Notes                                       |
 |-------------------------|---------------------------------------------|
@@ -342,6 +342,14 @@ Contract: `development/v2-features/orchestration-ctx/decisions/contract-v2.2.md`
 - **Previous-completion lookup** is `cycleRepository.findRecentCompletionForHabit` (latest `completedOn` ≤ date, across all cycles). It has its own test against a stub model (`backend/scripts/test-repo-habit-lookup.js`) because the fake repo can't catch real-repo bugs; smoke asserts a 3-day TRIPLE STRIKE.
 - **`GET /api/cycles/insights`** (read-only, computed from all cycles): `perfectDays` (all required done; no-task days skipped), `finishedMonths`, `habits` (top 20; completions count pre-v2.2 tasks too), `months`, `weekdayRates`, `combatLog` (last 7 days). Store: `insights` / `fetchInsights()`.
 - **UI:** strike badge + `STRIKE READY ×N` on rows/tiles; cockpit split into `components/campaign/cockpit/*` with Combat log + perfect streak; `components/certificate/` (modal + canvas PNG, opens on the `monthFinished` event and from Stats → CERTIFICATE); Telemetry page (`components/telemetry/*`, sidebar section `telemetry`).
+
+### v2.3 additions (chests, credits, achievements, Trophy Vault)
+Contract: `development/v2-features/orchestration-ctx/decisions/contract-v2.3.md` (decisions F1–F5).
+- **Credits** are a separate profile balance (never XP). **Chests:** one per level (levels 2…current, backfilled once; idempotent — a level drop keeps chests, re-crossing never duplicates). Rarity is rolled server-side on claim (`shared/rewards.js`: COMMON 10 / RARE 25 / EPIC 50 / LEGENDARY 100; odds by level).
+- **Achievements:** 16 in `shared/achievements.js`, evaluated from history (insights stats + profile) and granting credits once (10/25/50).
+- **Sync:** `rewardsService.syncRewards` (idempotent) runs after lifetime-changing PATCHes, after finish and on `GET /api/cycles/rewards`. PATCH/finish responses carry `rewards: {newChests, newAchievements}` when something new happened → `rewardsStore` emits `chestEarned` / `achievementUnlocked` (toasts in `composables/useAppToasts.ts`).
+- **API:** `GET /api/cycles/rewards`; `POST /api/cycles/rewards/chests/:chestId/claim` (atomic conditional update; second claim → 409 `ALREADY_CLAIMED`, a new error code). Real-repository stub tests: `backend/scripts/test-repo-rewards.js`.
+- **FE:** `stores/rewardsStore.ts` (kept out of `monthStore`, which is at its 400-line cap; `utils/rewardsBridge.ts` forwards PATCH rewards). Header chest button + unclaimed badge, credits, NEXT REWARD; `components/rewards/ChestModal.vue` (opened chests stay visible with their rarity until the modal closes); Trophy Vault section (`components/vault/*`). The `openCertificate {cycleUuid}` event opens any finished month's certificate without changing the active month; `openChests` opens the chest modal.
 
 ### Performance
 Measured with `development/remediation-w5/measurements/bench.mjs` (V2 copy: `development/v2-redesign/tasks/W3-qa/bench-v2.mjs`). V2 vs v0.6.0: same 60 fps, far fewer running animations and media bytes; JS heap ~1 MB higher (accepted).

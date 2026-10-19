@@ -170,16 +170,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useMonthStore } from "../../stores/monthStore";
 import PpIcon from "../ui/PpIcon.vue";
 import { certificateFilename, renderCertificateToBlob } from "./renderCertificate";
 import { comboName } from "../../utils/sharedCombos";
 import { todayIso } from "../../utils/sharedDates";
+import { getCycle as apiGetCycle } from "../../services/cycleApi";
 
 const props = defineProps<{
   open: boolean;
+  /** v2.3 (W2): when set, the certificate binds to THAT cycle instead
+   *  of the store's `currentMonth`. The Trophy Vault uses it to open a
+   *  certificate for an arbitrary finished month. */
+  cycleUuid?: string | null;
 }>();
 const emit = defineEmits<{
   (e: "close"): void;
@@ -189,8 +194,37 @@ const monthStore = useMonthStore();
 const storeRefs: any = storeToRefs(monthStore as any);
 const currentMonth = computed<any>(() => storeRefs.currentMonth?.value ?? null);
 
-const hasMonth = computed(() => !!currentMonth.value);
-const month = computed(() => currentMonth.value);
+// v2.3 (W2): when `cycleUuid` is set we render that cycle instead of
+// the store's current month. The Trophy Vault passes a finished cycle
+// here. We fetch via the API and cache for the lifetime of the modal.
+const fetchedCycle = ref<any | null>(null);
+
+async function loadCycle(uuid: string | null | undefined) {
+  if (!uuid) {
+    fetchedCycle.value = null;
+    return;
+  }
+  try {
+    const c = await apiGetCycle(uuid);
+    fetchedCycle.value = c || null;
+  } catch (err) {
+    fetchedCycle.value = null;
+  }
+}
+
+watch(
+  () => props.cycleUuid,
+  (uuid) => {
+    if (uuid) loadCycle(uuid);
+    else fetchedCycle.value = null;
+  },
+  { immediate: true },
+);
+
+const hasMonth = computed(() => {
+  return !!fetchedCycle.value || !!currentMonth.value;
+});
+const month = computed(() => fetchedCycle.value || currentMonth.value);
 
 const headerTitle = computed(() => {
   const m = month.value;

@@ -31,6 +31,10 @@
         :showHamburger="!isDesktop"
         :openCreateTask="openCreateTask"
         :openSettings="openSettings"
+        :openChests="openChests"
+        :unclaimedCount="unclaimedCount"
+        :credits="credits"
+        :nextReward="nextReward"
         @toggleMenu="() => (sidebarOpen = !sidebarOpen)"
         @openSettings="openSettings"
       />
@@ -58,7 +62,7 @@ import AppSidebar from "./AppSidebar.vue";
 import AppHeader from "./AppHeader.vue";
 
 const props = defineProps<{
-  section: "campaign" | "stats" | "telemetry";
+  section: "campaign" | "stats" | "telemetry" | "vault";
   currentMonth: any;
   months: Array<{ uuid: string; name: string; finished: boolean }>;
   currentMonthUuid: string | null;
@@ -77,10 +81,15 @@ const props = defineProps<{
   finishMonth: () => void;
   refreshData: () => void;
   openCreateTask: () => void;
+  /** v2.3 (W2) rewards chrome. */
+  openChests?: () => void;
+  unclaimedCount?: number;
+  credits?: number;
+  nextReward?: { level: number | null; xpRemaining: number | null };
 }>();
 
 const emit = defineEmits<{
-  (e: "update:section", v: "campaign" | "stats" | "telemetry"): void;
+  (e: "update:section", v: "campaign" | "stats" | "telemetry" | "vault"): void;
 }>();
 
 const sidebarOpen = ref(false);

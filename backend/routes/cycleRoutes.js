@@ -3,8 +3,8 @@
  * Wiring only. All HTTP semantics live in the controller; all business
  * rules live in the services; all I/O lives in the repositories.
  *
- * Route order matters in Express: literal paths (`/profile`, `/insights`,
- * `/current`) must be registered before the `:id` wildcard.
+ * Route order matters: literal paths (`/profile`, `/insights`, `/rewards`,
+ * `/current`) and `/rewards/chests/:chestId/claim` MUST come before `/:id`.
  */
 
 const express = require('express');
@@ -23,6 +23,8 @@ const c = createCycleController({
 router.get('/profile', c.getProfile);
 router.patch('/profile', c.patchProfile);
 router.get('/insights', c.getInsights);
+router.get('/rewards', c.getRewards);
+router.post('/rewards/chests/:chestId/claim', c.claimChest);
 router.get('/current', c.getCurrent);
 router.get('/', c.list);
 router.post('/', c.create);

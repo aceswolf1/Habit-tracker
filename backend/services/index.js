@@ -19,17 +19,28 @@ const {
 const { createCycleLifecycleService } = require('./cycleLifecycleService');
 const { createTaskMutationService } = require('./taskMutationService');
 const { createInsightsService } = require('./insightsService');
+const { createRewardsService } = require('./rewardsService');
 const scoreService = require('./scoreService');
+
+// v2.3: rewards sync is shared between PATCH and finish and the rewards
+// endpoint. It needs the same repos as the lifecycle service. Built BEFORE
+// the other services so they can take a reference.
+const rewardsService = createRewardsService({
+  profileRepo: userProfileRepository,
+  cycleRepo: cycleRepository,
+});
 
 const cycleLifecycleService = createCycleLifecycleService({
   cycleRepo: cycleRepository,
   profileRepo: userProfileRepository,
+  rewardsService,
 });
 
 const taskMutationService = createTaskMutationService({
   cycleRepo: cycleRepository,
   profileRepo: userProfileRepository,
   scoreService,
+  rewardsService,
 });
 
 // v2.2: insights endpoint service (read-only, computed on demand).
@@ -42,6 +53,7 @@ module.exports = {
   cycleLifecycleService,
   taskMutationService,
   insightsService,
+  rewardsService,
   scoreService,
   // Underlying repositories for server boot housekeeping only.
   cycleRepository,
