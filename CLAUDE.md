@@ -469,6 +469,7 @@ Watchtower) are in [deploy/AUTOMATION.md](./deploy/AUTOMATION.md).
   `pick()` helper that falls back to `.default[key]` — this works whether
   the transform synthesises named exports, only the ESM `default`, or both,
   across client / dev / SSR builds.
+- **Node version is pinned** (`node:22.23.4-alpine` in both Dockerfiles, `node-version: "22.23.4"` in `publish.yml`). On a Node security release, bump all three together, run `npm audit --omit=dev` in `frontend/` and `backend/`, and confirm `npm ci` still works from the lock files (the smoke build fails if a lock file is out of sync). Remaining frontend advisories need the Nuxt 4 major upgrade.
 - Backend `console.log` is gated behind `DEBUG` (UB-39); `console.error` stays
   for real failures.
 - CORS is **off by default** (`CORS_ORIGIN` unset → no middleware). Only set

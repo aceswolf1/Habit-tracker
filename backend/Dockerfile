@@ -6,7 +6,7 @@
 # Layout inside the image mirrors the monorepo relative paths:
 #   /app/backend/utils/scoreCalculator.js → require('../../shared/scoring')
 #   /app/backend/routes/cycleRoutes.js    → require('../../shared/progress')
-FROM node:22-alpine
+FROM node:22.23.4-alpine
 
 WORKDIR /app
 ENV NODE_ENV=production
