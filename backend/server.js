@@ -107,7 +107,8 @@ app.use((err, req, res, next) => {
 });
 
 // Start Server
-const server = app.listen(PORT, () => {
+const HOST = process.env.HOST || '127.0.0.1';
+const server = app.listen(PORT, HOST, () => {
   if (DEBUG) log.debug({ msg: `Server running on port ${PORT}` });
   log.info({ msg: 'server.listening', port: PORT });
 });
