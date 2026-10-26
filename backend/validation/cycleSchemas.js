@@ -17,7 +17,15 @@ const shortText = (max) => z.string().min(1).max(max);
 const { TAGS, TIMES_OF_DAY } = require('../../shared/taskMeta');
 const { isIsoDate, isMonday } = require('../../shared/dates');
 
+const { MAX_LABELS, MAX_LABEL_LENGTH, normalizeLabels } = require('../../shared/labels');
+
 const tagEnum = z.enum(TAGS);
+// Custom labels: up to MAX_LABELS strings, normalized (trim, upper-case,
+// de-duplicated) so the stored form is always canonical.
+const labelsSchema = z
+  .array(z.string().min(1).max(MAX_LABEL_LENGTH))
+  .max(MAX_LABELS)
+  .transform(normalizeLabels);
 const timeOfDayEnum = z.enum(TIMES_OF_DAY);
 // `inputDurationMin` is the optional-on-add variant (omitted = no duration set).
 // `updateDurationMin` is the nullable-on-update variant that lets the FE
@@ -60,6 +68,7 @@ const taskInputSchema = z
       (s) => /^([01]\d|2[0-3]):[0-5]\d$/.test(s),
       { message: 'dueTime must be HH:MM (24-hour)' }
     ).optional(),
+    labels: labelsSchema.optional(),
     // v2.1: clients never send completedAt; the server maintains it. We
     // accept it on addTasks only when completed:true (seeded add), but the
     // service always overrides it. Keep it absent from the input schema
@@ -94,6 +103,8 @@ const taskUpdateSchema = z
       (s) => /^([01]\d|2[0-3]):[0-5]\d$/.test(s),
       { message: 'dueTime must be HH:MM (24-hour)' }
     ).nullable().optional(),
+    // Custom labels: replaces the whole list; `null` clears.
+    labels: labelsSchema.nullable().optional(),
   })
   .strict();
 

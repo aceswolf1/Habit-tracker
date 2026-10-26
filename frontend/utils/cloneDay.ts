@@ -53,6 +53,7 @@ export function cloneTaskFromSource(source: Task): Task {
     durationMin: source.durationMin,
     timeOfDay: source.timeOfDay,
     dueTime: source.dueTime,
+    labels: source.labels && source.labels.length ? [...source.labels] : undefined,
     // recurrenceId intentionally NOT copied — clone != recurrence.
   };
 }

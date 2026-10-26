@@ -45,6 +45,8 @@
             v-model:durationMin="form.durationMin"
             v-model:timeOfDay="form.timeOfDay"
             v-model:dueTime="form.dueTime"
+            v-model:labels="form.labels"
+            :labelSuggestions="labelSuggestions"
             :showDueTime="showDueTime"
           />
 
@@ -113,6 +115,7 @@ import { useMonthStore } from "../stores/monthStore";
 import { emitAppEvent } from "../composables/useAppEvents";
 import { buildDaySelection, type WeekScope } from "../utils/cycleRecurrence";
 import type { TaskTag, TaskTimeOfDay } from "../types/index";
+import { collectLabels } from "../utils/sharedLabels";
 import TaskModalFields from "./task/TaskModalFields.vue";
 import TaskModalDetails from "./task/TaskModalDetails.vue";
 import TaskModalVisualPicker from "./task/TaskModalVisualPicker.vue";
@@ -135,7 +138,7 @@ function notifyError(title: string, message: string) {
 }
 
 // Form state (notes/visual come from V2 A8; tag/durationMin/timeOfDay/dueTime from v2.1 contract §5).
-const form = reactive({
+const blankForm = () => ({
   description: "",
   optional: false,
   legendary: false,
@@ -151,7 +154,11 @@ const form = reactive({
   durationMin: null as number | null,
   timeOfDay: null as TaskTimeOfDay | null,
   dueTime: null as string | null,
+  labels: [] as string[],
 });
+const form = reactive(blankForm());
+// Labels already used in this month, offered as suggestions.
+const labelSuggestions = computed(() => collectLabels(store.currentMonth));
 
 // Hide due-time when the cycle has no startDate (contract §5).
 const showDueTime = computed(() => !!store.currentMonth?.startDate);
@@ -226,6 +233,7 @@ watch(
       form.durationMin = t.durationMin ?? null;
       form.timeOfDay = t.timeOfDay ?? null;
       form.dueTime = t.dueTime ?? null;
+      form.labels = t.labels ? [...t.labels] : [];
     } else {
       resetForm();
       if (props.prefillDayUuid) {
@@ -237,23 +245,7 @@ watch(
 );
 
 function resetForm() {
-  Object.assign(form, {
-    description: "",
-    optional: false,
-    legendary: false,
-    weekScope: "single" as WeekScope,
-    repeatAcrossWeeks: false,
-    icon: "",
-    visualType: "emoji" as "emoji" | "gif",
-    gifUrl: "",
-    gifVideoUrl: "",
-    gifStillUrl: "",
-    notes: "",
-    tag: null as TaskTag | null,
-    durationMin: null as number | null,
-    timeOfDay: null as TaskTimeOfDay | null,
-    dueTime: null as string | null,
-  });
+  Object.assign(form, blankForm());
   selectedDayUuids.value = [];
   selectedWeekUuids.value = [];
   editScope.value = "single";
@@ -309,6 +301,7 @@ function submit() {
         durationMin: form.durationMin ?? undefined,
         timeOfDay: form.timeOfDay ?? undefined,
         dueTime: form.dueTime ?? undefined,
+        labels: form.labels.length ? form.labels : undefined,
       });
       emit("created");
     } else if (editingTask.value) {
@@ -326,6 +319,7 @@ function submit() {
         durationMin: form.durationMin,
         timeOfDay: form.timeOfDay,
         dueTime: form.dueTime,
+        labels: form.labels.length ? form.labels : null,
       });
       emit("updated");
     }

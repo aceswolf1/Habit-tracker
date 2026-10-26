@@ -21,6 +21,7 @@ const TaskSchema = new mongoose.Schema({
   timeOfDay: { type: String, enum: ['morning', 'afternoon', 'evening', 'night'] },
   // v2.1: 'HH:MM' in 24-hour local format. Only meaningful on dated days.
   dueTime: String,
+  labels: { type: [String], default: undefined }, // custom labels (normalized)
   recurrenceId: String,
   order: Number,
   icon: String,

@@ -51,6 +51,28 @@
         <PpIcon name="edit" :size="16" />
         <span>Edit</span>
       </button>
+      <template v-if="canReorder">
+        <button
+          type="button"
+          role="menuitem"
+          class="menu-item w-full flex items-center gap-2 px-3 min-h-[40px] font-mono text-label-md uppercase tracking-wider text-pp-text hover:bg-pp-card-active hover:text-pp-cyan text-left border-t border-pp-line disabled:opacity-40"
+          :disabled="isFirst"
+          @click="onMove('moveUp')"
+        >
+          <span aria-hidden="true" class="w-4 text-center">↑</span>
+          <span>Move up</span>
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          class="menu-item w-full flex items-center gap-2 px-3 min-h-[40px] font-mono text-label-md uppercase tracking-wider text-pp-text hover:bg-pp-card-active hover:text-pp-cyan text-left border-t border-pp-line disabled:opacity-40"
+          :disabled="isLast"
+          @click="onMove('moveDown')"
+        >
+          <span aria-hidden="true" class="w-4 text-center">↓</span>
+          <span>Move down</span>
+        </button>
+      </template>
       <button
         type="button"
         role="menuitem"
@@ -71,11 +93,17 @@ import PpIcon from "../ui/PpIcon.vue";
 const props = defineProps<{
   taskUuid: string;
   taskDescription: string;
+  /** Show Move up / Move down (only on the saved order). */
+  canReorder?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
 }>();
 
 const emit = defineEmits<{
   edit: [uuid: string];
   delete: [uuid: string];
+  moveUp: [uuid: string];
+  moveDown: [uuid: string];
 }>();
 
 const isOpen = ref(false);
@@ -95,6 +123,11 @@ function onEdit() {
 function onDelete() {
   close();
   emit("delete", props.taskUuid);
+}
+function onMove(kind: "moveUp" | "moveDown") {
+  close();
+  if (kind === "moveUp") emit("moveUp", props.taskUuid);
+  else emit("moveDown", props.taskUuid);
 }
 
 function onDocClick(e: MouseEvent) {

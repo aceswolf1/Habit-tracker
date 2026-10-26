@@ -65,6 +65,12 @@
         :kind="tagKind"
       >{{ tagLabel }}</PpBadge>
       <span
+        v-for="label in task.labels || []"
+        :key="label"
+        class="pp-label-chip"
+        :class="`pp-label-hue-${labelColorIndex(label)}`"
+      >{{ label }}</span>
+      <span
         v-if="task.legendary"
         class="inline-flex items-center gap-1 px-1.5 py-0.5 font-mono text-label-sm uppercase border text-pp-magenta border-pp-magenta"
         style="background: rgb(var(--pp-magenta-rgb) / 0.08);"
@@ -92,6 +98,7 @@ import {
   tagBadgeLabel,
 } from "../../composables/useCampaignStats";
 import { useTaskRowStrikeBadge } from "../../composables/useTaskRowStrikeBadge";
+import { labelColorIndex } from "../../utils/sharedLabels";
 import type { InsightsHabit, Task } from "../../types/index";
 
 const props = defineProps<{

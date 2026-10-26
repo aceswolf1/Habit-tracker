@@ -25,16 +25,24 @@ const { calculateProgress } = require('../../shared/progress');
 const { applyMove } = require('../services/taskMutationService');
 
 let passed = 0;
+// Checks run sequentially and are awaited; the summary prints only after
+// every check (sync or async) has finished. A failure exits 1.
+let __chain = Promise.resolve();
 function check(name, fn) {
-  try {
-    fn();
-    passed += 1;
-    console.log(`PASS: ${name}`);
-  } catch (err) {
-    console.error(`FAIL: ${name}`);
-    console.error(err && err.message ? err.message : err);
-    process.exit(1);
-  }
+  __chain = __chain.then(async () => {
+    try {
+      await fn();
+      passed += 1;
+      console.log(`PASS: ${name}`);
+    } catch (err) {
+      console.error(`FAIL: ${name}`);
+      console.error(err && err.stack ? err.stack : err);
+      // CHECK_CONTINUE=1 lists every failure instead of stopping at the first.
+      if (!process.env.CHECK_CONTINUE) process.exit(1);
+      process.exitCode = 1;
+    }
+  });
+  return __chain;
 }
 
 function fixture() {
@@ -234,7 +242,7 @@ check('v2.1: PATCH /:id/moveTasks keeps ALL task fields (per v2.1 contract §3)'
   assert.strictEqual(moved.description, 'A');
   assert.strictEqual(moved.optional, false);
   assert.strictEqual(moved.completed, true);
-  assert.ok(moved.completedAt instanceof Date, 'completedAt preserved');
+  assert.ok(((x) => x instanceof Date || (typeof x === 'string' && !Number.isNaN(Date.parse(x))))(moved.completedAt), 'completedAt preserved (Date or ISO string from the fake clone)');
   assert.strictEqual(moved.habitId, 'h-abc');
   assert.strictEqual(moved.tag, 'rare');
   assert.strictEqual(moved.durationMin, 25);
@@ -245,6 +253,8 @@ check('v2.1: PATCH /:id/moveTasks keeps ALL task fields (per v2.1 contract §3)'
   assert.strictEqual(moved.gifUrl, 'https://example.com/x.gif');
   assert.strictEqual(moved.notes, 'memo');
 });
-
-console.log(`\n${passed} checks passed`);
-process.exit(0);
+__chain.then(() => {
+  if (process.exitCode) process.exit(1);
+  console.log(`\n${passed} checks passed`);
+  process.exit(0);
+});

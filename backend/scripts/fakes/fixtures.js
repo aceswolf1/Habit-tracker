@@ -54,6 +54,10 @@ function addTask(cycle, weekIdx, dayIdx, task) {
  */
 function cycleWithRequiredTasks(n, overrides) {
   const c = emptyCycle('Test');
+  // Keep only week 1 so month progress == week-1 progress (month progress is
+  // the average of all weeks). Scoring tests reason in "1 of 4 tasks → 25%
+  // → Silver"; with four weeks the month would sit at 6% (Bronze).
+  c.weeks = c.weeks.slice(0, 1);
   for (let i = 0; i < n; i++) {
     const t = { description: `t${i}`, optional: false, completed: false };
     addTask(c, 0, 0, overrides ? overrides(t, i) : t);

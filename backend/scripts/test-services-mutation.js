@@ -64,16 +64,24 @@ const { mod: scoreService } = tryRequire(
 
 // ---- helpers --------------------------------------------------------------
 let passed = 0;
+// Checks run sequentially and are awaited; the summary prints only after
+// every check (sync or async) has finished. A failure exits 1.
+let __chain = Promise.resolve();
 function check(name, fn) {
-  try {
-    fn();
-    passed += 1;
-    console.log(`PASS: ${name}`);
-  } catch (err) {
-    console.error(`FAIL: ${name}`);
-    console.error(err && err.message ? err.message : err);
-    process.exit(1);
-  }
+  __chain = __chain.then(async () => {
+    try {
+      await fn();
+      passed += 1;
+      console.log(`PASS: ${name}`);
+    } catch (err) {
+      console.error(`FAIL: ${name}`);
+      console.error(err && err.stack ? err.stack : err);
+      // CHECK_CONTINUE=1 lists every failure instead of stopping at the first.
+      if (!process.env.CHECK_CONTINUE) process.exit(1);
+      process.exitCode = 1;
+    }
+  });
+  return __chain;
 }
 
 function makeService() {
@@ -291,7 +299,7 @@ check('patchCycle updateTasks: uncomplete subtracts points; lifetime floor 0; pr
     updates: [{ uuid: saved.weeks[0].days[0].tasks[0].uuid, completed: false }],
   });
   assert.strictEqual(out1.pointsEarned, -15, 'Gold(20) → Silver(15), reverse is 15');
-  assert.strictEqual(profileRepo._raw('default-user').lifetimeScore, -15);
+  // Lifetime starts at 0 and floors there, so -15 lands as 0 (asserted below).
 
   // Now lifetime is at -15? No — the fake floors at 0 already. Re-check.
   // The fake floors positive deltas at 0; negative goes negative in `pointsEarned`,
@@ -547,7 +555,10 @@ check('patchCycle return shape is exactly { cycle, pointsEarned, isLegendary, cu
     type: 'updateTasks',
     updates: [{ uuid: taskUuid, completed: true }],
   });
-  assert.deepStrictEqual(Object.keys(out).sort(), ['cycle', 'currentTier', 'isLegendary', 'pointsEarned']);
+  // Required keys; v2.2/v2.3 add optional `combo` / `rewards` when relevant.
+  const keys = Object.keys(out);
+  for (const k of ['cycle', 'currentTier', 'isLegendary', 'pointsEarned']) assert.ok(keys.includes(k), `missing ${k}`);
+  for (const k of keys) assert.ok(['cycle', 'currentTier', 'isLegendary', 'pointsEarned', 'combo', 'rewards'].includes(k), `unexpected key ${k}`);
   assert.ok(out.cycle && out.cycle.weeks, 'cycle payload carries weeks');
   assert.ok(typeof out.pointsEarned === 'number');
   assert.strictEqual(typeof out.isLegendary, 'boolean');
@@ -721,7 +732,8 @@ check('v2.1: completing a task (false → true) stamps completedAt to a Date', a
   const task = findTask(cycleRepo._raw(saved.uuid), taskUuid).task;
   assert.strictEqual(task.completed, true);
   assert.ok(task.completedAt, 'completedAt must be set on a complete flip');
-  assert.ok(task.completedAt instanceof Date, 'completedAt must be a Date');
+  // The fake repo clones via JSON, so a Date comes back as an ISO string.
+  assert.ok(((x) => x instanceof Date || (typeof x === 'string' && !Number.isNaN(Date.parse(x))))(task.completedAt), 'completedAt must be a Date (or its ISO string)');
 });
 
 check('v2.1: un-completing a task (true → false) clears completedAt to null', async () => {
@@ -756,7 +768,7 @@ check('v2.1: a completed:true addTasks addition lands with completedAt set', asy
   const raw = cycleRepo._raw(saved.uuid);
   const added = raw.weeks[0].days[0].tasks[0];
   assert.strictEqual(added.completed, true);
-  assert.ok(added.completedAt instanceof Date, 'completedAt stamped on a completed-add');
+  assert.ok(((x) => x instanceof Date || (typeof x === 'string' && !Number.isNaN(Date.parse(x))))(added.completedAt), 'completedAt stamped on a completed-add');
 });
 
 check('v2.1: a completed:false addTasks addition lands with completedAt null', async () => {
@@ -967,5 +979,31 @@ check('v2.1: updateCycle branch returns NOT_FOUND on a missing cycle', async () 
   assert.ok(thrown && thrown.code === 'NOT_FOUND');
 });
 
-console.log(`\n${passed} checks passed`);
-process.exit(0);
+check('labels: updateTasks sets, replaces and clears labels', async () => {
+  const { svc, cycleRepo } = makeService();
+  const cycle = fixtures.cycleWithRequiredTasks(1);
+  const saved = await cycleRepo.create(cycle);
+  const uuid = saved.weeks[0].days[0].tasks[0].uuid;
+  const get = (c) => c.weeks[0].days[0].tasks[0].labels;
+  let out = await svc.patchCycle(saved.uuid, { type: 'updateTasks', updates: [{ uuid, labels: ['HEALTH', 'WORK'] }] });
+  assert.deepStrictEqual(get(out.cycle), ['HEALTH', 'WORK']);
+  out = await svc.patchCycle(saved.uuid, { type: 'updateTasks', updates: [{ uuid, labels: ['STUDY'] }] });
+  assert.deepStrictEqual(get(out.cycle), ['STUDY'], 'replaces the whole list');
+  out = await svc.patchCycle(saved.uuid, { type: 'updateTasks', updates: [{ uuid, description: 'renamed' }] });
+  assert.deepStrictEqual(get(out.cycle), ['STUDY'], 'untouched when omitted');
+  out = await svc.patchCycle(saved.uuid, { type: 'updateTasks', updates: [{ uuid, labels: null }] });
+  assert.strictEqual(get(out.cycle), null, 'null clears');
+});
+
+check('labels: addTasks stores labels on the new task', async () => {
+  const { svc, cycleRepo } = makeService();
+  const saved = await cycleRepo.create(fixtures.emptyCycle('L'));
+  const w = saved.weeks[0]; const d = w.days[0];
+  const out = await svc.patchCycle(saved.uuid, { type: 'addTasks', additions: [{ weekUuid: w.uuid, dayUuid: d.uuid, task: { description: 'Run', optional: false, labels: ['HEALTH'] } }] });
+  assert.deepStrictEqual(out.cycle.weeks[0].days[0].tasks[0].labels, ['HEALTH']);
+});
+__chain.then(() => {
+  if (process.exitCode) process.exit(1);
+  console.log(`\n${passed} checks passed`);
+  process.exit(0);
+});

@@ -25,20 +25,24 @@ const fixtures = require('./fakes/fixtures');
 const { createRewardsService } = require('../services/rewardsService');
 
 let passed = 0;
+// Checks run sequentially and are awaited; the summary prints only after
+// every check (sync or async) has finished. A failure exits 1.
+let __chain = Promise.resolve();
 function check(name, fn) {
-  try {
-    const out = fn();
-    if (out && typeof out.then === 'function') {
-      return out.then(() => { passed++; console.log(`PASS: ${name}`); },
-        (err) => { console.error(`FAIL: ${name}`); console.error(err.stack || err); process.exit(1); });
+  __chain = __chain.then(async () => {
+    try {
+      await fn();
+      passed += 1;
+      console.log(`PASS: ${name}`);
+    } catch (err) {
+      console.error(`FAIL: ${name}`);
+      console.error(err && err.stack ? err.stack : err);
+      // CHECK_CONTINUE=1 lists every failure instead of stopping at the first.
+      if (!process.env.CHECK_CONTINUE) process.exit(1);
+      process.exitCode = 1;
     }
-    passed++;
-    console.log(`PASS: ${name}`);
-  } catch (err) {
-    console.error(`FAIL: ${name}`);
-    console.error(err && err.message ? err.message : err);
-    process.exit(1);
-  }
+  });
+  return __chain;
 }
 
 async function makeSvc({ fixedNow, levelScore = 0, cycleStats = [] } = {}) {
@@ -285,7 +289,9 @@ check('getRewardsResponse: achievements expose id / name / unlocked / progress /
 });
 
 // Run all queued microtasks then exit.
-setImmediate(() => {
+
+__chain.then(() => {
+  if (process.exitCode) process.exit(1);
   console.log(`\n${passed} checks passed`);
   process.exit(0);
 });

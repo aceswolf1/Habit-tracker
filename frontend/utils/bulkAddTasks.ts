@@ -31,6 +31,7 @@ export interface BulkAddTasksOptions {
   durationMin?: number;
   timeOfDay?: TaskTimeOfDay;
   dueTime?: string;
+  labels?: string[];
   recurrenceId?: string;
 }
 
@@ -62,6 +63,7 @@ export function bulkAddTasksToCycle(
     durationMin,
     timeOfDay,
     dueTime,
+    labels,
   } = options;
 
   const recurrenceId = options.recurrenceId || generateRecurrenceId();
@@ -83,7 +85,7 @@ export function bulkAddTasksToCycle(
       const newTask: Task = createTaskDraft({
         description, optional, legendary,
         icon, gifUrl, gifVideoUrl, gifStillUrl, notes,
-        habitId, tag, durationMin, timeOfDay, dueTime,
+        habitId, tag, durationMin, timeOfDay, dueTime, labels,
         recurrenceId,
         order: day.tasks.length,
       });

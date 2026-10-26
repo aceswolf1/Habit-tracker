@@ -470,5 +470,18 @@ check('v2.1: patchProfileSchema rejects displayName out of range', () => {
   bad('extra key', patchProfileSchema, { displayName: 'X', evil: true });
 });
 
+check('labels: addTasks/updateTasks accept up to 5 labels, normalized', () => {
+  const { taskUpdateSchema, taskInputSchema } = require('../validation/cycleSchemas')._internal;
+  const u = taskUpdateSchema.parse({ uuid: 't1', labels: [' health ', 'Health', 'work  out'] });
+  if (JSON.stringify(u.labels) !== JSON.stringify(['HEALTH', 'WORK OUT'])) throw new Error('normalize: ' + JSON.stringify(u.labels));
+  if (taskUpdateSchema.parse({ uuid: 't1', labels: null }).labels !== null) throw new Error('null should clear');
+  const a = taskInputSchema.parse({ description: 'x', optional: false, labels: ['study'] });
+  if (a.labels[0] !== 'STUDY') throw new Error('add normalize');
+  bad('6 labels', taskUpdateSchema, { uuid: 't1', labels: ['a', 'b', 'c', 'd', 'e', 'f'] });
+  bad('empty label', taskUpdateSchema, { uuid: 't1', labels: [''] });
+  bad('label too long', taskUpdateSchema, { uuid: 't1', labels: ['x'.repeat(25)] });
+  bad('not an array', taskUpdateSchema, { uuid: 't1', labels: 'HEALTH' });
+});
+
 console.log(`\n${passed} checks passed`);
 process.exit(0);

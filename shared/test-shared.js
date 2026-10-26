@@ -842,5 +842,18 @@ check('index barrel re-exports rewards + achievements helpers', () => {
   assert.ok(Array.isArray(ix.ACHIEVEMENTS) && ix.ACHIEVEMENTS.length === 16);
 });
 
+check('labels: normalize, cap, colour slot, collect', () => {
+  const L = require('./labels');
+  assert.strictEqual(L.normalizeLabel('  deep   work '), 'DEEP WORK');
+  assert.deepStrictEqual(L.normalizeLabels(['a', 'A', ' b', '', 'c', 'd', 'e', 'f']), ['A', 'B', 'C', 'D', 'E']);
+  assert.deepStrictEqual(L.normalizeLabels('nope'), []);
+  const i = L.labelColorIndex('health');
+  assert.ok(i >= 0 && i < L.LABEL_HUES);
+  assert.strictEqual(i, L.labelColorIndex(' HEALTH '), 'same label, same colour');
+  const cycle = { weeks: [{ days: [{ tasks: [{ labels: ['WORK', 'health'] }, { labels: ['WORK'] }, {}] }] }] };
+  assert.deepStrictEqual(L.collectLabels(cycle), ['HEALTH', 'WORK']);
+  assert.strictEqual(typeof require('./index').normalizeLabels, 'function');
+});
+
 console.log(`\n${passed} checks passed`);
 process.exit(0);

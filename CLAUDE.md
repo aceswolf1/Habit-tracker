@@ -351,6 +351,12 @@ Contract: `development/v2-features/orchestration-ctx/decisions/contract-v2.3.md`
 - **API:** `GET /api/cycles/rewards`; `POST /api/cycles/rewards/chests/:chestId/claim` (atomic conditional update; second claim → 409 `ALREADY_CLAIMED`, a new error code). Real-repository stub tests: `backend/scripts/test-repo-rewards.js`.
 - **FE:** `stores/rewardsStore.ts` (kept out of `monthStore`, which is at its 400-line cap; `utils/rewardsBridge.ts` forwards PATCH rewards). Header chest button + unclaimed badge, credits, NEXT REWARD; `components/rewards/ChestModal.vue` (opened chests stay visible with their rarity until the modal closes); Trophy Vault section (`components/vault/*`). The `openCertificate {cycleUuid}` event opens any finished month's certificate without changing the active month; `openChests` opens the chest modal.
 
+### Labels, day sort and reorder
+- **Labels** (`shared/labels.js`, FE re-export `utils/sharedLabels.ts`): free-text task `labels` (≤ 5, each ≤ 24 chars), normalized server-side (trim, collapse spaces, UPPER-CASE, de-dupe) by the zod schema. Accepted on `addTasks`; `updateTasks` accepts `null` to clear. Separate from the fixed rarity `tag`. Colour = `labelColorIndex` → `.pp-label-hue-0…7` (`main.css`). Dialog field: `components/task/TaskLabelsField.vue` (autocomplete from `collectLabels(month)`); clone-day copies labels.
+- **Sort / group** (`composables/useDayOrdering.ts`, `node frontend/scripts/check-day-ordering.mjs`): `settingsStore.daySort` (`manual|timeOfDay|dueTime|pending|label|name`) and `groupByLabel`, both in localStorage. Spotlight **View** button opens `DayViewBar` (filter + sort + group). Grouping = collapsible sections by first label, UNLABELED last. Display sorting never changes stored order.
+- **Reorder** (only on "My order" with no filter): drag on desktop, ↑/↓ on tablet, Move up/down in the phone ⋯ menu. All call `moveTask(uuid, dayUuid, targetIndex)` → `moveTasks` PATCH; the day's `tasks` array order is "My order". `useMonthPageState.moveTask` accepts positional args or `{taskUuid, toDayUuid, targetIndex}` (Grid drag uses the object form).
+- **Boss video:** `WeeklyBossPortrait` keys the `<video>` on its src — browsers don't reload a `<video>` when only `<source>` changes (the old "same boss every week" bug).
+
 ### Performance
 Measured with `development/remediation-w5/measurements/bench.mjs` (V2 copy: `development/v2-redesign/tasks/W3-qa/bench-v2.mjs`). V2 vs v0.6.0: same 60 fps, far fewer running animations and media bytes; JS heap ~1 MB higher (accepted).
 - **Task GIFs:** a picked GIF stores `gifUrl` (fallback), `gifVideoUrl` (MP4) and `gifStillUrl` (still). `TaskMedia` renders `<video preload="none" :poster>` and `useInViewPlayback` plays it only while ≥ 25% visible and the tab is visible, never under reduced motion. Older tasks fall back to a lazy `<img>`.
@@ -360,8 +366,10 @@ Measured with `development/remediation-w5/measurements/bench.mjs` (V2 copy: `dev
 
 ### Dev notes
 - `vite.build.commonjsOptions` only applies to builds. `nuxt.config.ts` has a dev-only plugin (`pp-shared-cjs-dev`) that turns `shared/*.js` CJS into ESM for the browser in `nuxt dev`; without it the current month never loads in dev.
-- Use Node 22 (`nvm`); `/usr/local/bin/node` is v18 on this machine and breaks the preview harness (`--import` in `NODE_OPTIONS`).
+- Local dev uses Node 24 (`nvm`, default 24.22.1); images and CI are pinned to Node 22.23.4. `/usr/local/bin/node` is v18 on this machine and breaks the preview harness (`--import` in `NODE_OPTIONS`) — always use the nvm Node. npm 11 (local) and npm 10 (images) both read lockfile v3, but after changing dependencies confirm `npm ci` in the image (the smoke build does).
 - Editing `nuxt.config.ts` restarts `nuxt dev`, which can crash the preview; rerun `scripts/preview/start.sh`. `start.sh` doesn't restart a running backend — kill it first after backend changes.
+- `backend/server.js` listens on `HOST` (default `127.0.0.1`); `backend/Dockerfile` sets `HOST=0.0.0.0` so the frontend container can reach it (the port is never published).
+- Test runners chain async checks and exit 1 on the first failure; `CHECK_CONTINUE=1` lists every failure instead.
 - **Verify with data visible**, not just HTTP 200: a page can return 200 with no month loaded.
 
 ## Tests + CI

@@ -6,13 +6,15 @@
   Layout (top → bottom):
     - Header: accent square + "<DAY NAME> PROTOCOLS"
                 + subline "OBJECTIVES: n/m VERIFIED | +X XP SECURED TODAY"
-    - Toolbar (right): Clone (toggles <CloneDayPanel>), Filter (toggles
-                       <TaskFilterBar>), "+ ADD PROTOCOL" (opens the
-                       create modal for this day via the existing
-                       `openCreateTaskForDay`).
-    - Optional <CloneDayPanel> (W3 placeholder until they ship it).
-    - TaskFilterBar (when toggled).
-    - Sorted TaskRow list with drag-and-drop reorder.
+    - Toolbar (right): Clone (toggles <CloneDayPanel>), View (toggles
+                       <DayViewBar>: filter + sort + group by label),
+                       "+ ADD PROTOCOL" (opens the create modal for this
+                       day via `openCreateTaskForDay`).
+    - Optional <CloneDayPanel>.
+    - DayViewBar (when toggled).
+    - TaskRow list, sorted per settingsStore.daySort and optionally grouped
+      into collapsible sections by first label. Reorder (drag / ↑↓ / menu)
+      only on "My order" with no filter; it saves via moveTasks.
     - Empty state: friendly message + ADD button.
     - Filter-empty state: "no tasks match this filter" + reset button.
 
@@ -66,7 +68,8 @@
           @click="showFilter = !showFilter"
         >
           <span aria-hidden="true">⊟</span>
-          <span>Filter</span>
+          <span>View</span>
+          <span v-if="viewBadge" class="text-pp-cyan">· {{ viewBadge }}</span>
         </button>
         <button
           type="button"
@@ -88,41 +91,57 @@
       @close="showClone = false"
     />
 
-    <!-- Filter bar -->
-    <div v-if="showFilter" class="px-1">
-      <TaskFilterBar v-model="filter" :tasks="day.tasks" />
-    </div>
+    <!-- View bar: filter + sort + group by label -->
+    <DayViewBar v-if="showFilter" v-model:filter="filter" :tasks="day.tasks" />
 
-    <!-- Task rows -->
-    <div
-      v-if="filteredTasks.length > 0"
-      class="flex flex-col gap-1.5"
-      @dragover.prevent="onListDragOver"
-    >
-      <TaskRow
-        v-for="(task, idx) in filteredTasks"
-        :key="task.uuid"
-        :task="task"
-        :day="day"
-        :week="week"
-        :monthProgress="monthProgress"
-        :index="originalIndex(task)"
-        :isFinished="isFinished"
-        :isToday="isTodayForDay"
-        :insightHabits="insightHabits"
-        @toggle="onToggle"
-        @edit="onEdit"
-        @delete="onDelete"
-        @dragStart="onDragStart"
-        @dragEnd="onDragEnd"
-      />
-      <!-- Drop indicator (when dragging within the day) -->
-      <div
-        v-if="dragging"
-        class="h-1 bg-pp-cyan/60"
-        style="box-shadow: 0 0 8px rgba(0, 240, 255, 0.6);"
-        aria-hidden="true"
-      ></div>
+    <!-- Task rows (optionally grouped by first label) -->
+    <div v-if="displayTasks.length > 0" class="flex flex-col gap-1.5">
+      <template v-for="group in groups" :key="group.label">
+        <button
+          v-if="grouped"
+          type="button"
+          class="flex items-center justify-between gap-2 px-2 py-1 mt-1 font-mono text-label-md uppercase tracking-wider bg-pp-panel border border-pp-line hover:border-pp-cyan text-left"
+          :aria-expanded="!collapsed.has(group.label)"
+          @click="toggleGroup(group.label)"
+        >
+          <span class="flex items-center gap-2">
+            <span
+              v-if="group.label !== UNLABELED"
+              class="pp-label-chip"
+              :class="`pp-label-hue-${labelColorIndex(group.label)}`"
+            >{{ group.label }}</span>
+            <span v-else class="text-pp-muted">{{ UNLABELED }}</span>
+            <span class="text-pp-muted">· {{ group.tasks.filter((t) => t.completed).length }}/{{ group.tasks.length }}</span>
+          </span>
+          <span class="text-pp-muted" aria-hidden="true">{{ collapsed.has(group.label) ? "▸" : "▾" }}</span>
+        </button>
+        <template v-if="!collapsed.has(group.label)">
+          <TaskRow
+            v-for="task in group.tasks"
+            :key="task.uuid"
+            :task="task"
+            :day="day"
+            :week="week"
+            :monthProgress="monthProgress"
+            :index="savedIndex(task)"
+            :isFinished="isFinished"
+            :isToday="isTodayForDay"
+            :insightHabits="insightHabits"
+            :canReorder="canReorder"
+            :isFirst="savedIndex(task) === 0"
+            :isLast="savedIndex(task) === day.tasks.length - 1"
+            @toggle="onToggle"
+            @edit="onEdit"
+            @delete="onDelete"
+            @moveUp="(uuid) => moveBy(uuid, -1)"
+            @moveDown="(uuid) => moveBy(uuid, 1)"
+            @dragStart="onDragStart"
+            @dragEnd="onDragEnd"
+            @dragover.prevent="onListDragOver"
+            @drop.prevent="onDropOn(task)"
+          />
+        </template>
+      </template>
     </div>
 
     <!-- Filter empty state -->
@@ -167,7 +186,13 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, type Ref } from "vue";
 import TaskRow from "./TaskRow.vue";
-import TaskFilterBar, { type Filter } from "./TaskFilterBar.vue";
+import { type Filter } from "./TaskFilterBar.vue";
+import DayViewBar from "./DayViewBar.vue";
+import { useSettingsStore } from "../../stores/settingsStore";
+import {
+  DAY_SORT_LABELS, UNLABELED, groupByFirstLabel, neighbourIndex, sortDayTasks,
+} from "../../composables/useDayOrdering";
+import { labelColorIndex } from "../../utils/sharedLabels";
 import CloneDayPanel from "./CloneDayPanel.vue";
 import type { Day, InsightsHabit, Task, Week, Cycle } from "../../types/index";
 import { getDayStats } from "../../composables/useCampaignStats";
@@ -213,26 +238,52 @@ const isTodayForDay = computed<boolean>(() => {
   return today.weekIndex === weekIdx && today.dayIndex === dayIdx;
 });
 
-const filteredTasks = computed(() => {
-  const t = props.day.tasks;
+const settings = useSettingsStore();
+
+function matchesFilter(x: Task): boolean {
   switch (filter.value) {
-    case "pending":   return t.filter((x) => !x.completed);
-    case "done":      return t.filter((x) =>  x.completed);
-    case "legendary": return t.filter((x) => !!x.legendary);
-    case "optional":  return t.filter((x) => !!x.optional);
-    case "all":
-    default:          return t;
+    case "pending":   return !x.completed;
+    case "done":      return x.completed;
+    case "legendary": return !!x.legendary;
+    case "optional":  return !!x.optional;
+    default:          return true;
   }
+}
+
+// Saved order = the day's task array (what moveTasks rewrites).
+const displayTasks = computed(() =>
+  sortDayTasks(props.day.tasks, settings.daySort).filter(matchesFilter),
+);
+const grouped = computed(() => settings.groupByLabel);
+const groups = computed(() =>
+  grouped.value ? groupByFirstLabel(displayTasks.value) : [{ label: "", tasks: displayTasks.value }],
+);
+const collapsed = ref<Set<string>>(new Set());
+function toggleGroup(label: string) {
+  const next = new Set(collapsed.value);
+  if (next.has(label)) next.delete(label);
+  else next.add(label);
+  collapsed.value = next;
+}
+
+// Reordering only makes sense on the saved order with nothing hidden.
+const canReorder = computed(
+  () => !props.isFinished && settings.daySort === "manual" && filter.value === "all",
+);
+const viewBadge = computed(() => {
+  const parts: string[] = [];
+  if (settings.daySort !== "manual") parts.push(DAY_SORT_LABELS[settings.daySort]);
+  if (settings.groupByLabel) parts.push("Grouped");
+  return parts.join(" · ");
 });
 
-// We use the sorted (displayed) order but the index emitted is the
-// position in the FULL sorted day.tasks list so cross-row drag-and-drop
-// works against the same index space.
-const sortedDayTasks = computed(() =>
-  [...props.day.tasks].sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9)),
-);
-function originalIndex(task: Task): number {
-  return sortedDayTasks.value.findIndex((t) => t.uuid === task.uuid);
+function savedIndex(task: Task): number {
+  return props.day.tasks.findIndex((t) => t.uuid === task.uuid);
+}
+function moveBy(uuid: string, delta: -1 | 1) {
+  if (!canReorder.value) return;
+  const to = neighbourIndex(props.day.tasks, uuid, delta);
+  if (to !== null) props.moveTask(uuid, props.day.uuid, to);
 }
 
 function onToggle(uuid: string) {
@@ -257,6 +308,14 @@ function onDragEnd() {
 }
 function onListDragOver(e: DragEvent) {
   if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+}
+function onDropOn(target: Task) {
+  const from = dragging.value;
+  dragging.value = null;
+  if (!from || !canReorder.value || from.uuid === target.uuid) return;
+  if (from.fromDayUuid !== props.day.uuid) return;
+  const to = savedIndex(target);
+  if (to >= 0) props.moveTask(from.uuid, props.day.uuid, to);
 }
 </script>
 
