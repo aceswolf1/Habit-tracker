@@ -36,6 +36,7 @@ export function applyTaskMetaUpdate(
     durationMin?: number | null;
     timeOfDay?: string | null;
     dueTime?: string | null;
+    labels?: string[] | null;
   }
 ): boolean {
   let changed = false;
@@ -52,5 +53,6 @@ export function applyTaskMetaUpdate(
   if (payload.durationMin !== undefined) { task.durationMin = (payload.durationMin ?? undefined) as Task["durationMin"]; changed = true; }
   if (payload.timeOfDay !== undefined)   { task.timeOfDay = (payload.timeOfDay ?? undefined) as Task["timeOfDay"]; changed = true; }
   if (payload.dueTime !== undefined)     { task.dueTime = (payload.dueTime ?? undefined) as Task["dueTime"]; changed = true; }
+  if (payload.labels !== undefined)      { task.labels = payload.labels && payload.labels.length ? [...payload.labels] : null; changed = true; }
   return changed;
 }

@@ -39,3 +39,20 @@ html, body {
   outline: 2px solid var(--pp-cyan);
   outline-offset: 2px;
 }
+/* Custom task labels: 8 stable colour slots (shared/labels.labelColorIndex).
+   `color` drives the text/border; `--tl-rgb` feeds the low-opacity wash. */
+.pp-label-hue-0 { color: #00f0ff; --tl-rgb: 0 240 255; }
+.pp-label-hue-1 { color: #ff4fa3; --tl-rgb: 255 79 163; }
+.pp-label-hue-2 { color: #ffbe0b; --tl-rgb: 255 190 11; }
+.pp-label-hue-3 { color: #00ff66; --tl-rgb: 0 255 102; }
+.pp-label-hue-4 { color: #b18cff; --tl-rgb: 177 140 255; }
+.pp-label-hue-5 { color: #ff8a3d; --tl-rgb: 255 138 61; }
+.pp-label-hue-6 { color: #7cc4ff; --tl-rgb: 124 196 255; }
+.pp-label-hue-7 { color: #c6f432; --tl-rgb: 198 244 50; }
+.pp-label-chip {
+  display: inline-flex; align-items: center;
+  padding: 0 0.3rem; font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+  line-height: 14px; border: 1px solid currentColor;
+  background: rgb(var(--tl-rgb, 110 127 157) / 0.12);
+  white-space: nowrap;
+}

@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { DAY_SORTS, type DaySort } from "../composables/useDayOrdering";
 
 /*
  * Settings store (V2).
@@ -41,6 +42,10 @@ export const useSettingsStore = defineStore("settings", {
     soundFx:
       typeof window !== "undefined" &&
       localStorage.getItem("soundFx") === "true",
+    // Day Spotlight ordering + label grouping (see composables/useDayOrdering).
+    // Real values come from hydrateSettingsFromLocalStorage() on mount.
+    daySort: "manual" as DaySort,
+    groupByLabel: false,
   }),
   actions: {
     setUseWeekVideos(val: boolean) {
@@ -64,6 +69,14 @@ export const useSettingsStore = defineStore("settings", {
       if (typeof window !== "undefined") {
         localStorage.setItem("campaignView", view);
       }
+    },
+    setDaySort(sort: DaySort) {
+      this.daySort = sort;
+      if (typeof window !== "undefined") localStorage.setItem("daySort", sort);
+    },
+    setGroupByLabel(val: boolean) {
+      this.groupByLabel = val;
+      if (typeof window !== "undefined") localStorage.setItem("groupByLabel", val ? "true" : "false");
     },
     setSoundFx(val: boolean) {
       this.soundFx = val;
@@ -107,4 +120,8 @@ export function hydrateSettingsFromLocalStorage(): void {
   if (c !== null) store.campaignView = c;
   const s = readBool("soundFx");
   if (s !== null) store.soundFx = s;
+  const ds = readStr("daySort", DAY_SORTS);
+  if (ds !== null) store.daySort = ds;
+  const g = readBool("groupByLabel");
+  if (g !== null) store.groupByLabel = g;
 }

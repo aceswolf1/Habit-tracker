@@ -28,6 +28,13 @@
 -->
 <template>
   <div class="task-modal-details">
+    <!-- Custom labels (HEALTH, WORK, …) -->
+    <TaskLabelsField
+      :modelValue="labels"
+      :suggestions="labelSuggestions"
+      @update:modelValue="(v) => emit('update:labels', v)"
+    />
+
     <!-- Tag -->
     <fieldset class="td-field">
       <legend class="td-label font-mono">TAG</legend>
@@ -121,6 +128,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import TaskLabelsField from "./TaskLabelsField.vue";
 import {
   TAGS,
   TIMES_OF_DAY,
@@ -134,6 +142,9 @@ const props = defineProps<{
   dueTime: string | null;
   /** Hide the due-time field when the active cycle has no startDate. */
   showDueTime: boolean;
+  /** Custom labels and suggestions (labels used elsewhere this month). */
+  labels: string[];
+  labelSuggestions?: string[];
 }>();
 
 const emit = defineEmits<{
@@ -141,6 +152,7 @@ const emit = defineEmits<{
   "update:durationMin": [value: number | null];
   "update:timeOfDay": [value: TaskTimeOfDay | null];
   "update:dueTime": [value: string | null];
+  "update:labels": [value: string[]];
 }>();
 
 const hasDuration = computed(() => props.durationMin !== null);

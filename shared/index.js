@@ -19,6 +19,7 @@ const taskMeta = require('./taskMeta');
 const combos   = require('./combos');
 const rewards  = require('./rewards');
 const achievements = require('./achievements');
+const labels   = require('./labels');
 
 module.exports = {
   ...progress,
@@ -31,4 +32,5 @@ module.exports = {
   ...combos,
   ...rewards,
   ...achievements,
+  ...labels,
 };

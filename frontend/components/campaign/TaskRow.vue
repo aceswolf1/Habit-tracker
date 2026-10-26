@@ -1,45 +1,17 @@
 <!--
-  TaskRow.vue (W2 contract §4 / §5 / Wave B / B3, v2.1 details).
+  TaskRow.vue — one task in the Day Spotlight.
 
-  Spotlight row. Layout differs between phone (< 640) and ≥ 640:
+  ≥ 640: [check] [thumb 96×54 + duration] [title · badges / meta line] [↑↓ (tablet) · edit · delete · drag (desktop)]
+  < 640: [check] [thumb 64×36] [title (2 lines) / XP + 2 labels] [⋯ menu: edit, move up/down, delete]
 
-    ≥ 640 (desktop / tablet — unchanged from Wave A):
-      [ check ] [ thumb 128×72 ] [ title + meta + badges ] [ edit ][ delete ][ drag ]
+  Meta line: XP · custom label chips · notes · REPLICATED · time of day ·
+  DUE IN / OVERDUE (today only, ticks every 60 s).
+  Reordering (drag on desktop, ↑↓ on tablet, menu on phone) is offered only
+  when `canReorder` (saved order, no filter); DaySpotlight performs the move.
+  Completed: `pp-done` background + 3px green left bar.
 
-    < 640 (phone):
-      [ check ] [ thumb 64×36 ] [ title (2 lines OK) ] [ ⋯ menu ]
-      - thumb is hidden when the task has no media AND no icon
-      - the two action buttons collapse into one TaskRowMenu (more_horiz)
-      - drag is hidden (no native drag affordance on touch)
-
-  v2.1 display rules (contract §5):
-    - Tag badge (`PpBadge` `common | rare | essential | defense`) sits
-      next to the title.
-    - Duration overlay (`05:00` / `1:30:00`) on the thumb bottom-right
-      via `TaskMedia.durationLabel`.
-    - `• EVENING` in the meta line when `timeOfDay` is set.
-    - `• DUE IN 2H 40M` (amber) when today's day and due time ahead;
-      `• OVERDUE` (danger) when past and not completed. The line
-      re-renders every 60 s via a local `now` ref so the "DUE IN"
-      count ticks down without an explicit refresh.
-
-  Check button (Wave B fixup):
-    Unchecked: 1px cyan border (1px magenta for legendary), transparent
-               fill, muted text. Hover fills to cyan/magenta with a dark
-               glyph for clear visibility against the dark card.
-    Checked:   solid green (or magenta for legendary completed) with a
-               dark ✓ glyph — unchanged.
-
-  Completed state: `pp-done` background + 3px green left bar.
-  Drag-and-drop is plumbed via native HTML5 drag events. Within-day
-  reorder uses the same `moveTask` action.
-
-  Emits:
-    toggle(uuid)
-    edit(uuid)
-    delete(uuid)
-    dragStart({ uuid, fromDayUuid, fromIndex })
-    dragEnd()
+  Emits: toggle, edit, delete, moveUp, moveDown (uuid); dragStart({uuid,
+  fromDayUuid, fromIndex}); dragEnd().
 -->
 <template>
   <div
@@ -53,7 +25,7 @@
       isFinished && 'opacity-80',
     ]"
     :data-task-uuid="task.uuid"
-    :draggable="!isPhone"
+    :draggable="!isPhone && !!canReorder"
     @dragstart="onDragStart"
     @dragend="onDragEnd"
   >
@@ -124,6 +96,12 @@
         class="flex items-center gap-2 font-mono text-body-sm text-pp-muted min-w-0 flex-wrap"
       >
         <span class="shrink-0" :class="xpClasses">{{ xpLabel }}</span>
+        <span
+          v-for="label in task.labels || []"
+          :key="label"
+          class="pp-label-chip shrink-0"
+          :class="`pp-label-hue-${labelColorIndex(label)}`"
+        >{{ label }}</span>
         <span v-if="task.notes" class="shrink-0 text-pp-muted" aria-hidden="true">•</span>
         <span v-if="task.notes" class="truncate min-w-0" :title="task.notes">{{ task.notes }}</span>
         <span v-if="replicatedLabel" class="shrink-0 text-pp-muted" aria-hidden="true">•</span>
@@ -141,8 +119,14 @@
       <!-- Phone: only show the xp line (no notes / replicated to keep
            the row short and avoid 3+ lines). Notes & replicated labels
            remain visible on desktop only. -->
-      <div v-else class="font-mono text-body-sm text-pp-muted min-w-0">
+      <div v-else class="flex items-center gap-1.5 font-mono text-body-sm text-pp-muted min-w-0 overflow-hidden">
         <span class="shrink-0" :class="xpClasses">{{ xpLabel }}</span>
+        <span
+          v-for="label in (task.labels || []).slice(0, 2)"
+          :key="label"
+          class="pp-label-chip shrink-0"
+          :class="`pp-label-hue-${labelColorIndex(label)}`"
+        >{{ label }}</span>
       </div>
     </div>
 
@@ -153,8 +137,13 @@
       class="self-center"
       :task-uuid="task.uuid"
       :task-description="task.description"
+      :can-reorder="canReorder"
+      :is-first="isFirst"
+      :is-last="isLast"
       @edit="(uuid) => emit('edit', uuid)"
       @delete="(uuid) => emit('delete', uuid)"
+      @moveUp="(uuid) => emit('moveUp', uuid)"
+      @moveDown="(uuid) => emit('moveDown', uuid)"
     />
 
     <!-- ≥ sm: explicit edit + delete (and a hidden drag affordance at lg). -->
@@ -162,6 +151,22 @@
       v-else-if="!isFinished"
       class="shrink-0 self-center flex items-center gap-1"
     >
+      <template v-if="canReorder && !showDragHandle">
+        <button
+          type="button"
+          class="micro shrink-0 w-7 h-7 flex items-center justify-center bg-pp-panel hover:bg-pp-card-active text-pp-muted hover:text-pp-cyan transition-colors disabled:opacity-30"
+          :disabled="isFirst"
+          :aria-label="`Move ${task.description} up`"
+          @click.stop="emit('moveUp', task.uuid)"
+        >↑</button>
+        <button
+          type="button"
+          class="micro shrink-0 w-7 h-7 flex items-center justify-center bg-pp-panel hover:bg-pp-card-active text-pp-muted hover:text-pp-cyan transition-colors disabled:opacity-30"
+          :disabled="isLast"
+          :aria-label="`Move ${task.description} down`"
+          @click.stop="emit('moveDown', task.uuid)"
+        >↓</button>
+      </template>
       <button
         type="button"
         class="micro shrink-0 w-7 h-7 flex items-center justify-center bg-pp-panel hover:bg-pp-card-active text-pp-muted hover:text-pp-cyan transition-colors"
@@ -181,7 +186,7 @@
       <!-- Drag affordance. The row is already `draggable` so this is
            only a visible handle + a keyboard focus target. -->
       <span
-        v-if="showDragHandle"
+        v-if="showDragHandle && canReorder"
         class="hidden lg:flex shrink-0 w-7 h-7 items-center justify-center text-pp-muted cursor-grab"
         :aria-label="`Reorder ${task.description}`"
       >
@@ -207,6 +212,7 @@ import {
   timeOfDayLabel,
 } from "../../composables/useCampaignStats";
 import { useTaskRowStrikeBadge } from "../../composables/useTaskRowStrikeBadge";
+import { labelColorIndex } from "../../utils/sharedLabels";
 import { injectCampaignBreakpoints } from "../../composables/campaignBreakpoints";
 import type { InsightsHabit, Task, Week } from "../../types/index";
 import type { TaskTag, TaskTimeOfDay } from "../../types/index";
@@ -223,12 +229,18 @@ const props = defineProps<{
   /** v2.2: insights habit table, used for the STRIKE READY pill on
    * pending tasks. Optional — when unset, no STRIKE READY pill is shown. */
   insightHabits?: InsightsHabit[] | null;
+  /** Saved order + no filter: allow Move up/down and drag. */
+  canReorder?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
 }>();
 
 const emit = defineEmits<{
   toggle: [uuid: string];
   edit: [uuid: string];
   delete: [uuid: string];
+  moveUp: [uuid: string];
+  moveDown: [uuid: string];
   dragStart: [payload: { uuid: string; fromDayUuid: string; fromIndex: number }];
   dragEnd: [];
 }>();

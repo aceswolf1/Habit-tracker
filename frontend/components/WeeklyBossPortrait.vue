@@ -21,8 +21,11 @@
     <div class="weekly-boss-image">
       <img v-if="renderMode === 'image'" :src="imageSrc" :alt="weekName" decoding="async" />
       <!-- W5 perf: optional boss videos (~8 MB each) play only while visible. -->
+      <!-- :key recreates the element per week: browsers don't reload a
+           <video> when only its <source> changes (it kept week 1's clip). -->
       <video
         v-if="renderMode === 'video'"
+        :key="computedVideoSrc"
         ref="bossVideoEl"
         class="boss-subtitle-video"
         loop

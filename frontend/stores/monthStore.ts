@@ -236,6 +236,7 @@ export const useMonthStore = defineStore("month", {
         durationMin: options.durationMin,
         timeOfDay: options.timeOfDay,
         dueTime: options.dueTime,
+        labels: options.labels,
         recurrenceId: options.recurrenceId,
       });
       refreshProgressLocal(this.currentMonth);

@@ -47,6 +47,8 @@ export interface TaskDraftInput {
   timeOfDay?: TaskTimeOfDay;
   /** v2.1: 'HH:MM' 24h string. */
   dueTime?: string;
+  /** Custom labels (normalized by the API). */
+  labels?: string[];
   /** Required for grouping recurring habits. */
   recurrenceId: string;
   /** Position within the day — pass the current tasks length for append. */
@@ -76,6 +78,7 @@ export function createTaskDraft(input: TaskDraftInput): Task {
     durationMin: input.durationMin,
     timeOfDay: input.timeOfDay,
     dueTime: input.dueTime,
+    labels: input.labels && input.labels.length ? [...input.labels] : undefined,
   };
 }
 

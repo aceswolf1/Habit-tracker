@@ -31,6 +31,8 @@ export interface BulkAddTasksPayload {
   timeOfDay?: TaskTimeOfDay;
   /** v2.1: HH:MM 24-hour string. */
   dueTime?: string;
+  /** Custom labels. */
+  labels?: string[];
 }
 
 export interface UpdateTaskPayload {
@@ -49,4 +51,6 @@ export interface UpdateTaskPayload {
   durationMin?: number | null;
   timeOfDay?: TaskTimeOfDay | null;
   dueTime?: string | null;
+  /** Replaces the label list; null clears. */
+  labels?: string[] | null;
 }

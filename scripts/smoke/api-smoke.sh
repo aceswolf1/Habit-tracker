@@ -406,7 +406,26 @@ echo "    notes after clear: ${NOTES_RAW}"
 if [[ "${NOTES_RAW}" != "null" && "${NOTES_RAW}" != "<<missing>>" ]]; then
   echo "FATAL: notes was not cleared (got '${NOTES_RAW}')"; cat "${RESP_BODY}"; exit 30
 fi
+
 echo "    notes clear OK (notes cleared via null)"
+
+# ---- Custom labels: normalized on write, null clears ----
+echo
+echo "==> smoke: [10l] labels — set (normalized) + clear via PATCH"
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-1","labels":[" health ","Health","deep work"]}]}'
+assert_envelope_ok "labels-set"
+LABELS_RAW="$(jq -c '[.data.cycle.weeks[].days[].tasks[] | select(.uuid=="t-smoke-1")][0].labels' "${RESP_BODY}")"
+echo "    labels after set: ${LABELS_RAW}"
+if [[ "${LABELS_RAW}" != '["HEALTH","DEEP WORK"]' ]]; then
+  echo "FATAL: labels should normalize to [\"HEALTH\",\"DEEP WORK\"] (got ${LABELS_RAW})"; cat "${RESP_BODY}"; exit 60
+fi
+req PATCH "/api/cycles/${NEW_UUID}" '{"type":"updateTasks","updates":[{"uuid":"t-smoke-1","labels":null}]}'
+assert_envelope_ok "labels-clear"
+LABELS_RAW="$(jq -c '[.data.cycle.weeks[].days[].tasks[] | select(.uuid=="t-smoke-1")][0].labels' "${RESP_BODY}")"
+if [[ "${LABELS_RAW}" != "null" ]]; then
+  echo "FATAL: labels were not cleared (got ${LABELS_RAW})"; cat "${RESP_BODY}"; exit 61
+fi
+echo "    labels set + clear OK"
 
 # ---- v2.2 — strike combos (E1+E2): same habit on two consecutive days → combo 2 ----
 echo

@@ -65,7 +65,11 @@ export interface SharedPageState {
   refreshDataFromStore: () => void;
   // Task mutations
   toggleTask: (taskUuid: string) => void;
-  moveTask: (payload: { taskUuid: string; toDayUuid: string }) => void;
+  moveTask: (
+    a: string | { taskUuid: string; toDayUuid: string; targetIndex?: number },
+    toDayUuid?: string,
+    targetIndex?: number,
+  ) => void;
   deleteSingleTask: (taskUuid: string) => void;
   // Modal openers (optional — only present when the owner provided them)
   openCreateTask?: () => void;
@@ -226,9 +230,17 @@ export function useMonthPageState() {
     refreshDataFromStore();
   }
 
-  function moveTask(payload: { taskUuid: string; toDayUuid: string }) {
+  // Accepts `(uuid, toDayUuid, targetIndex?)` (what the campaign components
+  // call) or the older `({ taskUuid, toDayUuid, targetIndex? })` form.
+  function moveTask(
+    a: string | { taskUuid: string; toDayUuid: string; targetIndex?: number },
+    toDayUuid?: string,
+    targetIndex?: number,
+  ) {
     if (monthStore.currentMonth?.finished) return;
-    monthStore.moveTask(payload.taskUuid, payload.toDayUuid);
+    const p = typeof a === "string" ? { taskUuid: a, toDayUuid: toDayUuid || "", targetIndex } : a;
+    if (!p.taskUuid || !p.toDayUuid) return;
+    monthStore.moveTask(p.taskUuid, p.toDayUuid, p.targetIndex);
     refreshDataFromStore();
   }
 

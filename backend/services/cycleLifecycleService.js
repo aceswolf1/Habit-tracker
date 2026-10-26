@@ -179,7 +179,7 @@ function createCycleLifecycleService({ cycleRepo, profileRepo, rewardsService })
 
     if (cycle.finished && cycle.statistics) {
       const out = {
-        cycle: cycle.toObject(),
+        cycle: cycle && typeof cycle.toObject === 'function' ? cycle.toObject() : cycle,
         statistics: cycle.statistics,
         alreadyFinished: true,
       };
@@ -209,7 +209,7 @@ function createCycleLifecycleService({ cycleRepo, profileRepo, rewardsService })
 
     const saved = await cycleRepo.save(cycle);
     const out = {
-      cycle: saved.toObject(),
+      cycle: saved && typeof saved.toObject === 'function' ? saved.toObject() : saved,
       statistics,
       alreadyFinished: false,
     };

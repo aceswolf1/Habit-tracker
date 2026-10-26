@@ -23,16 +23,24 @@ const { createFakeCycleRepository } = require('./fakes/cycleRepo');
 const fixtures = require('./fakes/fixtures');
 
 let passed = 0;
+// Checks run sequentially and are awaited; the summary prints only after
+// every check (sync or async) has finished. A failure exits 1.
+let __chain = Promise.resolve();
 function check(name, fn) {
-  try {
-    fn();
-    passed += 1;
-    console.log(`PASS: ${name}`);
-  } catch (err) {
-    console.error(`FAIL: ${name}`);
-    console.error(err && err.message ? err.message : err);
-    process.exit(1);
-  }
+  __chain = __chain.then(async () => {
+    try {
+      await fn();
+      passed += 1;
+      console.log(`PASS: ${name}`);
+    } catch (err) {
+      console.error(`FAIL: ${name}`);
+      console.error(err && err.stack ? err.stack : err);
+      // CHECK_CONTINUE=1 lists every failure instead of stopping at the first.
+      if (!process.env.CHECK_CONTINUE) process.exit(1);
+      process.exitCode = 1;
+    }
+  });
+  return __chain;
 }
 
 // ---- listQuerySchema parses the supported range --------------------------
@@ -267,6 +275,8 @@ check('routes/cycleRoutes.js exposes PATCH /:id wiring (not inline)', () => {
   assert.ok(/router\.patch\('\/:id',\s*c\.patch\)/.test(src),
     "PATCH /:id must be wired to controller's patch handler");
 });
-
-console.log(`\n${passed} checks passed`);
-process.exit(0);
+__chain.then(() => {
+  if (process.exitCode) process.exit(1);
+  console.log(`\n${passed} checks passed`);
+  process.exit(0);
+});

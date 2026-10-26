@@ -53,6 +53,8 @@ export interface Task {
   timeOfDay?: TaskTimeOfDay;
   /** v2.1: 24-hour HH:MM string; only meaningful on dated days. */
   dueTime?: string;
+  /** Custom labels (e.g. HEALTH, WORK), normalized upper-case, max 5. */
+  labels?: string[] | null;
   /** v2.2: server-stamped local calendar date ('YYYY-MM-DD') of the
    * last completion. `null` when the task is currently un-completed. */
   completedOn?: string | null;
@@ -250,6 +252,7 @@ export interface PatchAddTasks {
       | "durationMin"
       | "timeOfDay"
       | "dueTime"
+      | "labels"
     >;
   }>;
 }
@@ -276,6 +279,8 @@ export interface PatchUpdateTasks {
     durationMin?: number | null;
     timeOfDay?: TaskTimeOfDay | null;
     dueTime?: string | null;
+    /** Replaces the whole label list; null clears. */
+    labels?: string[] | null;
   }>;
   /** v2.2: optional browser-local 'YYYY-MM-DD'. When present, used as
    * the task's `completedOn` stamp on a false→true flip; falls back to

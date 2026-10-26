@@ -210,6 +210,8 @@ async function applyUpdates(cycle, updates, opts) {
         if (update.durationMin !== undefined) task.durationMin = update.durationMin;
         if (update.timeOfDay !== undefined) task.timeOfDay = update.timeOfDay;
         if (update.dueTime !== undefined) task.dueTime = update.dueTime;
+        // Custom labels (already normalized by zod); null clears.
+        if (update.labels !== undefined) task.labels = update.labels;
 
         // v2.1 D3: persist `habitId` on next save when a task is missing
         // one and the client didn't supply one in *this* update.
