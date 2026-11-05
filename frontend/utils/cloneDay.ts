@@ -58,6 +58,12 @@ export function cloneTaskFromSource(source: Task): Task {
   };
 }
 
+/** True when `day` already has a task matching `task`'s fingerprint. */
+export function dayHasTask(day: Pick<Day, "tasks">, task: Task): boolean {
+  const fp = taskFingerprint(task);
+  return day.tasks.some((t) => taskFingerprint(t) === fp);
+}
+
 /** Look up a Day in the cycle tree by uuid. Returns null when not found. */
 export function findDayInWeeks(weeks: readonly Week[], dayUuid: string): Day | null {
   for (const w of weeks) {
@@ -74,6 +80,8 @@ export interface BuildCloneAdditionsInput {
   sourceDayUuid: string;
   /** Day UUIDs the user toggled on in the clone panel. */
   targetDayUuids: readonly string[];
+  /** Copy only these tasks of the source day (single-habit clone). Omit = all. */
+  sourceTaskUuids?: readonly string[];
 }
 
 export interface BuildCloneAdditionsResult {
@@ -100,7 +108,9 @@ export function buildCloneAdditions(input: BuildCloneAdditionsInput): BuildClone
   const additions: Array<{ weekUuid: string; dayUuid: string; task: Task }> = [];
   let skippedDuplicates = 0;
   const sourceDay = findDayInWeeks(input.weeks, input.sourceDayUuid);
-  if (!sourceDay || sourceDay.tasks.length === 0) {
+  const only = input.sourceTaskUuids ? new Set(input.sourceTaskUuids) : null;
+  const sourceTasks = sourceDay ? sourceDay.tasks.filter((t) => !only || only.has(t.uuid)) : [];
+  if (sourceTasks.length === 0) {
     return { additions, skippedDuplicates };
   }
   // Track fingerprints already added per target so that passing the
@@ -117,7 +127,7 @@ export function buildCloneAdditions(input: BuildCloneAdditionsInput): BuildClone
     const existingFingerprints = new Set(target.tasks.map(taskFingerprint));
     const inFlight = perTarget.get(targetUuid) ?? new Set<string>();
     perTarget.set(targetUuid, inFlight);
-    for (const sourceTask of sourceDay.tasks) {
+    for (const sourceTask of sourceTasks) {
       const fp = taskFingerprint(sourceTask);
       if (existingFingerprints.has(fp) || inFlight.has(fp)) {
         skippedDuplicates += 1;

@@ -80,6 +80,8 @@ const props = defineProps<{
   hasStartDate?: boolean;
   finishMonth: () => void;
   refreshData: () => void;
+  /** Switch the active month (sidebar month list). */
+  selectMonth: (uuid: string) => void;
   openCreateTask: () => void;
   /** v2.3 (W2) rewards chrome. */
   openChests?: () => void;
@@ -127,12 +129,7 @@ const mainPaddingClass = computed(() =>
 );
 
 function onSelectMonth(uuid: string) {
-  props.refreshData();
-  if (props.currentMonthUuid !== uuid) {
-    // The store's setCurrentMonth is invoked by app.vue; refreshData
-    // here is a no-op safeguard so the page always reflects the new
-    // selection immediately even if the store didn't fire a watch.
-  }
+  if (props.currentMonthUuid !== uuid) props.selectMonth(uuid);
 }
 </script>
 

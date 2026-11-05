@@ -81,6 +81,13 @@
             :initialDayUuid="currentDayUuid"
             @move="onMoveTo"
           />
+          <TaskModalCopyTo
+            :isEdit="isEdit"
+            :finished="isCycleFinished"
+            :task="editingTask ?? null"
+            :sourceDayUuid="currentDayUuid"
+            @copied="() => { emit('updated'); close(); }"
+          />
 
           <!-- Actions -->
           <footer class="task-modal-footer">
@@ -121,6 +128,7 @@ import TaskModalDetails from "./task/TaskModalDetails.vue";
 import TaskModalVisualPicker from "./task/TaskModalVisualPicker.vue";
 import TaskModalDayScope from "./task/TaskModalDayScope.vue";
 import TaskModalMoveTo from "./task/TaskModalMoveTo.vue";
+import TaskModalCopyTo from "./task/TaskModalCopyTo.vue";
 
 const props = defineProps<{
   open: boolean;

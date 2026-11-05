@@ -26,9 +26,10 @@
  *   `useMonthPageState()` factory is preserved (still used by app.vue)
  *   so the watch + computed graph lives there exactly as before.
  */
-import { inject, provide, ref, computed, watch, type Ref, type InjectionKey } from "vue";
+import { inject, provide, ref, computed, watch, onMounted, type Ref, type InjectionKey } from "vue";
 import { storeToRefs } from "pinia";
 import { useMonthStore } from "../stores/monthStore";
+import { loadDayFocus, saveDayFocus } from "./useDayFocus";
 
 const WEEKDAY_NAMES = [
   "Sunday",
@@ -223,6 +224,36 @@ export function useMonthPageState() {
       }
     },
     { deep: true }
+  );
+
+  // Remember the focused week + day per month across reloads
+  // (utils/dayFocus.ts). Restored after mount so SSR markup (week 1)
+  // hydrates cleanly, then again whenever another month is loaded.
+  const focusReady = ref(false);
+  function restoreDayFocus() {
+    const focus = loadDayFocus(currentMonth.value);
+    const week = focus ? monthStore.getWeekByUuid(focus.weekUuid) : null;
+    if (!focus || !week) return;
+    currentWeek.value = week;
+    currentDayUuid.value = focus.dayUuid;
+  }
+  onMounted(() => {
+    restoreDayFocus();
+    focusReady.value = true;
+  });
+  watch(
+    () => currentMonth.value?.uuid,
+    (uuid, prev) => {
+      if (focusReady.value && uuid && uuid !== prev) restoreDayFocus();
+    },
+  );
+  watch(
+    [() => currentMonth.value?.uuid, () => currentWeek.value?.uuid, currentDayUuid],
+    ([monthUuid, weekUuid, dayUuid]) => {
+      if (focusReady.value && monthUuid && weekUuid && dayUuid) {
+        saveDayFocus(monthUuid, weekUuid, dayUuid);
+      }
+    },
   );
 
   function toggleTask(taskUuid: string) {
