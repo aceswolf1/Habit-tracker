@@ -312,11 +312,12 @@ export const useMonthStore = defineStore("month", {
 
     /** V2 A9 — Clone every task from `sourceDayUuid` into each day in
      * `targetDayUuids` via a single PATCH `addTasks`. Finished month = no-op. */
-    cloneDayTasks(sourceDayUuid: string, targetDayUuids: string[]): number {
+    // `taskUuids` limits the copy to those tasks (single-habit "Copy to…").
+    cloneDayTasks(sourceDayUuid: string, targetDayUuids: string[], taskUuids?: string[]): number {
       if (!this.currentMonth || this.currentMonth.finished) return 0;
       if (!sourceDayUuid || !targetDayUuids?.length) return 0;
       const { additions } = buildCloneAdditions({
-        weeks: this.currentMonth.weeks, sourceDayUuid, targetDayUuids,
+        weeks: this.currentMonth.weeks, sourceDayUuid, targetDayUuids, sourceTaskUuids: taskUuids,
       });
       if (additions.length === 0) return 0;
       appendClonedTasksToCycle(this.currentMonth.weeks, additions);
@@ -327,7 +328,7 @@ export const useMonthStore = defineStore("month", {
       const added = additions.length;
       emitAppEvent("toast", {
         type: "success",
-        title: "DAY CLONED",
+        title: taskUuids ? "HABIT CLONED" : "DAY CLONED",
         message: `Synced ${added} ${added === 1 ? "task" : "tasks"} across selected days.`,
       });
       return added;

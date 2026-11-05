@@ -29,6 +29,7 @@
     :setDates="onSidebarSetDates"
     :finishMonth="finishMonth"
     :refreshData="refreshDataFromStore"
+    :selectMonth="onSidebarSelectMonth"
     :openCreateTask="openCreateTask"
     :openChests="onOpenChests"
     :unclaimedCount="rewardsStore.unclaimedCount"
@@ -315,6 +316,12 @@ function onSidebarNewMonth() {
   // handler rolls forward (the dialog handles "set dates" if there's
   // no startDate, otherwise the user can clear dates from inside).
   openNewMonthDialog(hasMonth.value ? "newMonth" : "newMonth");
+}
+
+// Sidebar month list: open that month (the remembered week/day is
+// restored by useMonthPageState when the month loads).
+function onSidebarSelectMonth(uuid: string) {
+  monthStore.setCurrentMonth(uuid);
 }
 
 function onSidebarSetDates() {

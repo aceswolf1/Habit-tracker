@@ -274,5 +274,42 @@ check('expectedCloneCount: empty source day = 0', () => {
   );
 });
 
+// ---- single-habit clone (sourceTaskUuids) -------------------------------
+
+check('buildCloneAdditions: sourceTaskUuids copies only that habit across weeks', () => {
+  const c = emptyCycle(3);
+  addTask(c, 0, 2, { uuid: 'a', description: 'Run', optional: false, completed: true, habitId: 'h-run', labels: ['HEALTH'] });
+  addTask(c, 0, 2, { uuid: 'b', description: 'Read', optional: false, completed: false });
+  const { additions } = buildCloneAdditions({
+    weeks: c.weeks, sourceDayUuid: 'd-0-2', targetDayUuids: ['d-1-2', 'd-2-4'], sourceTaskUuids: ['a'],
+  });
+  assert.deepStrictEqual(additions.map((x) => [x.weekUuid, x.dayUuid, x.task.description]),
+    [['w-1', 'd-1-2', 'Run'], ['w-2', 'd-2-4', 'Run']]);
+  assert.strictEqual(additions[0].task.completed, false);
+  assert.strictEqual(additions[0].task.habitId, 'h-run', 'copy stays the same habit (strikes)');
+  assert.deepStrictEqual(additions[0].task.labels, ['HEALTH']);
+  assert.notStrictEqual(additions[0].task.uuid, 'a');
+});
+
+check('buildCloneAdditions: single-habit clone skips days that already have it', () => {
+  const c = emptyCycle(2);
+  addTask(c, 0, 0, { uuid: 'a', description: 'Run', optional: false });
+  addTask(c, 1, 0, { uuid: 'x', description: 'Run', optional: false });
+  const out = buildCloneAdditions({
+    weeks: c.weeks, sourceDayUuid: 'd-0-0', targetDayUuids: ['d-1-0', 'd-1-1'], sourceTaskUuids: ['a'],
+  });
+  assert.deepStrictEqual(out.additions.map((x) => x.dayUuid), ['d-1-1']);
+  assert.strictEqual(out.skippedDuplicates, 1);
+});
+
+check('dayHasTask: true when a matching task (fingerprint) is on the day', () => {
+  const c = emptyCycle(1);
+  addTask(c, 0, 0, { uuid: 'a', description: 'Run', optional: false });
+  addTask(c, 0, 3, { uuid: 'z', description: 'Run', optional: false });
+  const src = c.weeks[0].days[0].tasks[0];
+  assert.strictEqual(cloneMod.dayHasTask(c.weeks[0].days[3], src), true);
+  assert.strictEqual(cloneMod.dayHasTask(c.weeks[0].days[1], src), false);
+});
+
 console.log(`\n${passed} checks passed`);
 process.exit(0);
